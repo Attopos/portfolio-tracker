@@ -1,5 +1,6 @@
 const STORAGE_KEY = "portfolioDataV1";
 const MARKET_FEED_STORAGE_KEY = "portfolioMarketFeedV1";
+const CNY_SWAP_MIGRATION_KEY = "portfolioCnySwapMigratedV1";
 const DEFAULT_CNY_PER_USD = 6.91;
 const MARKET_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 const MIN_MARKET_REQUEST_GAP_MS = 30 * 1000;
@@ -377,7 +378,7 @@ function startMarketAutoRefresh() {
   runMarketRefreshCycle();
 }
 
-function normalizeEditableCell(cell, type) {
+function normalizeCellNumber(cell, type) {
   const value = parseCurrencyNumber(cell.textContent);
   const safeValue = Number.isFinite(value) ? value : 0;
 
@@ -432,13 +433,170 @@ function normalizeAllEditableFields() {
     const priceCell = rows[i].querySelector(".price");
 
     if (positionCell) {
-      normalizeEditableCell(positionCell, "position");
+      normalizeCellNumber(positionCell, "position");
     }
 
     if (priceCell) {
-      normalizeEditableCell(priceCell, "price");
+      normalizeCellNumber(priceCell, "price");
     }
   }
+}
+
+function migrateCnyRowsPositionPriceSwap() {
+  if (localStorage.getItem(CNY_SWAP_MIGRATION_KEY) === "1") {
+    return;
+  }
+
+  const rows = getDataRows();
+  let hasChanges = false;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowId = getRowId(row);
+    const currencySelect = row.querySelector(".currency-select");
+    const positionCell = row.querySelector(".postion");
+    const priceCell = row.querySelector(".price");
+
+    if (!currencySelect || !positionCell || !priceCell) {
+      continue;
+    }
+
+    if (currencySelect.value !== "CNY" || CRYPTO_ASSET_IDS[rowId]) {
+      continue;
+    }
+
+    const position = parseCurrencyNumber(positionCell.textContent);
+    const price = parseCurrencyNumber(priceCell.textContent);
+    positionCell.textContent = POSITION_FORMATTER.format(price);
+    priceCell.textContent = VALUE_FORMATTER.format(position);
+    hasChanges = true;
+  }
+
+  if (hasChanges) {
+    savePortfolioData();
+  }
+
+  localStorage.setItem(CNY_SWAP_MIGRATION_KEY, "1");
+}
+
+function fillPositionEditorOptions() {
+  const select = document.getElementById("positionAssetSelect");
+  if (!select) {
+    return;
+  }
+
+  const rows = getDataRows();
+  let html = '<option value="" selected>Select an asset...</option>';
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowId = getRowId(row);
+    const nameCell = row.querySelector("td:nth-child(2)");
+    if (!rowId || !nameCell) {
+      continue;
+    }
+
+    const label = rowId + " - " + nameCell.textContent.trim();
+    html += '<option value="' + rowId + '">' + label + "</option>";
+  }
+
+  select.innerHTML = html;
+}
+
+function updateHighlightedAssetRow(selectedAssetId) {
+  const rows = getDataRows();
+
+  for (let i = 0; i < rows.length; i++) {
+    const rowId = getRowId(rows[i]);
+    rows[i].classList.toggle("selected-asset-row", rowId === selectedAssetId);
+  }
+}
+
+function syncPositionInputWithSelectedAsset() {
+  const select = document.getElementById("positionAssetSelect");
+  const input = document.getElementById("positionSizeInput");
+  const applyBtn = document.getElementById("positionApplyBtn");
+  if (!select || !input) {
+    return;
+  }
+
+  updateHighlightedAssetRow(select.value);
+
+  if (!select.value) {
+    input.value = "";
+    input.disabled = true;
+    if (applyBtn) {
+      applyBtn.disabled = true;
+    }
+    return;
+  }
+
+  input.disabled = false;
+  if (applyBtn) {
+    applyBtn.disabled = false;
+  }
+
+  const row = getRowByAssetId(select.value);
+  const positionCell = row ? row.querySelector(".postion") : null;
+  const position = positionCell ? parseCurrencyNumber(positionCell.textContent) : 0;
+  input.value = position.toString();
+}
+
+function showPositionEditSuccessFeedback(row) {
+  if (!row) {
+    return;
+  }
+
+  row.classList.remove("position-edit-success");
+  void row.offsetWidth;
+  row.classList.add("position-edit-success");
+
+  window.setTimeout(function () {
+    row.classList.remove("position-edit-success");
+  }, 900);
+}
+
+function focusPositionSizeInput() {
+  const input = document.getElementById("positionSizeInput");
+  if (!input || input.disabled) {
+    return;
+  }
+
+  input.focus();
+  input.select();
+}
+
+function handleAssetSelectionChange() {
+  syncPositionInputWithSelectedAsset();
+  focusPositionSizeInput();
+}
+
+function applyPositionSizeUpdate(event) {
+  event.preventDefault();
+
+  const select = document.getElementById("positionAssetSelect");
+  const input = document.getElementById("positionSizeInput");
+  if (!select || !input) {
+    return;
+  }
+
+  const row = getRowByAssetId(select.value);
+  if (!row) {
+    return;
+  }
+
+  const positionCell = row.querySelector(".postion");
+  if (!positionCell) {
+    return;
+  }
+
+  const nextValue = parseCurrencyNumber(input.value);
+  const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
+  positionCell.textContent = POSITION_FORMATTER.format(safeValue);
+  savePortfolioData();
+  updateTotals();
+  syncPositionInputWithSelectedAsset();
+  showPositionEditSuccessFeedback(row);
 }
 
 function getAllocationData() {
@@ -701,7 +859,6 @@ function restorePortfolioData() {
 
 function bindPersistenceEvents() {
   const currencySelects = document.querySelectorAll(".currency-select");
-  const rows = getDataRows();
 
   for (let i = 0; i < currencySelects.length; i++) {
     currencySelects[i].addEventListener("change", function () {
@@ -714,45 +871,13 @@ function bindPersistenceEvents() {
     });
   }
 
-  for (let i = 0; i < rows.length; i++) {
-    const positionCell = rows[i].querySelector(".postion");
-    const priceCell = rows[i].querySelector(".price");
-
-    if (positionCell) {
-      positionCell.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          positionCell.blur();
-        }
-      });
-      positionCell.addEventListener("input", function () {
-        savePortfolioData();
-        updateTotals();
-      });
-      positionCell.addEventListener("blur", function () {
-        normalizeEditableCell(positionCell, "position");
-        savePortfolioData();
-        updateTotals();
-      });
-    }
-
-    if (priceCell) {
-      priceCell.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          priceCell.blur();
-        }
-      });
-      priceCell.addEventListener("input", function () {
-        savePortfolioData();
-        updateTotals();
-      });
-      priceCell.addEventListener("blur", function () {
-        normalizeEditableCell(priceCell, "price");
-        savePortfolioData();
-        updateTotals();
-      });
-    }
+  const positionEditorForm = document.getElementById("positionEditorForm");
+  const positionAssetSelect = document.getElementById("positionAssetSelect");
+  if (positionEditorForm) {
+    positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
+  }
+  if (positionAssetSelect) {
+    positionAssetSelect.addEventListener("change", handleAssetSelectionChange);
   }
 
   window.addEventListener("resize", updateAllocationChart);
@@ -760,9 +885,12 @@ function bindPersistenceEvents() {
 
 restorePortfolioData();
 restoreMarketFeedSnapshot();
+migrateCnyRowsPositionPriceSwap();
 normalizeAllEditableFields();
 applyCryptoQuotesToRows();
 updateTotals();
 renderMarketDataFooter();
+fillPositionEditorOptions();
+syncPositionInputWithSelectedAsset();
 bindPersistenceEvents();
 startMarketAutoRefresh();

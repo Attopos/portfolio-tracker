@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Portfolio v1.0</title>
+    <title>Portfolio Tracker</title>
     <link rel="stylesheet" href="pt-style.css" />
     <script src="pt-script.js" defer></script>
 </head>
@@ -28,6 +28,22 @@
                 </div>
             </section>
 
+            <section class="position-editor-panel" aria-label="Edit position size">
+                <div class="position-editor-head">
+                    <h2>Position Size Editor</h2>
+                    <p>Only updates Position Size.</p>
+                </div>
+                <form id="positionEditorForm" class="position-editor-form">
+                    <label for="positionAssetSelect">Asset</label>
+                    <select id="positionAssetSelect" required></select>
+
+                    <label for="positionSizeInput">Position Size</label>
+                    <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
+
+                    <button id="positionApplyBtn" type="submit" disabled>Apply</button>
+                </form>
+            </section>
+
             <div class="table-wrap">
                 <table>
                     <caption>Portfolio in Details</caption>
@@ -44,8 +60,8 @@
                         <td>S&amp;P500_017641</td>
                         <td>S&amp;P500 (MG)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">0.00</td>
                         <td class="usd">$0.00</td>
                         <td class="cny">¥0.00</td>
                     </tr>
@@ -53,8 +69,8 @@
                         <td>S&amp;P500_050025</td>
                         <td>S&amp;P500 (BS)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">4,536.08</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">4,536.08</td>
                         <td class="usd">$656.57</td>
                         <td class="cny">¥4,536.08</td>
                     </tr>
@@ -62,8 +78,8 @@
                         <td>NASDAQ100_016452</td>
                         <td>Nasdaq100 (NF)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">27,256.76</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">27,256.76</td>
                         <td class="usd">$3,945.25</td>
                         <td class="cny">¥27,256.76</td>
                     </tr>
@@ -71,8 +87,8 @@
                         <td>CAC40_021539</td>
                         <td>CAC40 (HA)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">2,000.00</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">2,000.00</td>
                         <td class="usd">$289.49</td>
                         <td class="cny">¥2,000.00</td>
                     </tr>
@@ -80,8 +96,8 @@
                         <td>DAX40_000614</td>
                         <td>DAX40 (HA)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">0.00</td>
                         <td class="usd">$0.00</td>
                         <td class="cny">¥0.00</td>
                     </tr>
@@ -89,8 +105,8 @@
                         <td>NIKKEI225_020712</td>
                         <td>NIKKEI225 (HA)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="postion">1.000</td>
+                        <td class="price">0.00</td>
                         <td class="usd">$0.00</td>
                         <td class="cny">¥0.00</td>
                     </tr>
@@ -98,8 +114,8 @@
                         <td>GoldETF_009505</td>
                         <td>GoldETF (FG)</td>
                         <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">4.766</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">802.00</td>
+                        <td class="postion">4.766</td>
+                        <td class="price">802.00</td>
                         <td class="usd">$553.33</td>
                         <td class="cny">¥3,822.81</td>
                     </tr>
@@ -107,8 +123,8 @@
                         <td>BTC</td>
                         <td>BTC (BN)</td>
                         <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.021</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">69,488.46</td>
+                        <td class="postion">0.021</td>
+                        <td class="price">69,488.46</td>
                         <td class="usd">$1,462.38</td>
                         <td class="cny">¥10,103.20</td>
                     </tr>
@@ -116,8 +132,8 @@
                         <td>ETH</td>
                         <td>ETH (BN)</td>
                         <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.058</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">2,070.23</td>
+                        <td class="postion">0.058</td>
+                        <td class="price">2,070.23</td>
                         <td class="usd">$120.34</td>
                         <td class="cny">¥831.41</td>
                     </tr>
@@ -125,8 +141,8 @@
                         <td>BNB</td>
                         <td>BNB (BN)</td>
                         <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
-                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.020</td>
-                        <td class="price editable-cell" contenteditable="true" spellcheck="false">627.00</td>
+                        <td class="postion">0.020</td>
+                        <td class="price">627.00</td>
                         <td class="usd">$12.53</td>
                         <td class="cny">¥86.58</td>
                     </tr>

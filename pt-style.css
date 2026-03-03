@@ -158,6 +158,11 @@ tr:not(.head-row):not(.total-row):hover td {
     background: rgba(34, 227, 164, 0.08);
 }
 
+tr.selected-asset-row td {
+    background: rgba(75, 160, 255, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(139, 195, 255, 0.35);
+}
+
 .usd,
 .cny {
     color: #c1ffe6;
@@ -165,16 +170,6 @@ tr:not(.head-row):not(.total-row):hover td {
 
 .price {
     color: #a8ceff;
-}
-
-.editable-cell {
-    cursor: text;
-}
-
-.editable-cell:focus {
-    outline: 1px solid var(--accent);
-    box-shadow: inset 0 0 0 1px rgba(34, 227, 164, 0.28);
-    background: rgba(34, 227, 164, 0.1);
 }
 
 .currency-select {
@@ -233,6 +228,103 @@ tr:not(.head-row):not(.total-row):hover td {
     margin: 0.95rem 0.9rem 0.1rem;
     border: 1px solid var(--line-strong);
     background: linear-gradient(180deg, #0b1520 0%, #0a1118 100%);
+}
+
+.position-editor-panel {
+    margin: 0.85rem 0.9rem 0.1rem;
+    border: 1px solid var(--line-strong);
+    background: linear-gradient(180deg, #0b1520 0%, #0a1118 100%);
+}
+
+.position-editor-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.position-editor-head h2 {
+    margin: 0;
+    font-size: 0.96rem;
+    color: #dcfff1;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.position-editor-head p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.position-editor-form {
+    padding: 0.9rem 1rem 1rem;
+    display: grid;
+    grid-template-columns: 100px 1fr 120px 160px 100px;
+    gap: 0.55rem;
+    align-items: center;
+}
+
+.position-editor-form label {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.position-editor-form select,
+.position-editor-form input {
+    border: 1px solid #2b4358;
+    border-radius: 6px;
+    background: #0c1824;
+    color: #d5ebfa;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.86rem;
+    font-family: inherit;
+}
+
+.position-editor-form select:disabled,
+.position-editor-form input:disabled,
+.position-editor-form button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.position-editor-form select:focus,
+.position-editor-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(34, 227, 164, 0.2);
+}
+
+.position-editor-form button {
+    border: 1px solid #33cc98;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #29d79f 0%, #1ab17f 100%);
+    color: #072018;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 0.46rem 0.62rem;
+    cursor: pointer;
+}
+
+.position-editor-form button:hover {
+    filter: brightness(1.05);
+}
+
+tr.position-edit-success td {
+    animation: positionEditFlash 0.9s ease;
+}
+
+@keyframes positionEditFlash {
+    0% {
+        background: rgba(34, 227, 164, 0.36);
+        box-shadow: inset 0 0 0 1px rgba(159, 255, 216, 0.5);
+    }
+    100% {
+        background: rgba(75, 160, 255, 0.16);
+        box-shadow: inset 0 0 0 1px rgba(139, 195, 255, 0.35);
+    }
 }
 
 .breakdown-head {
@@ -332,5 +424,9 @@ tr:not(.head-row):not(.total-row):hover td {
 
     .allocation-legend {
         width: 100%;
+    }
+
+    .position-editor-form {
+        grid-template-columns: 1fr;
     }
 }
