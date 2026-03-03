@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio v1.0</title>
+    <link rel="stylesheet" href="pt-style.css" />
+    <script src="pt-script.js" defer></script>
+</head>
+<body>
+    <main class="page">
+        <section class="panel">
+            <header class="panel-header">
+                <p class="eyebrow">Wealth Dashboard</p>
+                <h1>Portfolio Tracker</h1>
+                <p class="subtitle">Overview of multi-asset positions and market value.</p>
+                <p id="marketUpdateStatus" class="subtitle crypto-status">Market auto-update: waiting for first sync...</p>
+            </header>
+
+            <section class="breakdown-panel" aria-label="Asset allocation">
+                <div class="breakdown-head">
+                    <h2>Asset Allocation</h2>
+                    <p>Share by market value (USD)</p>
+                </div>
+                <div class="breakdown-content">
+                    <canvas id="allocationChart" width="320" height="320" aria-label="Portfolio allocation pie chart"></canvas>
+                    <ul id="allocationLegend" class="allocation-legend"></ul>
+                </div>
+            </section>
+
+            <div class="table-wrap">
+                <table>
+                    <caption>Portfolio in Details</caption>
+                    <tr class="head-row">
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Currency</th>
+                        <th>Position Size</th>
+                        <th>Market Price</th>
+                        <th>Market Value (USD)</th>
+                        <th>Market Value (CNY)</th>
+                    </tr>
+                    <tr>
+                        <td>S&amp;P500_017641</td>
+                        <td>S&amp;P500 (MG)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="usd">$0.00</td>
+                        <td class="cny">¥0.00</td>
+                    </tr>
+                    <tr>
+                        <td>S&amp;P500_050025</td>
+                        <td>S&amp;P500 (BS)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">4,536.08</td>
+                        <td class="usd">$656.57</td>
+                        <td class="cny">¥4,536.08</td>
+                    </tr>
+                    <tr>
+                        <td>NASDAQ100_016452</td>
+                        <td>Nasdaq100 (NF)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">27,256.76</td>
+                        <td class="usd">$3,945.25</td>
+                        <td class="cny">¥27,256.76</td>
+                    </tr>
+                    <tr>
+                        <td>CAC40_021539</td>
+                        <td>CAC40 (HA)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">2,000.00</td>
+                        <td class="usd">$289.49</td>
+                        <td class="cny">¥2,000.00</td>
+                    </tr>
+                    <tr>
+                        <td>DAX40_000614</td>
+                        <td>DAX40 (HA)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="usd">$0.00</td>
+                        <td class="cny">¥0.00</td>
+                    </tr>
+                    <tr>
+                        <td>NIKKEI225_020712</td>
+                        <td>NIKKEI225 (HA)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">1.000</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">0.00</td>
+                        <td class="usd">$0.00</td>
+                        <td class="cny">¥0.00</td>
+                    </tr>
+                    <tr>
+                        <td>GoldETF_009505</td>
+                        <td>GoldETF (FG)</td>
+                        <td><select class="currency-select"><option value="CNY" selected>CNY</option><option value="USD">USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">4.766</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">802.00</td>
+                        <td class="usd">$553.33</td>
+                        <td class="cny">¥3,822.81</td>
+                    </tr>
+                    <tr>
+                        <td>BTC</td>
+                        <td>BTC (BN)</td>
+                        <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.021</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">69,488.46</td>
+                        <td class="usd">$1,462.38</td>
+                        <td class="cny">¥10,103.20</td>
+                    </tr>
+                    <tr>
+                        <td>ETH</td>
+                        <td>ETH (BN)</td>
+                        <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.058</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">2,070.23</td>
+                        <td class="usd">$120.34</td>
+                        <td class="cny">¥831.41</td>
+                    </tr>
+                    <tr>
+                        <td>BNB</td>
+                        <td>BNB (BN)</td>
+                        <td><select class="currency-select"><option value="CNY">CNY</option><option value="USD" selected>USD</option></select></td>
+                        <td class="postion editable-cell" contenteditable="true" spellcheck="false">0.020</td>
+                        <td class="price editable-cell" contenteditable="true" spellcheck="false">627.00</td>
+                        <td class="usd">$12.53</td>
+                        <td class="cny">¥86.58</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total</td>
+                        <td colspan="4"></td>
+                        <td id="usdTotal"></td>
+                        <td id="cnyTotal"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <footer class="market-footer">
+                <p id="marketDataFooter">
+                    FX USD/CNY: -- | BTC: -- | ETH: -- | BNB: -- | Updated: --
+                </p>
+            </footer>
+        </section>
+    </main>
+</body>
+</html>
