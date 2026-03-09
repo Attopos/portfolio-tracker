@@ -44,6 +44,34 @@
                 </form>
             </section>
 
+            <section class="create-asset-panel" aria-label="Create asset">
+                <div class="create-asset-head">
+                    <h2>Create Asset</h2>
+                    <p>Add a new position to portfolio.</p>
+                </div>
+                <form id="createAssetForm" class="create-asset-form">
+                    <label for="createAssetIdInput">ID</label>
+                    <input id="createAssetIdInput" type="text" required />
+
+                    <label for="createAssetNameInput">Name</label>
+                    <input id="createAssetNameInput" type="text" required />
+
+                    <label for="createAssetCurrencySelect">Currency</label>
+                    <select id="createAssetCurrencySelect" required>
+                        <option value="USD" selected>USD</option>
+                        <option value="CNY">CNY</option>
+                    </select>
+
+                    <label for="createAssetPositionInput">Position Size</label>
+                    <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
+
+                    <label for="createAssetPriceInput">Market Price</label>
+                    <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
+
+                    <button id="createAssetSubmitBtn" type="submit">Create</button>
+                </form>
+            </section>
+
             <div class="table-wrap">
                 <table>
                     <caption>Portfolio in Details</caption>

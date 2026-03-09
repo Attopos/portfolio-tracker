@@ -44,4 +44,49 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.post("/", async (req, res) => {
+  const body = req.body || {};
+  const assetId = String(body.id || "").trim();
+  const name = String(body.name || "").trim();
+  const currency = String(body.currency || "").trim().toUpperCase();
+  const position = Number(body.position);
+  const price = Number(body.price);
+
+  if (!assetId) {
+    return res.status(400).json({ error: "Asset id is required" });
+  }
+
+  if (!name) {
+    return res.status(400).json({ error: "Name is required" });
+  }
+
+  if (currency !== "USD" && currency !== "CNY") {
+    return res.status(400).json({ error: "Currency must be USD or CNY" });
+  }
+
+  if (!Number.isFinite(position)) {
+    return res.status(400).json({ error: "Position must be a finite number" });
+  }
+
+  if (!Number.isFinite(price)) {
+    return res.status(400).json({ error: "Price must be a finite number" });
+  }
+
+  try {
+    const result = await pool.query(
+      "INSERT INTO positions (id, name, currency, position, price) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, currency, position, price",
+      [assetId, name, currency, position, price]
+    );
+
+    return res.status(201).json(result.rows[0]);
+  } catch (error) {
+    if (error && error.code === "23505") {
+      return res.status(400).json({ error: "Asset id already exists" });
+    }
+
+    console.error("Failed to create position in database:", error);
+    return res.status(500).json({ error: "Failed to create position" });
+  }
+});
+
 module.exports = router;

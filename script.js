@@ -34,7 +34,7 @@ const VALUE_FORMATTER = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 const INITIAL_PORTFOLIO_ROWS = [];
-const API_BASE_URL = window.location.origin === "null" ? "http://localhost:3000" : "";
+const API_BASE_URL = deriveApiBaseUrl();
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let latestCryptoQuotes = {};
 let lastMarketSyncAt = "";
@@ -42,6 +42,27 @@ let lastMarketRequestAt = 0;
 let marketConsecutiveFailures = 0;
 let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
+
+function deriveApiBaseUrl() {
+  const override = String(window.__API_BASE_URL || "").trim();
+  if (override) {
+    return override.replace(/\/+$/, "");
+  }
+
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+
+  if (protocol === "file:") {
+    return "http://localhost:3000";
+  }
+
+  if ((hostname === "localhost" || hostname === "127.0.0.1") && port && port !== "3000") {
+    return "http://localhost:3000";
+  }
+
+  return "";
+}
 
 function parseCurrencyNumber(text) {
   const cleaned = (text || "").replace(/[^\d.-]/g, "");
@@ -154,7 +175,8 @@ function replacePortfolioRows(items) {
 }
 
 function getApiUrl(path) {
-  return API_BASE_URL + path;
+  const normalizedPath = path.startsWith("/") ? path : "/" + path;
+  return API_BASE_URL + normalizedPath;
 }
 
 function getDataRows() {
@@ -716,6 +738,11 @@ async function applyPositionSizeUpdate(event) {
     showPositionEditSuccessFeedback(row);
   } catch (error) {
     console.error("Failed to update position:", error);
+    const message =
+      error && typeof error.message === "string" && error.message
+        ? error.message
+        : "Unknown error";
+    window.alert("Failed to update position size: " + message);
   } finally {
     select.disabled = false;
     syncPositionInputWithSelectedAsset();
@@ -933,6 +960,96 @@ async function updatePositionOnServer(assetId, position) {
   return await res.json();
 }
 
+async function createPositionOnServer(payload) {
+  const res = await fetch(getApiUrl("/api/positions"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to create asset";
+    try {
+      const body = await res.json();
+      if (body && typeof body.error === "string" && body.error.trim()) {
+        message = body.error.trim();
+      }
+    } catch (error) {
+      // Keep default message.
+    }
+
+    throw new Error(message);
+  }
+
+  return await res.json();
+}
+
+async function applyCreateAsset(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("createAssetForm");
+  const idInput = document.getElementById("createAssetIdInput");
+  const nameInput = document.getElementById("createAssetNameInput");
+  const currencySelect = document.getElementById("createAssetCurrencySelect");
+  const positionInput = document.getElementById("createAssetPositionInput");
+  const priceInput = document.getElementById("createAssetPriceInput");
+  const submitBtn = document.getElementById("createAssetSubmitBtn");
+
+  if (
+    !form ||
+    !idInput ||
+    !nameInput ||
+    !currencySelect ||
+    !positionInput ||
+    !priceInput ||
+    !submitBtn
+  ) {
+    return;
+  }
+
+  const id = idInput.value.trim();
+  const name = nameInput.value.trim();
+  const currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+  const position = parseCurrencyNumber(positionInput.value);
+  const price = parseCurrencyNumber(priceInput.value);
+
+  if (!id || !name) {
+    window.alert("ID and Name are required.");
+    return;
+  }
+
+  const previousBtnText = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating...";
+
+  try {
+    await createPositionOnServer({
+      id,
+      name,
+      currency,
+      position,
+      price,
+    });
+
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
+    form.reset();
+    currencySelect.value = "USD";
+  } catch (error) {
+    console.error("Failed to create asset:", error);
+    const message =
+      error && typeof error.message === "string" && error.message
+        ? error.message
+        : "Unknown error";
+    window.alert("Failed to create asset: " + message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = previousBtnText || "Create";
+  }
+}
+
 function bindPersistenceEvents() {
   const table = document.querySelector(".table-wrap table");
   if (table) {
@@ -952,11 +1069,15 @@ function bindPersistenceEvents() {
 
   const positionEditorForm = document.getElementById("positionEditorForm");
   const positionAssetSelect = document.getElementById("positionAssetSelect");
+  const createAssetForm = document.getElementById("createAssetForm");
   if (positionEditorForm) {
     positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
   }
   if (positionAssetSelect) {
     positionAssetSelect.addEventListener("change", handleAssetSelectionChange);
+  }
+  if (createAssetForm) {
+    createAssetForm.addEventListener("submit", applyCreateAsset);
   }
 
   window.addEventListener("resize", updateAllocationChart);
