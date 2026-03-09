@@ -1146,10 +1146,13 @@ async function applyDeleteAsset(event) {
     replacePortfolioRows(positions);
   } catch (error) {
     console.error("Failed to delete asset:", error);
-    const message =
+    let message =
       error && typeof error.message === "string" && error.message
         ? error.message
         : "Unknown error";
+    if (message === "Failed to fetch") {
+      message = message + " (API: " + getApiUrl("/api/positions/" + encodeURIComponent(assetId)) + ")";
+    }
     window.alert("Failed to delete asset: " + message);
   } finally {
     submitBtn.disabled = false;
