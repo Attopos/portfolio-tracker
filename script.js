@@ -107,7 +107,7 @@ function buildPortfolioRowHtml(item) {
     '<td><select class="currency-select">' +
     buildCurrencySelectOptionsHtml(item.currency) +
     "</select></td>" +
-    '<td class="postion">' +
+    '<td class="position">' +
     POSITION_FORMATTER.format(item.position) +
     "</td>" +
     '<td class="price">' +
@@ -501,7 +501,7 @@ function updateMarketValues() {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const currencySelect = row.querySelector(".currency-select");
-    const positionCell = row.querySelector(".postion");
+    const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
     const usdCell = row.querySelector(".usd");
     const cnyCell = row.querySelector(".cny");
@@ -534,7 +534,7 @@ function normalizeAllEditableFields() {
   const rows = getDataRows();
 
   for (let i = 0; i < rows.length; i++) {
-    const positionCell = rows[i].querySelector(".postion");
+    const positionCell = rows[i].querySelector(".position");
     const priceCell = rows[i].querySelector(".price");
 
     if (positionCell) {
@@ -559,7 +559,7 @@ function migrateCnyRowsPositionPriceSwap() {
     const row = rows[i];
     const rowId = getRowId(row);
     const currencySelect = row.querySelector(".currency-select");
-    const positionCell = row.querySelector(".postion");
+    const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
 
     if (!currencySelect || !positionCell || !priceCell) {
@@ -642,7 +642,7 @@ function syncPositionInputWithSelectedAsset() {
   }
 
   const row = getRowByAssetId(select.value);
-  const positionCell = row ? row.querySelector(".postion") : null;
+  const positionCell = row ? row.querySelector(".position") : null;
   const position = positionCell ? parseCurrencyNumber(positionCell.textContent) : 0;
   input.value = position.toString();
 }
@@ -690,7 +690,7 @@ function applyPositionSizeUpdate(event) {
     return;
   }
 
-  const positionCell = row.querySelector(".postion");
+  const positionCell = row.querySelector(".position");
   if (!positionCell) {
     return;
   }
@@ -879,6 +879,14 @@ function updateTotals() {
   updateAllocationChart();
 }
 
+async function fetchPositionsFromServer() {
+  const res = await fetch("http://localhost:3000/api/positions");
+  if (!res.ok) {
+    throw new Error("Failed to fetch positions");
+  }
+  return await res.json();
+}
+
 function savePortfolioData() {
   const rows = getDataRows();
   const data = {};
@@ -893,7 +901,7 @@ function savePortfolioData() {
 
     const currencySelect = row.querySelector(".currency-select");
     const nameCell = row.querySelector("td:nth-child(2)");
-    const positionCell = row.querySelector(".postion");
+    const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
     const usdCell = row.querySelector(".usd");
     const cnyCell = row.querySelector(".cny");
@@ -938,7 +946,7 @@ function restorePortfolioData() {
 
     const currencySelect = row.querySelector(".currency-select");
     const nameCell = row.querySelector("td:nth-child(2)");
-    const positionCell = row.querySelector(".postion");
+    const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
     const usdCell = row.querySelector(".usd");
     const cnyCell = row.querySelector(".cny");
@@ -1001,7 +1009,7 @@ function bindPersistenceEvents() {
 
 window.replacePortfolioRows = replacePortfolioRows;
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
-restorePortfolioData();
+// restorePortfolioData(); 
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();
 normalizeAllEditableFields();
@@ -1012,3 +1020,6 @@ fillPositionEditorOptions();
 syncPositionInputWithSelectedAsset();
 bindPersistenceEvents();
 startMarketAutoRefresh();
+fetchPositionsFromServer()
+  .then(replacePortfolioRows)
+  .catch(console.error);
