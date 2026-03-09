@@ -34,6 +34,7 @@ const VALUE_FORMATTER = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+const INITIAL_PORTFOLIO_ROWS = [];
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let latestCryptoQuotes = {};
 let lastMarketSyncAt = "";
@@ -46,6 +47,110 @@ function parseCurrencyNumber(text) {
   const cleaned = (text || "").replace(/[^\d.-]/g, "");
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : 0;
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function normalizePortfolioRow(item) {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const id = typeof item.id === "string" ? item.id.trim() : "";
+  const name = typeof item.name === "string" ? item.name.trim() : "";
+  if (!id || !name) {
+    return null;
+  }
+
+  const currency = item.currency === "CNY" ? "CNY" : "USD";
+  const position = Number(item.position);
+  const price = Number(item.price);
+
+  return {
+    id,
+    name,
+    currency,
+    position: Number.isFinite(position) ? position : 0,
+    price: Number.isFinite(price) ? price : 0,
+  };
+}
+
+function buildCurrencySelectOptionsHtml(selectedCurrency) {
+  const cnySelected = selectedCurrency === "CNY" ? " selected" : "";
+  const usdSelected = selectedCurrency === "USD" ? " selected" : "";
+  return (
+    '<option value="CNY"' +
+    cnySelected +
+    ">CNY</option>" +
+    '<option value="USD"' +
+    usdSelected +
+    ">USD</option>"
+  );
+}
+
+function buildPortfolioRowHtml(item) {
+  return (
+    "<tr>" +
+    "<td>" +
+    escapeHtml(item.id) +
+    "</td>" +
+    "<td>" +
+    escapeHtml(item.name) +
+    "</td>" +
+    '<td><select class="currency-select">' +
+    buildCurrencySelectOptionsHtml(item.currency) +
+    "</select></td>" +
+    '<td class="postion">' +
+    POSITION_FORMATTER.format(item.position) +
+    "</td>" +
+    '<td class="price">' +
+    VALUE_FORMATTER.format(item.price) +
+    "</td>" +
+    '<td class="usd">$0.00</td>' +
+    '<td class="cny">¥0.00</td>' +
+    "</tr>"
+  );
+}
+
+function renderPortfolioRows(items) {
+  const tableBody = document.getElementById("portfolioTableBody");
+  if (!tableBody) {
+    return;
+  }
+
+  if (!Array.isArray(items) || !items.length) {
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+
+  for (let i = 0; i < items.length; i++) {
+    const normalized = normalizePortfolioRow(items[i]);
+    if (!normalized) {
+      continue;
+    }
+
+    html += buildPortfolioRowHtml(normalized);
+  }
+
+  tableBody.innerHTML = html;
+}
+
+function replacePortfolioRows(items) {
+  renderPortfolioRows(items);
+  normalizeAllEditableFields();
+  applyCryptoQuotesToRows();
+  updateTotals();
+  fillPositionEditorOptions();
+  syncPositionInputWithSelectedAsset();
 }
 
 function getDataRows() {
@@ -787,12 +892,14 @@ function savePortfolioData() {
     }
 
     const currencySelect = row.querySelector(".currency-select");
+    const nameCell = row.querySelector("td:nth-child(2)");
     const positionCell = row.querySelector(".postion");
     const priceCell = row.querySelector(".price");
     const usdCell = row.querySelector(".usd");
     const cnyCell = row.querySelector(".cny");
 
     data[rowId] = {
+      name: nameCell ? nameCell.textContent.trim() : "",
       currency: currencySelect ? currencySelect.value : "",
       position: positionCell ? positionCell.textContent.trim() : "",
       price: priceCell ? priceCell.textContent.trim() : "",
@@ -830,10 +937,15 @@ function restorePortfolioData() {
     }
 
     const currencySelect = row.querySelector(".currency-select");
+    const nameCell = row.querySelector("td:nth-child(2)");
     const positionCell = row.querySelector(".postion");
     const priceCell = row.querySelector(".price");
     const usdCell = row.querySelector(".usd");
     const cnyCell = row.querySelector(".cny");
+
+    if (nameCell && typeof rowData.name === "string" && rowData.name.trim()) {
+      nameCell.textContent = rowData.name.trim();
+    }
 
     if (currencySelect && rowData.currency) {
       currencySelect.value = rowData.currency;
@@ -858,11 +970,15 @@ function restorePortfolioData() {
 }
 
 function bindPersistenceEvents() {
-  const currencySelects = document.querySelectorAll(".currency-select");
+  const table = document.querySelector(".table-wrap table");
+  if (table) {
+    table.addEventListener("change", function (event) {
+      const target = event.target;
+      if (!(target instanceof HTMLSelectElement) || !target.classList.contains("currency-select")) {
+        return;
+      }
 
-  for (let i = 0; i < currencySelects.length; i++) {
-    currencySelects[i].addEventListener("change", function () {
-      const row = currencySelects[i].closest("tr");
+      const row = target.closest("tr");
       if (row) {
         applyLatestQuoteForRowIfCrypto(row);
       }
@@ -883,6 +999,8 @@ function bindPersistenceEvents() {
   window.addEventListener("resize", updateAllocationChart);
 }
 
+window.replacePortfolioRows = replacePortfolioRows;
+renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
 restorePortfolioData();
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();
