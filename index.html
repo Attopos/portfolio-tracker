@@ -77,6 +77,18 @@
                 </form>
             </section>
 
+            <section class="delete-asset-panel" aria-label="Delete asset">
+                <div class="delete-asset-head">
+                    <h2>Delete Asset</h2>
+                    <p>Remove an asset from portfolio.</p>
+                </div>
+                <form id="deleteAssetForm" class="delete-asset-form">
+                    <label for="deleteAssetSelect">Asset</label>
+                    <select id="deleteAssetSelect" required></select>
+                    <button id="deleteAssetSubmitBtn" type="submit" disabled>Delete</button>
+                </form>
+            </section>
+
             <div class="table-wrap">
                 <table>
                     <caption>Portfolio in Details</caption>

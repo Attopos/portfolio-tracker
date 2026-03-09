@@ -44,6 +44,30 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  const assetId = String(req.params.id || "").trim();
+
+  if (!assetId) {
+    return res.status(400).json({ error: "Asset id is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM positions WHERE id = $1 RETURNING id, name, currency, position, price",
+      [assetId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Position not found" });
+    }
+
+    return res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to delete position in database:", error);
+    return res.status(500).json({ error: "Failed to delete position" });
+  }
+});
+
 router.post("/", async (req, res) => {
   const body = req.body || {};
   const assetId = String(body.id || "").trim();

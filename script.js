@@ -171,6 +171,7 @@ function replacePortfolioRows(items) {
   applyCryptoQuotesToRows();
   updateTotals();
   fillPositionEditorOptions();
+  fillDeleteAssetOptions();
   syncPositionInputWithSelectedAsset();
 }
 
@@ -624,6 +625,51 @@ function fillPositionEditorOptions() {
   select.innerHTML = html;
 }
 
+function fillDeleteAssetOptions() {
+  const select = document.getElementById("deleteAssetSelect");
+  const submitBtn = document.getElementById("deleteAssetSubmitBtn");
+  if (!select) {
+    return;
+  }
+
+  const currentValue = select.value;
+  const rows = getDataRows();
+  if (!rows.length) {
+    select.innerHTML = '<option value="" selected>No assets available</option>';
+    select.disabled = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+    }
+    return;
+  }
+
+  let html = "";
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowId = getRowId(row);
+    const nameCell = row.querySelector("td:nth-child(2)");
+    if (!rowId || !nameCell) {
+      continue;
+    }
+
+    const label = rowId + " - " + nameCell.textContent.trim();
+    html += '<option value="' + rowId + '">' + label + "</option>";
+  }
+
+  select.innerHTML = html;
+  if (currentValue) {
+    select.value = currentValue;
+  }
+  if (!select.value && select.options.length > 0) {
+    select.selectedIndex = 0;
+  }
+
+  select.disabled = false;
+  if (submitBtn) {
+    submitBtn.disabled = !select.value;
+  }
+}
+
 function updateHighlightedAssetRow(selectedAssetId) {
   const rows = getDataRows();
 
@@ -986,6 +1032,28 @@ async function createPositionOnServer(payload) {
   return await res.json();
 }
 
+async function deletePositionOnServer(assetId) {
+  const res = await fetch(getApiUrl("/api/positions/" + encodeURIComponent(assetId)), {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    let message = "Failed to delete asset";
+    try {
+      const body = await res.json();
+      if (body && typeof body.error === "string" && body.error.trim()) {
+        message = body.error.trim();
+      }
+    } catch (error) {
+      // Keep default message.
+    }
+
+    throw new Error(message);
+  }
+
+  return await res.json();
+}
+
 async function applyCreateAsset(event) {
   event.preventDefault();
 
@@ -1053,6 +1121,43 @@ async function applyCreateAsset(event) {
   }
 }
 
+async function applyDeleteAsset(event) {
+  event.preventDefault();
+
+  const select = document.getElementById("deleteAssetSelect");
+  const submitBtn = document.getElementById("deleteAssetSubmitBtn");
+  if (!select || !submitBtn || !select.value) {
+    return;
+  }
+
+  const assetId = select.value;
+  const confirmed = window.confirm("Delete asset " + assetId + "?");
+  if (!confirmed) {
+    return;
+  }
+
+  const previousBtnText = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Deleting...";
+
+  try {
+    await deletePositionOnServer(assetId);
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
+  } catch (error) {
+    console.error("Failed to delete asset:", error);
+    const message =
+      error && typeof error.message === "string" && error.message
+        ? error.message
+        : "Unknown error";
+    window.alert("Failed to delete asset: " + message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = previousBtnText || "Delete";
+    fillDeleteAssetOptions();
+  }
+}
+
 function bindPersistenceEvents() {
   const table = document.querySelector(".table-wrap table");
   if (table) {
@@ -1073,6 +1178,7 @@ function bindPersistenceEvents() {
   const positionEditorForm = document.getElementById("positionEditorForm");
   const positionAssetSelect = document.getElementById("positionAssetSelect");
   const createAssetForm = document.getElementById("createAssetForm");
+  const deleteAssetForm = document.getElementById("deleteAssetForm");
   if (positionEditorForm) {
     positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
   }
@@ -1081,6 +1187,9 @@ function bindPersistenceEvents() {
   }
   if (createAssetForm) {
     createAssetForm.addEventListener("submit", applyCreateAsset);
+  }
+  if (deleteAssetForm) {
+    deleteAssetForm.addEventListener("submit", applyDeleteAsset);
   }
 
   window.addEventListener("resize", updateAllocationChart);
@@ -1095,6 +1204,7 @@ applyCryptoQuotesToRows();
 updateTotals();
 renderMarketDataFooter();
 fillPositionEditorOptions();
+fillDeleteAssetOptions();
 syncPositionInputWithSelectedAsset();
 bindPersistenceEvents();
 startMarketAutoRefresh();

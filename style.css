@@ -242,6 +242,12 @@ tr.selected-asset-row td {
     background: linear-gradient(180deg, #0b1520 0%, #0a1118 100%);
 }
 
+.delete-asset-panel {
+    margin: 0.85rem 0.9rem 0.1rem;
+    border: 1px solid var(--line-strong);
+    background: linear-gradient(180deg, #0b1520 0%, #0a1118 100%);
+}
+
 .position-editor-head {
     display: flex;
     align-items: baseline;
@@ -283,6 +289,29 @@ tr.selected-asset-row td {
 }
 
 .create-asset-head p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.delete-asset-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.delete-asset-head h2 {
+    margin: 0;
+    font-size: 0.96rem;
+    color: #dcfff1;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.delete-asset-head p {
     margin: 0;
     font-size: 0.8rem;
     color: var(--muted);
@@ -393,6 +422,55 @@ tr.selected-asset-row td {
 }
 
 .create-asset-form button:hover {
+    filter: brightness(1.05);
+}
+
+.delete-asset-form {
+    padding: 0.9rem 1rem 1rem;
+    display: grid;
+    grid-template-columns: 70px 1fr 120px;
+    gap: 0.55rem;
+    align-items: center;
+}
+
+.delete-asset-form label {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.delete-asset-form select {
+    border: 1px solid #2b4358;
+    border-radius: 6px;
+    background: #0c1824;
+    color: #d5ebfa;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.86rem;
+    font-family: inherit;
+}
+
+.delete-asset-form select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(34, 227, 164, 0.2);
+}
+
+.delete-asset-form button {
+    border: 1px solid #d86262;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #ff8c8c 0%, #df5d5d 100%);
+    color: #2a0909;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 0.46rem 0.62rem;
+    cursor: pointer;
+}
+
+.delete-asset-form button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.delete-asset-form button:hover:not(:disabled) {
     filter: brightness(1.05);
 }
 
@@ -520,5 +598,9 @@ tr.position-edit-success td {
 
     .create-asset-form button {
         grid-column: 1 / -1;
+    }
+
+    .delete-asset-form {
+        grid-template-columns: 1fr;
     }
 }
