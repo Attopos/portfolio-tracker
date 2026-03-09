@@ -1039,10 +1039,13 @@ async function applyCreateAsset(event) {
     currencySelect.value = "USD";
   } catch (error) {
     console.error("Failed to create asset:", error);
-    const message =
+    let message =
       error && typeof error.message === "string" && error.message
         ? error.message
         : "Unknown error";
+    if (message === "Failed to fetch") {
+      message = message + " (API: " + getApiUrl("/api/positions") + ")";
+    }
     window.alert("Failed to create asset: " + message);
   } finally {
     submitBtn.disabled = false;

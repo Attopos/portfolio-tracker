@@ -344,18 +344,26 @@ tr.selected-asset-row td {
 .create-asset-form {
     padding: 0.9rem 1rem 1rem;
     display: grid;
-    grid-template-columns: 60px 1fr 70px 1.2fr 80px 100px 100px 130px 90px 120px 100px;
-    gap: 0.55rem;
-    align-items: center;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+    gap: 0.6rem;
+    align-items: end;
+}
+
+.create-asset-field {
+    min-width: 0;
 }
 
 .create-asset-form label {
+    display: block;
+    margin-bottom: 0.35rem;
     font-size: 0.82rem;
     color: var(--muted);
 }
 
 .create-asset-form input,
 .create-asset-form select {
+    width: 100%;
+    min-width: 0;
     border: 1px solid #2b4358;
     border-radius: 6px;
     background: #0c1824;
@@ -373,6 +381,7 @@ tr.selected-asset-row td {
 }
 
 .create-asset-form button {
+    align-self: end;
     border: 1px solid #33cc98;
     border-radius: 6px;
     background: linear-gradient(180deg, #29d79f 0%, #1ab17f 100%);
@@ -506,6 +515,10 @@ tr.position-edit-success td {
     }
 
     .create-asset-form {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .create-asset-form button {
+        grid-column: 1 / -1;
     }
 }

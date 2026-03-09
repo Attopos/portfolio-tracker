@@ -50,24 +50,29 @@
                     <p>Add a new position to portfolio.</p>
                 </div>
                 <form id="createAssetForm" class="create-asset-form">
-                    <label for="createAssetIdInput">ID</label>
-                    <input id="createAssetIdInput" type="text" required />
-
-                    <label for="createAssetNameInput">Name</label>
-                    <input id="createAssetNameInput" type="text" required />
-
-                    <label for="createAssetCurrencySelect">Currency</label>
-                    <select id="createAssetCurrencySelect" required>
-                        <option value="USD" selected>USD</option>
-                        <option value="CNY">CNY</option>
-                    </select>
-
-                    <label for="createAssetPositionInput">Position Size</label>
-                    <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
-
-                    <label for="createAssetPriceInput">Market Price</label>
-                    <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
-
+                    <div class="create-asset-field">
+                        <label for="createAssetIdInput">ID</label>
+                        <input id="createAssetIdInput" type="text" required />
+                    </div>
+                    <div class="create-asset-field">
+                        <label for="createAssetNameInput">Name</label>
+                        <input id="createAssetNameInput" type="text" required />
+                    </div>
+                    <div class="create-asset-field">
+                        <label for="createAssetCurrencySelect">Currency</label>
+                        <select id="createAssetCurrencySelect" required>
+                            <option value="USD" selected>USD</option>
+                            <option value="CNY">CNY</option>
+                        </select>
+                    </div>
+                    <div class="create-asset-field">
+                        <label for="createAssetPositionInput">Position Size</label>
+                        <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
+                    </div>
+                    <div class="create-asset-field">
+                        <label for="createAssetPriceInput">Market Price</label>
+                        <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
+                    </div>
                     <button id="createAssetSubmitBtn" type="submit">Create</button>
                 </form>
             </section>
