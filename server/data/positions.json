@@ -1,0 +1,5 @@
+[
+  { "id": "BTC", "name": "Bitcoin", "currency": "USD", "position": 0.25, "price": 70000 },
+  { "id": "ETH", "name": "Ethereum", "currency": "USD", "position": 1.5, "price": 3500 },
+  { "id": "Cash", "name": "Cash", "currency": "CNY", "position": 10000, "price": 1 }
+]

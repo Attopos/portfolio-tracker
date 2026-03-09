@@ -1,4 +1,3 @@
-const STORAGE_KEY = "portfolioDataV1";
 const MARKET_FEED_STORAGE_KEY = "portfolioMarketFeedV1";
 const CNY_SWAP_MIGRATION_KEY = "portfolioCnySwapMigratedV1";
 const DEFAULT_CNY_PER_USD = 6.91;
@@ -35,6 +34,7 @@ const VALUE_FORMATTER = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 const INITIAL_PORTFOLIO_ROWS = [];
+const API_BASE_URL = window.location.origin === "null" ? "http://localhost:3000" : "";
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let latestCryptoQuotes = {};
 let lastMarketSyncAt = "";
@@ -151,6 +151,10 @@ function replacePortfolioRows(items) {
   updateTotals();
   fillPositionEditorOptions();
   syncPositionInputWithSelectedAsset();
+}
+
+function getApiUrl(path) {
+  return API_BASE_URL + path;
 }
 
 function getDataRows() {
@@ -401,10 +405,7 @@ async function refreshMarketData() {
     cnyPerUsdRate = results[1];
     lastMarketSyncAt = new Date().toLocaleString();
 
-    const changed = applyCryptoQuotesToRows();
-    if (changed) {
-      savePortfolioData();
-    }
+    applyCryptoQuotesToRows();
 
     updateTotals();
     saveMarketFeedSnapshot();
@@ -553,8 +554,6 @@ function migrateCnyRowsPositionPriceSwap() {
   }
 
   const rows = getDataRows();
-  let hasChanges = false;
-
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowId = getRowId(row);
@@ -574,11 +573,6 @@ function migrateCnyRowsPositionPriceSwap() {
     const price = parseCurrencyNumber(priceCell.textContent);
     positionCell.textContent = POSITION_FORMATTER.format(price);
     priceCell.textContent = VALUE_FORMATTER.format(position);
-    hasChanges = true;
-  }
-
-  if (hasChanges) {
-    savePortfolioData();
   }
 
   localStorage.setItem(CNY_SWAP_MIGRATION_KEY, "1");
@@ -676,12 +670,17 @@ function handleAssetSelectionChange() {
   focusPositionSizeInput();
 }
 
-function applyPositionSizeUpdate(event) {
+async function applyPositionSizeUpdate(event) {
   event.preventDefault();
 
   const select = document.getElementById("positionAssetSelect");
   const input = document.getElementById("positionSizeInput");
+  const applyBtn = document.getElementById("positionApplyBtn");
   if (!select || !input) {
+    return;
+  }
+
+  if (!select.value) {
     return;
   }
 
@@ -697,11 +696,33 @@ function applyPositionSizeUpdate(event) {
 
   const nextValue = parseCurrencyNumber(input.value);
   const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
-  positionCell.textContent = POSITION_FORMATTER.format(safeValue);
-  savePortfolioData();
-  updateTotals();
-  syncPositionInputWithSelectedAsset();
-  showPositionEditSuccessFeedback(row);
+  const previousButtonText = applyBtn ? applyBtn.textContent : "";
+
+  if (applyBtn) {
+    applyBtn.disabled = true;
+    applyBtn.textContent = "Saving...";
+  }
+  select.disabled = true;
+  input.disabled = true;
+
+  try {
+    const updated = await updatePositionOnServer(select.value, safeValue);
+    const updatedPosition = Number(updated && updated.position);
+    const appliedValue = Number.isFinite(updatedPosition) ? updatedPosition : safeValue;
+
+    positionCell.textContent = POSITION_FORMATTER.format(appliedValue);
+    updateTotals();
+    syncPositionInputWithSelectedAsset();
+    showPositionEditSuccessFeedback(row);
+  } catch (error) {
+    console.error("Failed to update position:", error);
+  } finally {
+    select.disabled = false;
+    syncPositionInputWithSelectedAsset();
+    if (applyBtn) {
+      applyBtn.textContent = previousButtonText || "Apply";
+    }
+  }
 }
 
 function getAllocationData() {
@@ -880,101 +901,36 @@ function updateTotals() {
 }
 
 async function fetchPositionsFromServer() {
-  const res = await fetch("http://localhost:3000/api/positions");
+  const res = await fetch(getApiUrl("/api/positions"));
   if (!res.ok) {
     throw new Error("Failed to fetch positions");
   }
   return await res.json();
 }
 
-function savePortfolioData() {
-  const rows = getDataRows();
-  const data = {};
+async function updatePositionOnServer(assetId, position) {
+  const res = await fetch(getApiUrl("/api/positions/" + encodeURIComponent(assetId)), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ position }),
+  });
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowId = getRowId(row);
-
-    if (!rowId) {
-      continue;
+  if (!res.ok) {
+    let message = "Failed to update position";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
     }
-
-    const currencySelect = row.querySelector(".currency-select");
-    const nameCell = row.querySelector("td:nth-child(2)");
-    const positionCell = row.querySelector(".position");
-    const priceCell = row.querySelector(".price");
-    const usdCell = row.querySelector(".usd");
-    const cnyCell = row.querySelector(".cny");
-
-    data[rowId] = {
-      name: nameCell ? nameCell.textContent.trim() : "",
-      currency: currencySelect ? currencySelect.value : "",
-      position: positionCell ? positionCell.textContent.trim() : "",
-      price: priceCell ? priceCell.textContent.trim() : "",
-      usd: usdCell ? usdCell.textContent.trim() : "",
-      cny: cnyCell ? cnyCell.textContent.trim() : "",
-    };
+    throw new Error(message);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function restorePortfolioData() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return;
-  }
-
-  let savedData;
-  try {
-    savedData = JSON.parse(raw);
-  } catch (error) {
-    console.error("Saved portfolio data is invalid JSON:", error);
-    return;
-  }
-
-  const rows = getDataRows();
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowId = getRowId(row);
-    const rowData = savedData[rowId];
-
-    if (!rowData) {
-      continue;
-    }
-
-    const currencySelect = row.querySelector(".currency-select");
-    const nameCell = row.querySelector("td:nth-child(2)");
-    const positionCell = row.querySelector(".position");
-    const priceCell = row.querySelector(".price");
-    const usdCell = row.querySelector(".usd");
-    const cnyCell = row.querySelector(".cny");
-
-    if (nameCell && typeof rowData.name === "string" && rowData.name.trim()) {
-      nameCell.textContent = rowData.name.trim();
-    }
-
-    if (currencySelect && rowData.currency) {
-      currencySelect.value = rowData.currency;
-    }
-
-    if (positionCell && typeof rowData.position === "string") {
-      positionCell.textContent = rowData.position;
-    }
-
-    if (priceCell && typeof rowData.price === "string") {
-      priceCell.textContent = rowData.price;
-    }
-
-    if (usdCell && typeof rowData.usd === "string") {
-      usdCell.textContent = rowData.usd;
-    }
-
-    if (cnyCell && typeof rowData.cny === "string") {
-      cnyCell.textContent = rowData.cny;
-    }
-  }
+  return await res.json();
 }
 
 function bindPersistenceEvents() {
@@ -990,7 +946,6 @@ function bindPersistenceEvents() {
       if (row) {
         applyLatestQuoteForRowIfCrypto(row);
       }
-      savePortfolioData();
       updateTotals();
     });
   }
@@ -1009,7 +964,6 @@ function bindPersistenceEvents() {
 
 window.replacePortfolioRows = replacePortfolioRows;
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
-// restorePortfolioData(); 
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();
 normalizeAllEditableFields();
