@@ -90,15 +90,22 @@ body {
 .auth-panel {
     min-width: 320px;
     max-width: 380px;
-    padding: 0.9rem 1rem;
+    padding: 0.95rem 1rem 0.85rem;
     border: 1px solid rgba(139, 195, 255, 0.18);
     border-radius: 12px;
     background: linear-gradient(180deg, rgba(8, 18, 28, 0.96) 0%, rgba(7, 13, 20, 0.92) 100%);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+.auth-state {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+}
+
 .auth-panel-label {
-    margin: 0 0 0.65rem;
+    margin: 0;
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -107,15 +114,20 @@ body {
 
 .auth-actions {
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 0.55rem;
-    flex-wrap: wrap;
+}
+
+.auth-actions > div {
+    width: 250px;
+    max-width: 100%;
 }
 
 .auth-helper {
-    margin: 0.65rem 0 0;
-    font-size: 0.75rem;
+    margin: 0;
+    font-size: 0.73rem;
+    line-height: 1.45;
     color: var(--muted);
     text-align: right;
 }
@@ -320,11 +332,15 @@ tr.selected-asset-row td {
     }
 
     .auth-actions {
-        justify-content: flex-start;
+        align-items: stretch;
     }
 
     .auth-helper {
         text-align: left;
+    }
+
+    .auth-actions > div {
+        width: 100%;
     }
 
     .auth-user-row {
