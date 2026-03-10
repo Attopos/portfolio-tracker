@@ -45,6 +45,7 @@ let marketConsecutiveFailures = 0;
 let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
 let currentLocalUserId = null;
+let currentLocalUserProfile = null;
 
 // Small UI helper for Google auth status text.
 function setAuthStatus(message, isError) {
@@ -55,6 +56,36 @@ function setAuthStatus(message, isError) {
 
   statusEl.textContent = message;
   statusEl.style.color = isError ? "#ff9f9f" : "";
+}
+
+function setAuthUiState(user) {
+  const loggedOutEl = document.getElementById("auth-logged-out");
+  const loggedInEl = document.getElementById("auth-logged-in");
+  const nameEl = document.getElementById("auth-user-name");
+  const emailEl = document.getElementById("auth-user-email");
+  const hasUser = Boolean(user && user.id);
+
+  if (loggedOutEl) {
+    loggedOutEl.classList.toggle("auth-state-hidden", hasUser);
+  }
+
+  if (loggedInEl) {
+    loggedInEl.classList.toggle("auth-state-hidden", !hasUser);
+  }
+
+  if (nameEl) {
+    nameEl.textContent = hasUser
+      ? String(user.name || user.email || "Google user").trim() || "Google user"
+      : "Google user";
+  }
+
+  if (emailEl) {
+    emailEl.textContent = hasUser ? String(user.email || "").trim() : "";
+  }
+}
+
+function clearAuthenticatedPortfolioView() {
+  replacePortfolioRows([]);
 }
 
 // GIS callback: log token, send it to backend, and show verification status.
@@ -93,11 +124,15 @@ async function handleCredentialResponse(response) {
     const localUserId = Number(data && data.user && data.user.id);
     if (!Number.isInteger(localUserId) || localUserId <= 0) {
       currentLocalUserId = null;
+      currentLocalUserProfile = null;
+      setAuthUiState(null);
       setAuthStatus("Backend auth response missing a valid local user id.", true);
       return;
     }
 
     currentLocalUserId = localUserId;
+    currentLocalUserProfile = data.user;
+    setAuthUiState(currentLocalUserProfile);
     console.log("Current local user id:", currentLocalUserId);
 
     const positions = await fetchPositionsFromServer();
@@ -106,14 +141,17 @@ async function handleCredentialResponse(response) {
   } catch (error) {
     console.error("Google auth request failed:", error);
     currentLocalUserId = null;
+    currentLocalUserProfile = null;
+    setAuthUiState(null);
     setAuthStatus("Google auth request failed.", true);
   }
 }
 
 // Initialize and render the Google Sign-In button.
 function initGoogleSignIn() {
-  const btnContainer = document.getElementById("google-login-btn");
-  if (!btnContainer) {
+  const signInContainer = document.getElementById("google-signin-btn");
+  const signUpContainer = document.getElementById("google-signup-btn");
+  if (!signInContainer || !signUpContainer) {
     return;
   }
 
@@ -122,11 +160,19 @@ function initGoogleSignIn() {
     callback: handleCredentialResponse,
   });
 
-  google.accounts.id.renderButton(btnContainer, {
+  google.accounts.id.renderButton(signInContainer, {
     type: "standard",
     theme: "outline",
-    size: "large",
+    size: "medium",
     text: "signin_with",
+    shape: "rectangular",
+  });
+
+  google.accounts.id.renderButton(signUpContainer, {
+    type: "standard",
+    theme: "filled_black",
+    size: "medium",
+    text: "signup_with",
     shape: "rectangular",
   });
 
@@ -176,6 +222,56 @@ function buildFetchOptions(options) {
   const nextOptions = options && typeof options === "object" ? { ...options } : {};
   nextOptions.credentials = "include";
   return nextOptions;
+}
+
+async function signOutFromSession() {
+  const signOutButton = document.getElementById("signout-btn");
+  const previousLabel = signOutButton ? signOutButton.textContent : "";
+
+  if (signOutButton) {
+    signOutButton.disabled = true;
+    signOutButton.textContent = "Signing out...";
+  }
+
+  try {
+    const res = await fetch(
+      getApiUrl("/auth/logout"),
+      buildFetchOptions({
+        method: "POST",
+      })
+    );
+
+    if (!res.ok) {
+      let message = "Failed to sign out";
+      try {
+        const payload = await res.json();
+        if (payload && typeof payload.error === "string" && payload.error.trim()) {
+          message = payload.error.trim();
+        }
+      } catch (error) {
+        // keep default message
+      }
+      throw new Error(message);
+    }
+
+    currentLocalUserId = null;
+    currentLocalUserProfile = null;
+    setAuthUiState(null);
+    clearAuthenticatedPortfolioView();
+    setAuthStatus("Google auth: signed out.", false);
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+  } catch (error) {
+    console.error("Failed to sign out:", error);
+    setAuthStatus("Failed to sign out.", true);
+  } finally {
+    if (signOutButton) {
+      signOutButton.disabled = false;
+      signOutButton.textContent = previousLabel || "Sign out";
+    }
+  }
 }
 
 function parseCurrencyNumber(text) {
@@ -1239,17 +1335,23 @@ async function restoreAuthSession() {
     const user = await fetchCurrentLocalUserFromSession();
     if (!user) {
       currentLocalUserId = null;
+      currentLocalUserProfile = null;
+      setAuthUiState(null);
       setAuthStatus("Google auth: not signed in.", false);
       return;
     }
 
     currentLocalUserId = Number(user.id);
+    currentLocalUserProfile = user;
+    setAuthUiState(user);
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
     setAuthStatus("Session restored from backend.", false);
   } catch (error) {
     console.error("Failed to restore auth session:", error);
     currentLocalUserId = null;
+    currentLocalUserProfile = null;
+    setAuthUiState(null);
     setAuthStatus("Failed to restore backend session.", true);
   }
 }
@@ -1382,6 +1484,7 @@ function bindPersistenceEvents() {
   const positionAssetSelect = document.getElementById("positionAssetSelect");
   const createAssetForm = document.getElementById("createAssetForm");
   const deleteAssetForm = document.getElementById("deleteAssetForm");
+  const signOutButton = document.getElementById("signout-btn");
   if (positionEditorForm) {
     positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
   }
@@ -1394,11 +1497,15 @@ function bindPersistenceEvents() {
   if (deleteAssetForm) {
     deleteAssetForm.addEventListener("submit", applyDeleteAsset);
   }
+  if (signOutButton) {
+    signOutButton.addEventListener("click", signOutFromSession);
+  }
 
   window.addEventListener("resize", updateAllocationChart);
 }
 
 window.replacePortfolioRows = replacePortfolioRows;
+setAuthUiState(null);
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();

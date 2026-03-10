@@ -12,10 +12,33 @@
     <main class="page">
         <section class="panel">
             <header class="panel-header">
-                <p class="eyebrow">Wealth Dashboard</p>
-                <h1>Portfolio Tracker</h1>
-                <p class="subtitle">Overview of multi-asset positions and market value.</p>
-                <div id="google-login-btn"></div>
+                <div class="panel-header-top">
+                    <div class="panel-title-block">
+                        <p class="eyebrow">Wealth Dashboard</p>
+                        <h1>Portfolio Tracker</h1>
+                        <p class="subtitle">Overview of multi-asset positions and market value.</p>
+                    </div>
+                    <div class="auth-panel" aria-label="Authentication">
+                        <div id="auth-logged-out" class="auth-state">
+                            <p class="auth-panel-label">Account</p>
+                            <div class="auth-actions">
+                                <div id="google-signin-btn"></div>
+                                <div id="google-signup-btn"></div>
+                            </div>
+                            <p class="auth-helper">First Google login creates your account automatically.</p>
+                        </div>
+                        <div id="auth-logged-in" class="auth-state auth-state-hidden">
+                            <p class="auth-panel-label">Signed In</p>
+                            <div class="auth-user-row">
+                                <div>
+                                    <p id="auth-user-name" class="auth-user-name">Google user</p>
+                                    <p id="auth-user-email" class="auth-user-email"></p>
+                                </div>
+                                <button id="signout-btn" class="auth-signout-btn" type="button">Sign out</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
                 <p id="marketUpdateStatus" class="subtitle crypto-status">Market auto-update: waiting for first sync...</p>
             </header>
