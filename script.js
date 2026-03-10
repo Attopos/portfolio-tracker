@@ -5,14 +5,7 @@ const MARKET_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 const MIN_MARKET_REQUEST_GAP_MS = 30 * 1000;
 const MARKET_RETRY_BASE_MS = 60 * 1000;
 const MARKET_RETRY_MAX_MS = 30 * 60 * 1000;
-const COINGECKO_SIMPLE_PRICE_URL =
-  "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin&vs_currencies=usd,cny";
 const FX_RATE_API_URL = "https://api.frankfurter.app/latest?from=USD&to=CNY";
-const CRYPTO_ASSET_IDS = {
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  BNB: "binancecoin",
-};
 const PIE_COLORS = [
   "#22e3a4",
   "#4ba0ff",
@@ -38,7 +31,6 @@ const GOOGLE_CLIENT_ID =
   "133813157158-6mmjhgrbtdg0okk6dton4c6r786p51m4.apps.googleusercontent.com";
 const API_BASE_URL = deriveApiBaseUrl();
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
-let latestCryptoQuotes = {};
 let lastMarketSyncAt = "";
 let lastMarketRequestAt = 0;
 let marketConsecutiveFailures = 0;
@@ -409,7 +401,6 @@ function renderPortfolioRows(items) {
 function replacePortfolioRows(items) {
   renderPortfolioRows(items);
   normalizeAllEditableFields();
-  applyCryptoQuotesToRows();
   updateTotals();
   fillPositionEditorOptions();
   fillDeleteAssetOptions();
@@ -477,33 +468,15 @@ function formatRate(value) {
   return Number.isFinite(value) ? value.toFixed(4) : "--";
 }
 
-function formatQuotePair(quote) {
-  if (!quote || !Number.isFinite(quote.usd) || !Number.isFinite(quote.cny)) {
-    return "--";
-  }
-
-  return "$" + VALUE_FORMATTER.format(quote.usd) + " / ¥" + VALUE_FORMATTER.format(quote.cny);
-}
-
 function renderMarketDataFooter() {
   const footerEl = document.getElementById("marketDataFooter");
   if (!footerEl) {
     return;
   }
 
-  const btc = latestCryptoQuotes.bitcoin;
-  const eth = latestCryptoQuotes.ethereum;
-  const bnb = latestCryptoQuotes.binancecoin;
-
   footerEl.textContent =
     "FX USD/CNY: " +
     formatRate(cnyPerUsdRate) +
-    " | BTC: " +
-    formatQuotePair(btc) +
-    " | ETH: " +
-    formatQuotePair(eth) +
-    " | BNB: " +
-    formatQuotePair(bnb) +
     " | Updated: " +
     (lastMarketSyncAt || "--");
 }
@@ -511,7 +484,6 @@ function renderMarketDataFooter() {
 function saveMarketFeedSnapshot() {
   const snapshot = {
     cnyPerUsdRate,
-    latestCryptoQuotes,
     lastMarketSyncAt,
     lastMarketRequestAt,
   };
@@ -533,10 +505,6 @@ function restoreMarketFeedSnapshot() {
       cnyPerUsdRate = parsedRate;
     }
 
-    if (snapshot.latestCryptoQuotes && typeof snapshot.latestCryptoQuotes === "object") {
-      latestCryptoQuotes = snapshot.latestCryptoQuotes;
-    }
-
     if (typeof snapshot.lastMarketSyncAt === "string") {
       lastMarketSyncAt = snapshot.lastMarketSyncAt;
     }
@@ -548,82 +516,6 @@ function restoreMarketFeedSnapshot() {
   } catch (error) {
     console.error("Saved market feed data is invalid JSON:", error);
   }
-}
-
-function getSelectedPriceForRow(row, quote) {
-  const currencySelect = row.querySelector(".currency-select");
-  if (!currencySelect) {
-    return quote.usd;
-  }
-
-  if (currencySelect.value === "CNY") {
-    return quote.cny;
-  }
-
-  return quote.usd;
-}
-
-function applyQuoteToRowPrice(row, quote) {
-  const priceCell = row.querySelector(".price");
-  if (!priceCell) {
-    return false;
-  }
-
-  if (document.activeElement === priceCell) {
-    return false;
-  }
-
-  const priceValue = getSelectedPriceForRow(row, quote);
-  priceCell.textContent = VALUE_FORMATTER.format(priceValue);
-  return true;
-}
-
-function applyLatestQuoteForRowIfCrypto(row) {
-  const rowId = getRowId(row);
-  const quoteId = CRYPTO_ASSET_IDS[rowId];
-  if (!quoteId) {
-    return false;
-  }
-
-  const quote = latestCryptoQuotes[quoteId];
-  if (!quote || !Number.isFinite(quote.usd) || !Number.isFinite(quote.cny)) {
-    return false;
-  }
-
-  return applyQuoteToRowPrice(row, quote);
-}
-
-async function refreshCryptoPrices() {
-  const response = await fetch(COINGECKO_SIMPLE_PRICE_URL, {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("CoinGecko HTTP " + response.status);
-  }
-
-  const payload = await response.json();
-  const normalizedQuotes = {};
-
-  for (const rowId in CRYPTO_ASSET_IDS) {
-    const quoteId = CRYPTO_ASSET_IDS[rowId];
-    const quoteData = payload[quoteId];
-
-    if (!quoteData) {
-      continue;
-    }
-
-    const usd = Number(quoteData.usd);
-    const cny = Number(quoteData.cny);
-
-    if (!Number.isFinite(usd) || !Number.isFinite(cny)) {
-      continue;
-    }
-
-    normalizedQuotes[quoteId] = { usd, cny };
-  }
-
-  return normalizedQuotes;
 }
 
 async function refreshUsdCnyRate() {
@@ -645,52 +537,25 @@ async function refreshUsdCnyRate() {
   return rate;
 }
 
-function applyCryptoQuotesToRows() {
-  let changed = false;
-
-  for (const rowId in CRYPTO_ASSET_IDS) {
-    const quoteId = CRYPTO_ASSET_IDS[rowId];
-    const quote = latestCryptoQuotes[quoteId];
-    if (!quote) {
-      continue;
-    }
-
-    const row = getRowByAssetId(rowId);
-    if (!row) {
-      continue;
-    }
-
-    if (applyQuoteToRowPrice(row, quote)) {
-      changed = true;
-    }
-  }
-
-  return changed;
-}
-
 async function refreshMarketData() {
-  setCryptoStatus("Market auto-update: syncing CoinGecko + FX API...", false);
+  setCryptoStatus("FX auto-update: syncing exchange rate...", false);
 
   try {
-    const results = await Promise.all([refreshCryptoPrices(), refreshUsdCnyRate()]);
-    latestCryptoQuotes = results[0];
-    cnyPerUsdRate = results[1];
+    cnyPerUsdRate = await refreshUsdCnyRate();
     lastMarketSyncAt = new Date().toLocaleString();
-
-    applyCryptoQuotesToRows();
 
     updateTotals();
     saveMarketFeedSnapshot();
     renderMarketDataFooter();
 
-    setCryptoStatus("Market auto-update: synced at " + lastMarketSyncAt, false);
+    setCryptoStatus("FX auto-update: synced at " + lastMarketSyncAt, false);
     return true;
   } catch (error) {
-    console.error("Failed to refresh market data:", error);
+    console.error("Failed to refresh FX data:", error);
     lastMarketSyncAt = new Date().toLocaleString();
     saveMarketFeedSnapshot();
     renderMarketDataFooter();
-    setCryptoStatus("Market auto-update: failed at " + lastMarketSyncAt, true);
+    setCryptoStatus("FX auto-update: failed at " + lastMarketSyncAt, true);
     return false;
   }
 }
@@ -742,7 +607,7 @@ async function runMarketRefreshCycle() {
   const retryDelayMs = getRetryDelayMs(marketConsecutiveFailures);
   const retryMinutes = Math.round(retryDelayMs / 60000);
   setCryptoStatus(
-    "Market auto-update: failed at " +
+    "FX auto-update: failed at " +
       lastMarketSyncAt +
       " | retry in " +
       retryMinutes +
@@ -828,7 +693,6 @@ function migrateCnyRowsPositionPriceSwap() {
   const rows = getDataRows();
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const rowId = getRowId(row);
     const currencySelect = row.querySelector(".currency-select");
     const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
@@ -837,7 +701,7 @@ function migrateCnyRowsPositionPriceSwap() {
       continue;
     }
 
-    if (currencySelect.value !== "CNY" || CRYPTO_ASSET_IDS[rowId]) {
+    if (currencySelect.value !== "CNY") {
       continue;
     }
 
@@ -1514,11 +1378,6 @@ function bindPersistenceEvents() {
       if (!(target instanceof HTMLSelectElement) || !target.classList.contains("currency-select")) {
         return;
       }
-
-      const row = target.closest("tr");
-      if (row) {
-        applyLatestQuoteForRowIfCrypto(row);
-      }
       updateTotals();
     });
   }
@@ -1560,7 +1419,6 @@ renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();
 normalizeAllEditableFields();
-applyCryptoQuotesToRows();
 updateTotals();
 renderMarketDataFooter();
 fillPositionEditorOptions();

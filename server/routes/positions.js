@@ -112,10 +112,6 @@ router.post("/", async (req, res) => {
   const position = Number(body.position);
   const price = Number(body.price);
 
-  if (!assetId) {
-    return res.status(400).json({ error: "Asset id is required" });
-  }
-
   if (!name) {
     return res.status(400).json({ error: "Name is required" });
   }
@@ -141,7 +137,7 @@ router.post("/", async (req, res) => {
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error && error.code === "23505") {
-      return res.status(400).json({ error: "Asset id already exists" });
+      return res.status(400).json({ error: "Asset already exists" });
     }
 
     console.error("Failed to create position in database:", error);
