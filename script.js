@@ -360,10 +360,9 @@ function buildCurrencySelectOptionsHtml(selectedCurrency) {
 
 function buildPortfolioRowHtml(item) {
   return (
-    "<tr>" +
-    "<td>" +
+    '<tr data-asset-id="' +
     escapeHtml(item.id) +
-    "</td>" +
+    '">' +
     "<td>" +
     escapeHtml(item.name) +
     "</td>" +
@@ -436,8 +435,8 @@ function getDataRows() {
 }
 
 function getRowId(row) {
-  const firstCell = row.querySelector("td");
-  return firstCell ? firstCell.textContent.trim() : "";
+  const assetId = row.getAttribute("data-asset-id");
+  return assetId ? assetId.trim() : "";
 }
 
 function getRowByAssetId(assetId) {
@@ -863,12 +862,12 @@ function fillPositionEditorOptions() {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowId = getRowId(row);
-    const nameCell = row.querySelector("td:nth-child(2)");
-    if (!rowId || !nameCell) {
+    const displayNameCell = row.querySelector("td:nth-child(1)");
+    if (!rowId || !displayNameCell) {
       continue;
     }
 
-    const label = rowId + " - " + nameCell.textContent.trim();
+    const label = displayNameCell.textContent.trim();
     html += '<option value="' + rowId + '">' + label + "</option>";
   }
 
@@ -897,12 +896,12 @@ function fillDeleteAssetOptions() {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowId = getRowId(row);
-    const nameCell = row.querySelector("td:nth-child(2)");
-    if (!rowId || !nameCell) {
+    const displayNameCell = row.querySelector("td:nth-child(1)");
+    if (!rowId || !displayNameCell) {
       continue;
     }
 
-    const label = rowId + " - " + nameCell.textContent.trim();
+    const label = displayNameCell.textContent.trim();
     html += '<option value="' + rowId + '">' + label + "</option>";
   }
 
@@ -1054,7 +1053,7 @@ function getAllocationData() {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const nameCell = row.querySelector("td:nth-child(2)");
+    const nameCell = row.querySelector("td:nth-child(1)");
     const usdCell = row.querySelector(".usd");
 
     if (!nameCell || !usdCell) {
@@ -1297,7 +1296,6 @@ async function createPositionOnServer(payload) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        id: payload.id,
         name: payload.name,
         currency: payload.currency,
         position: payload.position,
@@ -1409,7 +1407,6 @@ async function applyCreateAsset(event) {
   event.preventDefault();
 
   const form = document.getElementById("createAssetForm");
-  const idInput = document.getElementById("createAssetIdInput");
   const nameInput = document.getElementById("createAssetNameInput");
   const currencySelect = document.getElementById("createAssetCurrencySelect");
   const positionInput = document.getElementById("createAssetPositionInput");
@@ -1418,7 +1415,6 @@ async function applyCreateAsset(event) {
 
   if (
     !form ||
-    !idInput ||
     !nameInput ||
     !currencySelect ||
     !positionInput ||
@@ -1428,14 +1424,13 @@ async function applyCreateAsset(event) {
     return;
   }
 
-  const id = idInput.value.trim();
   const name = nameInput.value.trim();
   const currency = currencySelect.value === "CNY" ? "CNY" : "USD";
   const position = parseCurrencyNumber(positionInput.value);
   const price = parseCurrencyNumber(priceInput.value);
 
-  if (!id || !name) {
-    window.alert("ID and Name are required.");
+  if (!name) {
+    window.alert("Name is required.");
     return;
   }
 
@@ -1445,7 +1440,6 @@ async function applyCreateAsset(event) {
 
   try {
     await createPositionOnServer({
-      id,
       name,
       currency,
       position,

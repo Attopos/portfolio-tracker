@@ -3,6 +3,21 @@ const pool = require("../db");
 
 const router = express.Router();
 
+function slugifyAssetName(name) {
+  return String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+}
+
+function buildGeneratedAssetId(name) {
+  const base = slugifyAssetName(name) || "asset";
+  const suffix = Date.now().toString(36).slice(-6);
+  return (base + "-" + suffix).slice(0, 48);
+}
+
 function getSessionUserId(req) {
   const userId = Number(req.session && req.session.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
@@ -91,8 +106,8 @@ router.delete("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const body = req.body || {};
-  const assetId = String(body.id || "").trim();
   const name = String(body.name || "").trim();
+  const assetId = String(body.id || "").trim() || buildGeneratedAssetId(name);
   const currency = String(body.currency || "").trim().toUpperCase();
   const position = Number(body.position);
   const price = Number(body.price);
