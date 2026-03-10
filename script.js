@@ -34,6 +34,8 @@ const VALUE_FORMATTER = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 const INITIAL_PORTFOLIO_ROWS = [];
+const GOOGLE_CLIENT_ID =
+  "133813157158-6mmjhgrbtdg0okk6dton4c6r786p51m4.apps.googleusercontent.com";
 const API_BASE_URL = deriveApiBaseUrl();
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let latestCryptoQuotes = {};
@@ -42,6 +44,94 @@ let lastMarketRequestAt = 0;
 let marketConsecutiveFailures = 0;
 let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
+
+// Small UI helper for Google auth status text.
+function setAuthStatus(message, isError) {
+  const statusEl = document.getElementById("auth-status");
+  if (!statusEl) {
+    return;
+  }
+
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? "#ff9f9f" : "";
+}
+
+// GIS callback: log token, send it to backend, and show verification status.
+async function handleCredentialResponse(response) {
+  console.log("Google sign-in response:", response);
+  console.log("Google ID token:", response.credential);
+
+  const credential = String(response && response.credential ? response.credential : "").trim();
+  if (!credential) {
+    setAuthStatus("Google sign-in failed: missing credential.", true);
+    return;
+  }
+
+  try {
+    const res = await fetch(getApiUrl("/auth/google"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credential }),
+    });
+
+    const data = await res.json();
+    console.log("Backend auth response:", data);
+
+    if (!res.ok || !data || data.ok !== true) {
+      const message = data && data.error ? data.error : "Google token verification failed.";
+      setAuthStatus(message, true);
+      return;
+    }
+
+    setAuthStatus("Google token verified by backend.", false);
+  } catch (error) {
+    console.error("Google auth request failed:", error);
+    setAuthStatus("Google auth request failed.", true);
+  }
+}
+
+// Initialize and render the Google Sign-In button.
+function initGoogleSignIn() {
+  const btnContainer = document.getElementById("google-login-btn");
+  if (!btnContainer) {
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+  });
+
+  google.accounts.id.renderButton(btnContainer, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "signin_with",
+    shape: "rectangular",
+  });
+
+  setAuthStatus("Google sign-in button ready.", false);
+}
+
+// Wait for GIS script to be available before initializing.
+function initGoogleSignInWhenReady(attempt) {
+  const nextAttempt = Number.isFinite(attempt) ? attempt : 0;
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    initGoogleSignIn();
+    return;
+  }
+
+  if (nextAttempt >= 40) {
+    setAuthStatus("Google GIS failed to load.", true);
+    return;
+  }
+
+  window.setTimeout(function () {
+    initGoogleSignInWhenReady(nextAttempt + 1);
+  }, 150);
+}
 
 function deriveApiBaseUrl() {
   const override = String(window.__API_BASE_URL || "").trim();
@@ -1214,3 +1304,4 @@ startMarketAutoRefresh();
 fetchPositionsFromServer()
   .then(replacePortfolioRows)
   .catch(console.error);
+initGoogleSignInWhenReady(0);

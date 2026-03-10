@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Portfolio Tracker</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -14,6 +15,8 @@
                 <p class="eyebrow">Wealth Dashboard</p>
                 <h1>Portfolio Tracker</h1>
                 <p class="subtitle">Overview of multi-asset positions and market value.</p>
+                <div id="google-login-btn"></div>
+                <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
                 <p id="marketUpdateStatus" class="subtitle crypto-status">Market auto-update: waiting for first sync...</p>
             </header>
 
