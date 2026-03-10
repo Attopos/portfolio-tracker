@@ -99,20 +99,26 @@ body {
 }
 
 .auth-panel {
-    min-width: 320px;
-    max-width: 380px;
-    padding: 0.95rem 1rem 0.85rem;
+    min-width: 300px;
+    max-width: 360px;
+    padding: 0.85rem 0.95rem 0.8rem;
     border: 1px solid rgba(139, 195, 255, 0.18);
     border-radius: 12px;
-    background: linear-gradient(180deg, rgba(8, 18, 28, 0.96) 0%, rgba(7, 13, 20, 0.92) 100%);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    background: linear-gradient(180deg, rgba(8, 18, 28, 0.84) 0%, rgba(7, 13, 20, 0.76) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .auth-state {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 0.55rem;
+    gap: 0.6rem;
+}
+
+.auth-panel-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
 }
 
 .auth-panel-label {
@@ -121,6 +127,13 @@ body {
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #8bc3ff;
+}
+
+.auth-panel-copy {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.74rem;
+    line-height: 1.4;
 }
 
 .auth-actions {
@@ -359,6 +372,10 @@ tr.selected-asset-row td {
         flex-direction: column;
     }
 
+    .action-tabs {
+        grid-template-columns: 1fr;
+    }
+
     .subtitle {
         font-size: 0.82rem;
     }
@@ -422,6 +439,64 @@ tr.selected-asset-row td {
 .workspace-sidebar {
     display: grid;
     gap: 0.9rem;
+}
+
+.action-stack {
+    display: grid;
+}
+
+.action-stack-head {
+    border-bottom: 0;
+    padding-bottom: 0.7rem;
+}
+
+.action-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0 1rem 0.95rem;
+}
+
+.action-tab {
+    border: 1px solid rgba(139, 195, 255, 0.18);
+    background: rgba(8, 18, 28, 0.78);
+    color: #b7d3e8;
+    border-radius: 10px;
+    padding: 0.7rem 0.55rem;
+    font: inherit;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.action-tab:hover {
+    border-color: rgba(139, 195, 255, 0.36);
+    background: rgba(12, 28, 42, 0.92);
+    transform: translateY(-1px);
+}
+
+.action-tab.is-active {
+    border-color: rgba(34, 227, 164, 0.4);
+    background: rgba(15, 49, 43, 0.9);
+    color: #dcfff1;
+}
+
+.action-tab.action-tab-danger.is-active {
+    border-color: rgba(255, 122, 122, 0.42);
+    background: rgba(56, 20, 24, 0.88);
+    color: #ffd5d5;
+}
+
+.action-panels {
+    display: grid;
+}
+
+.action-panel {
+    border-top: 1px solid var(--line);
+}
+
+.action-panel:not(.is-active) {
+    display: none;
 }
 
 .workspace-card {

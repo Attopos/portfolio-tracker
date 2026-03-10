@@ -236,6 +236,26 @@ function buildFetchOptions(options) {
   return nextOptions;
 }
 
+function setActiveActionTab(nextTab) {
+  const targetTab = String(nextTab || "").trim() || "edit";
+  const tabButtons = document.querySelectorAll("[data-action-tab]");
+  const panels = document.querySelectorAll("[data-action-panel]");
+
+  for (let i = 0; i < tabButtons.length; i++) {
+    const button = tabButtons[i];
+    const isActive = button.getAttribute("data-action-tab") === targetTab;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  }
+
+  for (let i = 0; i < panels.length; i++) {
+    const panel = panels[i];
+    const isActive = panel.getAttribute("data-action-panel") === targetTab;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  }
+}
+
 async function signOutFromSession() {
   const signOutButton = document.getElementById("signout-btn");
   const previousLabel = signOutButton ? signOutButton.textContent : "";
@@ -1514,6 +1534,7 @@ function bindPersistenceEvents() {
   const createAssetForm = document.getElementById("createAssetForm");
   const deleteAssetForm = document.getElementById("deleteAssetForm");
   const signOutButton = document.getElementById("signout-btn");
+  const actionTabs = document.querySelectorAll("[data-action-tab]");
   if (positionEditorForm) {
     positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
   }
@@ -1529,12 +1550,18 @@ function bindPersistenceEvents() {
   if (signOutButton) {
     signOutButton.addEventListener("click", signOutFromSession);
   }
+  for (let i = 0; i < actionTabs.length; i++) {
+    actionTabs[i].addEventListener("click", function () {
+      setActiveActionTab(actionTabs[i].getAttribute("data-action-tab"));
+    });
+  }
 
   window.addEventListener("resize", updateAllocationChart);
 }
 
 window.replacePortfolioRows = replacePortfolioRows;
 setAuthUiState(null);
+setActiveActionTab("edit");
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();
