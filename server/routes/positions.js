@@ -3,24 +3,31 @@ const pool = require("../db");
 
 const router = express.Router();
 
-function parseUserId(input) {
-  const userId = Number(input);
+function getSessionUserId(req) {
+  const userId = Number(req.session && req.session.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     return null;
   }
   return userId;
 }
 
-router.get("/", async (req, res) => {
-  const userId = parseUserId(req.query && req.query.userId);
+function requireAuth(req, res, next) {
+  const userId = getSessionUserId(req);
   if (!userId) {
-    return res.status(400).json({ error: "Valid userId is required" });
+    return res.status(401).json({ error: "Unauthenticated" });
   }
 
+  req.userId = userId;
+  return next();
+}
+
+router.use(requireAuth);
+
+router.get("/", async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT id, name, currency, position, price FROM positions WHERE user_id = $1 ORDER BY id",
-      [userId]
+      [req.userId]
     );
     return res.json(result.rows);
   } catch (error) {
@@ -32,14 +39,9 @@ router.get("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const assetId = String(req.params.id || "").trim();
   const nextPosition = Number(req.body && req.body.position);
-  const userId = parseUserId(req.body && req.body.userId);
 
   if (!assetId) {
     return res.status(400).json({ error: "Asset id is required" });
-  }
-
-  if (!userId) {
-    return res.status(400).json({ error: "Valid userId is required" });
   }
 
   if (!Number.isFinite(nextPosition)) {
@@ -49,7 +51,7 @@ router.put("/:id", async (req, res) => {
   try {
     const result = await pool.query(
       "UPDATE positions SET position = $1 WHERE id = $2 AND user_id = $3 RETURNING id, name, currency, position, price",
-      [nextPosition, assetId, userId]
+      [nextPosition, assetId, req.userId]
     );
 
     if (result.rowCount === 0) {
@@ -65,20 +67,15 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   const assetId = String(req.params.id || "").trim();
-  const userId = parseUserId(req.query && req.query.userId);
 
   if (!assetId) {
     return res.status(400).json({ error: "Asset id is required" });
   }
 
-  if (!userId) {
-    return res.status(400).json({ error: "Valid userId is required" });
-  }
-
   try {
     const result = await pool.query(
       "DELETE FROM positions WHERE id = $1 AND user_id = $2 RETURNING id, name, currency, position, price",
-      [assetId, userId]
+      [assetId, req.userId]
     );
 
     if (result.rowCount === 0) {
@@ -99,14 +96,9 @@ router.post("/", async (req, res) => {
   const currency = String(body.currency || "").trim().toUpperCase();
   const position = Number(body.position);
   const price = Number(body.price);
-  const userId = parseUserId(body.userId);
 
   if (!assetId) {
     return res.status(400).json({ error: "Asset id is required" });
-  }
-
-  if (!userId) {
-    return res.status(400).json({ error: "Valid userId is required" });
   }
 
   if (!name) {
@@ -128,7 +120,7 @@ router.post("/", async (req, res) => {
   try {
     const result = await pool.query(
       "INSERT INTO positions (user_id, id, name, currency, position, price) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, currency, position, price",
-      [userId, assetId, name, currency, position, price]
+      [req.userId, assetId, name, currency, position, price]
     );
 
     return res.status(201).json(result.rows[0]);

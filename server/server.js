@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const session = require("express-session");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const positionsRouter = require("./routes/positions");
@@ -8,6 +9,7 @@ const pool = require("./db");
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+const sessionSecret = String(process.env.SESSION_SECRET || "local-dev-session-secret").trim();
 const googleClient = new OAuth2Client(googleClientId);
 const allowedOrigins = new Set(["http://127.0.0.1:5500", "http://localhost:5500"]);
 
@@ -20,13 +22,35 @@ app.use(
       }
       callback(new Error("CORS origin not allowed"));
     },
+    credentials: true,
   })
 );
 app.use(express.json());
+app.use(
+  session({
+    name: "portfolio.sid",
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    },
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("Server is running");
 });
+
+async function findLocalUserById(userId) {
+  const result = await pool.query(
+    "SELECT id, google_sub, email, name, avatar_url, created_at, updated_at FROM users WHERE id = $1",
+    [userId]
+  );
+  return result.rowCount > 0 ? result.rows[0] : null;
+}
 
 async function findOrCreateLocalUser(googleProfile) {
   const selectSql = "SELECT * FROM users WHERE google_sub = $1";
@@ -81,6 +105,7 @@ app.post("/auth/google", async (req, res) => {
       picture: payload.picture || "",
     };
     const localUser = await findOrCreateLocalUser(googleUser);
+    req.session.userId = Number(localUser.id);
 
     console.log("Google token verified for local user:", {
       id: localUser.id,
@@ -96,6 +121,26 @@ app.post("/auth/google", async (req, res) => {
 
     console.error("Google auth database error:", error);
     return res.status(500).json({ ok: false, error: "Failed to find or create local user." });
+  }
+});
+
+app.get("/api/me", async (req, res) => {
+  const userId = Number(req.session && req.session.userId);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(401).json({ ok: false, error: "Unauthenticated." });
+  }
+
+  try {
+    const user = await findLocalUserById(userId);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ ok: false, error: "Unauthenticated." });
+    }
+
+    return res.json({ ok: true, user });
+  } catch (error) {
+    console.error("Failed to read current session user:", error);
+    return res.status(500).json({ ok: false, error: "Failed to load current user." });
   }
 });
 

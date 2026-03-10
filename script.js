@@ -69,13 +69,16 @@ async function handleCredentialResponse(response) {
   }
 
   try {
-    const res = await fetch(getApiUrl("/auth/google"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ credential }),
-    });
+    const res = await fetch(
+      getApiUrl("/auth/google"),
+      buildFetchOptions({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ credential }),
+      })
+    );
 
     const data = await res.json();
     console.log("Backend auth response:", data);
@@ -163,10 +166,16 @@ function deriveApiBaseUrl() {
   }
 
   if ((hostname === "localhost" || hostname === "127.0.0.1") && port && port !== "3000") {
-    return "http://localhost:3000";
+    return protocol + "//" + hostname + ":3000";
   }
 
   return "";
+}
+
+function buildFetchOptions(options) {
+  const nextOptions = options && typeof options === "object" ? { ...options } : {};
+  nextOptions.credentials = "include";
+  return nextOptions;
 }
 
 function parseCurrencyNumber(text) {
@@ -1087,25 +1096,35 @@ function updateTotals() {
 }
 
 async function fetchPositionsFromServer() {
-  const userId = getCurrentUserIdOrThrow();
-  const res = await fetch(
-    getApiUrl("/api/positions?userId=" + encodeURIComponent(String(userId)))
-  );
+  getCurrentUserIdOrThrow();
+  const res = await fetch(getApiUrl("/api/positions"), buildFetchOptions());
   if (!res.ok) {
-    throw new Error("Failed to fetch positions");
+    let message = "Failed to fetch positions";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
+    }
+    throw new Error(message);
   }
   return await res.json();
 }
 
 async function updatePositionOnServer(assetId, position) {
-  const userId = getCurrentUserIdOrThrow();
-  const res = await fetch(getApiUrl("/api/positions/" + encodeURIComponent(assetId)), {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ position, userId }),
-  });
+  getCurrentUserIdOrThrow();
+  const res = await fetch(
+    getApiUrl("/api/positions/" + encodeURIComponent(assetId)),
+    buildFetchOptions({
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ position }),
+    })
+  );
 
   if (!res.ok) {
     let message = "Failed to update position";
@@ -1124,21 +1143,23 @@ async function updatePositionOnServer(assetId, position) {
 }
 
 async function createPositionOnServer(payload) {
-  const userId = getCurrentUserIdOrThrow();
-  const res = await fetch(getApiUrl("/api/positions"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      id: payload.id,
-      name: payload.name,
-      currency: payload.currency,
-      position: payload.position,
-      price: payload.price,
-      userId,
-    }),
-  });
+  getCurrentUserIdOrThrow();
+  const res = await fetch(
+    getApiUrl("/api/positions"),
+    buildFetchOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: payload.id,
+        name: payload.name,
+        currency: payload.currency,
+        position: payload.position,
+        price: payload.price,
+      }),
+    })
+  );
 
   if (!res.ok) {
     let message = "Failed to create asset";
@@ -1158,16 +1179,14 @@ async function createPositionOnServer(payload) {
 }
 
 async function deletePositionOnServer(assetId) {
-  const userId = getCurrentUserIdOrThrow();
-  const deleteUrl = getApiUrl(
-    "/api/positions/" +
-      encodeURIComponent(assetId) +
-      "?userId=" +
-      encodeURIComponent(String(userId))
+  getCurrentUserIdOrThrow();
+  const deleteUrl = getApiUrl("/api/positions/" + encodeURIComponent(assetId));
+  const res = await fetch(
+    deleteUrl,
+    buildFetchOptions({
+      method: "DELETE",
+    })
   );
-  const res = await fetch(deleteUrl, {
-    method: "DELETE",
-  });
 
   if (!res.ok) {
     let message = "Failed to delete asset";
@@ -1184,6 +1203,55 @@ async function deletePositionOnServer(assetId) {
   }
 
   return await res.json();
+}
+
+async function fetchCurrentLocalUserFromSession() {
+  const res = await fetch(getApiUrl("/api/me"), buildFetchOptions());
+  if (res.status === 401) {
+    return null;
+  }
+
+  if (!res.ok) {
+    let message = "Failed to restore session";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
+    }
+    throw new Error(message);
+  }
+
+  const payload = await res.json();
+  const user = payload && payload.user ? payload.user : null;
+  const userId = Number(user && user.id);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("Session response missing a valid local user id.");
+  }
+
+  return user;
+}
+
+async function restoreAuthSession() {
+  try {
+    const user = await fetchCurrentLocalUserFromSession();
+    if (!user) {
+      currentLocalUserId = null;
+      setAuthStatus("Google auth: not signed in.", false);
+      return;
+    }
+
+    currentLocalUserId = Number(user.id);
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
+    setAuthStatus("Session restored from backend.", false);
+  } catch (error) {
+    console.error("Failed to restore auth session:", error);
+    currentLocalUserId = null;
+    setAuthStatus("Failed to restore backend session.", true);
+  }
 }
 
 async function applyCreateAsset(event) {
@@ -1344,3 +1412,4 @@ syncPositionInputWithSelectedAsset();
 bindPersistenceEvents();
 startMarketAutoRefresh();
 initGoogleSignInWhenReady(0);
+restoreAuthSession();
