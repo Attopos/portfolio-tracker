@@ -7,11 +7,26 @@ const positionsRouter = require("./routes/positions");
 const pool = require("./db");
 
 const app = express();
+const isProduction = String(process.env.NODE_ENV || "").trim() === "production";
 const port = Number(process.env.PORT) || 3000;
 const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
-const sessionSecret = String(process.env.SESSION_SECRET || "local-dev-session-secret").trim();
+const sessionSecret = String(process.env.SESSION_SECRET || "").trim();
 const googleClient = new OAuth2Client(googleClientId);
-const allowedOrigins = new Set(["http://127.0.0.1:5500", "http://localhost:5500"]);
+const allowedOrigins = new Set(
+  String(
+    process.env.APP_ORIGINS ||
+      "http://127.0.0.1:5500,http://localhost:5500,http://23.95.67.158:3001"
+  )
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+if (!sessionSecret && isProduction) {
+  throw new Error("SESSION_SECRET is required when NODE_ENV=production.");
+}
+
+app.set("trust proxy", 1);
 
 app.use(
   cors({
@@ -29,7 +44,7 @@ app.use(express.json());
 app.use(
   session({
     name: "portfolio.sid",
-    secret: sessionSecret,
+    secret: sessionSecret || "local-dev-session-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -142,6 +157,18 @@ app.get("/api/me", async (req, res) => {
     console.error("Failed to read current session user:", error);
     return res.status(500).json({ ok: false, error: "Failed to load current user." });
   }
+});
+
+app.post("/auth/logout", (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      console.error("Failed to destroy session:", error);
+      return res.status(500).json({ ok: false, error: "Failed to log out." });
+    }
+
+    res.clearCookie("portfolio.sid");
+    return res.json({ ok: true });
+  });
 });
 
 app.use("/api/positions", positionsRouter);
