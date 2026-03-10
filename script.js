@@ -63,6 +63,8 @@ function setAuthUiState(user) {
   const loggedInEl = document.getElementById("auth-logged-in");
   const nameEl = document.getElementById("auth-user-name");
   const emailEl = document.getElementById("auth-user-email");
+  const sessionStateEl = document.getElementById("summarySessionState");
+  const sessionMetaEl = document.getElementById("summarySessionMeta");
   const hasUser = Boolean(user && user.id);
 
   if (loggedOutEl) {
@@ -81,6 +83,16 @@ function setAuthUiState(user) {
 
   if (emailEl) {
     emailEl.textContent = hasUser ? String(user.email || "").trim() : "";
+  }
+
+  if (sessionStateEl) {
+    sessionStateEl.textContent = hasUser ? "Signed in" : "Signed out";
+  }
+
+  if (sessionMetaEl) {
+    sessionMetaEl.textContent = hasUser
+      ? String(user.email || user.name || "Backend session active").trim()
+      : "Sign in to load your portfolio.";
   }
 }
 
@@ -1165,6 +1177,7 @@ function updateTotals() {
 
   const usdCells = document.querySelectorAll(".usd");
   const cnyCells = document.querySelectorAll(".cny");
+  const holdingsCount = getDataRows().length;
 
   let usdTotal = 0;
   let cnyTotal = 0;
@@ -1186,6 +1199,22 @@ function updateTotals() {
 
   if (cnyTotalCell) {
     cnyTotalCell.textContent = "¥" + cnyTotal.toFixed(2);
+  }
+
+  const summaryUsdEl = document.getElementById("summaryUsdTotal");
+  const summaryCnyEl = document.getElementById("summaryCnyTotal");
+  const summaryHoldingsEl = document.getElementById("summaryHoldingsCount");
+
+  if (summaryUsdEl) {
+    summaryUsdEl.textContent = "$" + usdTotal.toFixed(2);
+  }
+
+  if (summaryCnyEl) {
+    summaryCnyEl.textContent = "¥" + cnyTotal.toFixed(2);
+  }
+
+  if (summaryHoldingsEl) {
+    summaryHoldingsEl.textContent = String(holdingsCount);
   }
 
   updateAllocationChart();

@@ -39,107 +39,154 @@
                         </div>
                     </div>
                 </div>
-                <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
-                <p id="marketUpdateStatus" class="subtitle crypto-status">Market auto-update: waiting for first sync...</p>
+                <div class="status-strip">
+                    <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
+                    <p id="marketUpdateStatus" class="subtitle crypto-status">Market auto-update: waiting for first sync...</p>
+                </div>
             </header>
 
-            <section class="breakdown-panel" aria-label="Asset allocation">
-                <div class="breakdown-head">
-                    <h2>Asset Allocation</h2>
-                    <p>Share by market value (USD)</p>
-                </div>
-                <div class="breakdown-content">
-                    <canvas id="allocationChart" width="320" height="320" aria-label="Portfolio allocation pie chart"></canvas>
-                    <ul id="allocationLegend" class="allocation-legend"></ul>
-                </div>
+            <section class="overview-grid" aria-label="Portfolio overview">
+                <article class="summary-card summary-card-accent">
+                    <p class="summary-label">Total USD</p>
+                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
+                    <p class="summary-footnote">Live aggregate market value in USD.</p>
+                </article>
+                <article class="summary-card">
+                    <p class="summary-label">Total CNY</p>
+                    <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
+                    <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
+                </article>
+                <article class="summary-card">
+                    <p class="summary-label">Holdings</p>
+                    <p id="summaryHoldingsCount" class="summary-value">0</p>
+                    <p class="summary-footnote">Tracked positions in the current portfolio.</p>
+                </article>
+                <article class="summary-card">
+                    <p class="summary-label">Session</p>
+                    <p id="summarySessionState" class="summary-value">Signed out</p>
+                    <p id="summarySessionMeta" class="summary-footnote">Sign in to load your portfolio.</p>
+                </article>
             </section>
 
-            <section class="position-editor-panel" aria-label="Edit position size">
-                <div class="position-editor-head">
-                    <h2>Position Size Editor</h2>
-                    <p>Only updates Position Size.</p>
+            <section class="workspace-grid">
+                <div class="workspace-main">
+                    <section class="breakdown-panel workspace-card" aria-label="Asset allocation">
+                        <div class="breakdown-head">
+                            <div>
+                                <h2>Asset Allocation</h2>
+                                <p>Share by market value across your active holdings.</p>
+                            </div>
+                        </div>
+                        <div class="breakdown-content">
+                            <canvas id="allocationChart" width="320" height="320" aria-label="Portfolio allocation pie chart"></canvas>
+                            <ul id="allocationLegend" class="allocation-legend"></ul>
+                        </div>
+                    </section>
+
+                    <section class="workspace-card portfolio-table-card" aria-label="Portfolio details">
+                        <div class="section-head">
+                            <div>
+                                <h2>Portfolio Details</h2>
+                                <p>Inspect every position, currency choice, and live market value.</p>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <caption>Portfolio in Details</caption>
+                                <thead>
+                                    <tr class="head-row">
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Currency</th>
+                                        <th>Position Size</th>
+                                        <th>Market Price</th>
+                                        <th>Market Value (USD)</th>
+                                        <th>Market Value (CNY)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="portfolioTableBody"></tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td>Total</td>
+                                        <td colspan="4"></td>
+                                        <td id="usdTotal"></td>
+                                        <td id="cnyTotal"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </section>
                 </div>
-                <form id="positionEditorForm" class="position-editor-form">
-                    <label for="positionAssetSelect">Asset</label>
-                    <select id="positionAssetSelect" required></select>
 
-                    <label for="positionSizeInput">Position Size</label>
-                    <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
+                <aside class="workspace-sidebar" aria-label="Portfolio actions">
+                    <section class="position-editor-panel workspace-card" aria-label="Edit position size">
+                        <div class="position-editor-head">
+                            <div>
+                                <h2>Edit Position</h2>
+                                <p>Fast path for your most common portfolio adjustment.</p>
+                            </div>
+                        </div>
+                        <form id="positionEditorForm" class="position-editor-form">
+                            <label for="positionAssetSelect">Asset</label>
+                            <select id="positionAssetSelect" required></select>
 
-                    <button id="positionApplyBtn" type="submit" disabled>Apply</button>
-                </form>
+                            <label for="positionSizeInput">Position Size</label>
+                            <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
+
+                            <button id="positionApplyBtn" type="submit" disabled>Apply</button>
+                        </form>
+                    </section>
+
+                    <section class="create-asset-panel workspace-card" aria-label="Create asset">
+                        <div class="create-asset-head">
+                            <div>
+                                <h2>Create Asset</h2>
+                                <p>Add a new position to portfolio.</p>
+                            </div>
+                        </div>
+                        <form id="createAssetForm" class="create-asset-form">
+                            <div class="create-asset-field">
+                                <label for="createAssetIdInput">ID</label>
+                                <input id="createAssetIdInput" type="text" required />
+                            </div>
+                            <div class="create-asset-field">
+                                <label for="createAssetNameInput">Name</label>
+                                <input id="createAssetNameInput" type="text" required />
+                            </div>
+                            <div class="create-asset-field">
+                                <label for="createAssetCurrencySelect">Currency</label>
+                                <select id="createAssetCurrencySelect" required>
+                                    <option value="USD" selected>USD</option>
+                                    <option value="CNY">CNY</option>
+                                </select>
+                            </div>
+                            <div class="create-asset-field">
+                                <label for="createAssetPositionInput">Position Size</label>
+                                <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
+                            </div>
+                            <div class="create-asset-field">
+                                <label for="createAssetPriceInput">Market Price</label>
+                                <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
+                            </div>
+                            <button id="createAssetSubmitBtn" type="submit">Create</button>
+                        </form>
+                    </section>
+
+                    <section class="delete-asset-panel workspace-card danger-card" aria-label="Delete asset">
+                        <div class="delete-asset-head">
+                            <div>
+                                <h2>Delete Asset</h2>
+                                <p>Remove an asset from portfolio.</p>
+                            </div>
+                        </div>
+                        <form id="deleteAssetForm" class="delete-asset-form">
+                            <label for="deleteAssetSelect">Asset</label>
+                            <select id="deleteAssetSelect" required></select>
+                            <button id="deleteAssetSubmitBtn" type="submit" disabled>Delete</button>
+                        </form>
+                    </section>
+                </aside>
             </section>
-
-            <section class="create-asset-panel" aria-label="Create asset">
-                <div class="create-asset-head">
-                    <h2>Create Asset</h2>
-                    <p>Add a new position to portfolio.</p>
-                </div>
-                <form id="createAssetForm" class="create-asset-form">
-                    <div class="create-asset-field">
-                        <label for="createAssetIdInput">ID</label>
-                        <input id="createAssetIdInput" type="text" required />
-                    </div>
-                    <div class="create-asset-field">
-                        <label for="createAssetNameInput">Name</label>
-                        <input id="createAssetNameInput" type="text" required />
-                    </div>
-                    <div class="create-asset-field">
-                        <label for="createAssetCurrencySelect">Currency</label>
-                        <select id="createAssetCurrencySelect" required>
-                            <option value="USD" selected>USD</option>
-                            <option value="CNY">CNY</option>
-                        </select>
-                    </div>
-                    <div class="create-asset-field">
-                        <label for="createAssetPositionInput">Position Size</label>
-                        <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
-                    </div>
-                    <div class="create-asset-field">
-                        <label for="createAssetPriceInput">Market Price</label>
-                        <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
-                    </div>
-                    <button id="createAssetSubmitBtn" type="submit">Create</button>
-                </form>
-            </section>
-
-            <section class="delete-asset-panel" aria-label="Delete asset">
-                <div class="delete-asset-head">
-                    <h2>Delete Asset</h2>
-                    <p>Remove an asset from portfolio.</p>
-                </div>
-                <form id="deleteAssetForm" class="delete-asset-form">
-                    <label for="deleteAssetSelect">Asset</label>
-                    <select id="deleteAssetSelect" required></select>
-                    <button id="deleteAssetSubmitBtn" type="submit" disabled>Delete</button>
-                </form>
-            </section>
-
-            <div class="table-wrap">
-                <table>
-                    <caption>Portfolio in Details</caption>
-                    <thead>
-                        <tr class="head-row">
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Currency</th>
-                            <th>Position Size</th>
-                            <th>Market Price</th>
-                            <th>Market Value (USD)</th>
-                            <th>Market Value (CNY)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="portfolioTableBody"></tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td>Total</td>
-                            <td colspan="4"></td>
-                            <td id="usdTotal"></td>
-                            <td id="cnyTotal"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
 
             <footer class="market-footer">
                 <p id="marketDataFooter">
