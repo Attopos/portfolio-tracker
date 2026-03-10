@@ -44,6 +44,7 @@ let lastMarketRequestAt = 0;
 let marketConsecutiveFailures = 0;
 let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
+let currentLocalUserId = null;
 
 // Small UI helper for Google auth status text.
 function setAuthStatus(message, isError) {
@@ -81,13 +82,27 @@ async function handleCredentialResponse(response) {
 
     if (!res.ok || !data || data.ok !== true) {
       const message = data && data.error ? data.error : "Google token verification failed.";
+      currentLocalUserId = null;
       setAuthStatus(message, true);
       return;
     }
 
+    const localUserId = Number(data && data.user && data.user.id);
+    if (!Number.isInteger(localUserId) || localUserId <= 0) {
+      currentLocalUserId = null;
+      setAuthStatus("Backend auth response missing a valid local user id.", true);
+      return;
+    }
+
+    currentLocalUserId = localUserId;
+    console.log("Current local user id:", currentLocalUserId);
+
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
     setAuthStatus("Google token verified by backend.", false);
   } catch (error) {
     console.error("Google auth request failed:", error);
+    currentLocalUserId = null;
     setAuthStatus("Google auth request failed.", true);
   }
 }
@@ -302,6 +317,14 @@ function getRowByAssetId(assetId) {
 
 function formatCurrency(value, symbol) {
   return symbol + VALUE_FORMATTER.format(value);
+}
+
+function getCurrentUserIdOrThrow() {
+  const userId = Number(currentLocalUserId);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("Please sign in with Google first.");
+  }
+  return userId;
 }
 
 function setCryptoStatus(message, isError) {
@@ -1064,7 +1087,10 @@ function updateTotals() {
 }
 
 async function fetchPositionsFromServer() {
-  const res = await fetch(getApiUrl("/api/positions"));
+  const userId = getCurrentUserIdOrThrow();
+  const res = await fetch(
+    getApiUrl("/api/positions?userId=" + encodeURIComponent(String(userId)))
+  );
   if (!res.ok) {
     throw new Error("Failed to fetch positions");
   }
@@ -1072,12 +1098,13 @@ async function fetchPositionsFromServer() {
 }
 
 async function updatePositionOnServer(assetId, position) {
+  const userId = getCurrentUserIdOrThrow();
   const res = await fetch(getApiUrl("/api/positions/" + encodeURIComponent(assetId)), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ position }),
+    body: JSON.stringify({ position, userId }),
   });
 
   if (!res.ok) {
@@ -1097,12 +1124,20 @@ async function updatePositionOnServer(assetId, position) {
 }
 
 async function createPositionOnServer(payload) {
+  const userId = getCurrentUserIdOrThrow();
   const res = await fetch(getApiUrl("/api/positions"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      id: payload.id,
+      name: payload.name,
+      currency: payload.currency,
+      position: payload.position,
+      price: payload.price,
+      userId,
+    }),
   });
 
   if (!res.ok) {
@@ -1123,7 +1158,14 @@ async function createPositionOnServer(payload) {
 }
 
 async function deletePositionOnServer(assetId) {
-  const res = await fetch(getApiUrl("/api/positions/" + encodeURIComponent(assetId)), {
+  const userId = getCurrentUserIdOrThrow();
+  const deleteUrl = getApiUrl(
+    "/api/positions/" +
+      encodeURIComponent(assetId) +
+      "?userId=" +
+      encodeURIComponent(String(userId))
+  );
+  const res = await fetch(deleteUrl, {
     method: "DELETE",
   });
 
@@ -1301,7 +1343,4 @@ fillDeleteAssetOptions();
 syncPositionInputWithSelectedAsset();
 bindPersistenceEvents();
 startMarketAutoRefresh();
-fetchPositionsFromServer()
-  .then(replacePortfolioRows)
-  .catch(console.error);
 initGoogleSignInWhenReady(0);

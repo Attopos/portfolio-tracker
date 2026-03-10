@@ -3,6 +3,7 @@ const cors = require("cors");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const positionsRouter = require("./routes/positions");
+const pool = require("./db");
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -27,6 +28,30 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
+async function findOrCreateLocalUser(googleProfile) {
+  const selectSql = "SELECT * FROM users WHERE google_sub = $1";
+  const selectParams = [googleProfile.sub];
+  const existingResult = await pool.query(selectSql, selectParams);
+
+  if (existingResult.rowCount > 0) {
+    return existingResult.rows[0];
+  }
+
+  const insertSql = `
+    INSERT INTO users (google_sub, email, name, avatar_url)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *;
+  `;
+  const insertParams = [
+    googleProfile.sub,
+    googleProfile.email,
+    googleProfile.name,
+    googleProfile.picture,
+  ];
+  const insertResult = await pool.query(insertSql, insertParams);
+  return insertResult.rows[0];
+}
+
 app.post("/auth/google", async (req, res) => {
   const credential = String(req.body && req.body.credential ? req.body.credential : "").trim();
   if (!credential) {
@@ -49,18 +74,28 @@ app.post("/auth/google", async (req, res) => {
       return res.status(401).json({ ok: false, error: "Invalid Google token." });
     }
 
-    const user = {
+    const googleUser = {
       sub: payload.sub,
       email: payload.email || "",
       name: payload.name || "",
       picture: payload.picture || "",
     };
+    const localUser = await findOrCreateLocalUser(googleUser);
 
-    console.log("Google token verified:", user);
-    return res.json({ ok: true, user });
+    console.log("Google token verified for local user:", {
+      id: localUser.id,
+      google_sub: localUser.google_sub,
+      email: localUser.email,
+    });
+    return res.json({ ok: true, user: localUser });
   } catch (error) {
-    console.error("Google token verification failed:", error);
-    return res.status(401).json({ ok: false, error: "Invalid Google token." });
+    if (error && (error.message || "").toLowerCase().includes("token")) {
+      console.error("Google token verification failed:", error.message);
+      return res.status(401).json({ ok: false, error: "Invalid Google token." });
+    }
+
+    console.error("Google auth database error:", error);
+    return res.status(500).json({ ok: false, error: "Failed to find or create local user." });
   }
 });
 

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "db:create-users": "node scripts/create-users-table.js"
+    "db:create-users": "node scripts/create-users-table.js",
+    "db:migrate-positions-user-id": "node scripts/add-user-id-to-positions.js"
   },
   "keywords": [],
   "author": "",
