@@ -42,6 +42,7 @@ let currentLocalUserProfile = null;
 let activePortfolioHistoryRange = "30d";
 let portfolioHistoryRequestId = 0;
 let currentPortfolioHistoryPoints = [];
+let positionEditSuccessTimerId = null;
 
 // Small UI helper for Google auth status text.
 function setAuthStatus(message, isError) {
@@ -1098,6 +1099,30 @@ function showPositionEditSuccessFeedback(row) {
   }, 900);
 }
 
+function setPositionEditVisualState(state) {
+  const panel = document.getElementById("action-panel-edit");
+  const signal = document.getElementById("positionEditSignal");
+  const applyBtn = document.getElementById("positionApplyBtn");
+  const nextState = String(state || "idle").trim();
+  const isSaving = nextState === "saving";
+  const isSaved = nextState === "saved";
+
+  if (panel) {
+    panel.classList.toggle("is-saving", isSaving);
+    panel.classList.toggle("is-saved", isSaved);
+  }
+
+  if (signal) {
+    signal.classList.toggle("is-saving", isSaving);
+    signal.classList.toggle("is-saved", isSaved);
+  }
+
+  if (applyBtn) {
+    applyBtn.classList.toggle("is-saving", isSaving);
+    applyBtn.classList.toggle("is-saved", isSaved);
+  }
+}
+
 function focusPositionSizeInput() {
   const input = document.getElementById("positionSizeInput");
   if (!input || input.disabled) {
@@ -1139,12 +1164,16 @@ async function applyPositionSizeUpdate(event) {
 
   const nextValue = parseCurrencyNumber(input.value);
   const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
-  const previousButtonText = applyBtn ? applyBtn.textContent : "";
+  const applyBtnLabel = applyBtn ? applyBtn.querySelector("span") : null;
+  const previousButtonText = applyBtnLabel ? applyBtnLabel.textContent : "";
 
   if (applyBtn) {
     applyBtn.disabled = true;
-    applyBtn.textContent = "Saving...";
   }
+  if (applyBtnLabel) {
+    applyBtnLabel.textContent = "Saving...";
+  }
+  setPositionEditVisualState("saving");
   select.disabled = true;
   input.disabled = true;
 
@@ -1157,8 +1186,17 @@ async function applyPositionSizeUpdate(event) {
     updateTotals();
     syncPositionInputWithSelectedAsset();
     showPositionEditSuccessFeedback(row);
+    setPositionEditVisualState("saved");
+    if (positionEditSuccessTimerId !== null) {
+      window.clearTimeout(positionEditSuccessTimerId);
+    }
+    positionEditSuccessTimerId = window.setTimeout(function () {
+      setPositionEditVisualState("idle");
+      positionEditSuccessTimerId = null;
+    }, 1400);
   } catch (error) {
     console.error("Failed to update position:", error);
+    setPositionEditVisualState("idle");
     const message =
       error && typeof error.message === "string" && error.message
         ? error.message
@@ -1167,8 +1205,11 @@ async function applyPositionSizeUpdate(event) {
   } finally {
     select.disabled = false;
     syncPositionInputWithSelectedAsset();
+    if (applyBtnLabel) {
+      applyBtnLabel.textContent = previousButtonText || "Apply";
+    }
     if (applyBtn) {
-      applyBtn.textContent = previousButtonText || "Apply";
+      applyBtn.disabled = false;
     }
   }
 }

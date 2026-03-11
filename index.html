@@ -178,6 +178,7 @@
                                         <h2>Edit Position</h2>
                                         <p>Fast path for your most common portfolio adjustment.</p>
                                     </div>
+                                    <span id="positionEditSignal" class="position-edit-signal" aria-hidden="true"></span>
                                 </div>
                                 <form id="positionEditorForm" class="position-editor-form">
                                     <label for="positionAssetSelect">Asset</label>
@@ -186,7 +187,10 @@
                                     <label for="positionSizeInput">Position Size</label>
                                     <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
 
-                                    <button id="positionApplyBtn" type="submit" disabled>Apply</button>
+                                    <button id="positionApplyBtn" type="submit" disabled>
+                                        <span>Apply</span>
+                                        <span class="position-apply-check" aria-hidden="true"></span>
+                                    </button>
                                 </form>
                             </section>
 
