@@ -30,6 +30,7 @@ const INITIAL_PORTFOLIO_ROWS = [];
 const GOOGLE_CLIENT_ID =
   "133813157158-6mmjhgrbtdg0okk6dton4c6r786p51m4.apps.googleusercontent.com";
 const API_BASE_URL = deriveApiBaseUrl();
+const PORTFOLIO_HISTORY_RANGES = ["7d", "30d", "90d", "1y"];
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let lastMarketSyncAt = "";
 let lastMarketRequestAt = 0;
@@ -38,6 +39,9 @@ let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
 let currentLocalUserId = null;
 let currentLocalUserProfile = null;
+let activePortfolioHistoryRange = "30d";
+let portfolioHistoryRequestId = 0;
+let currentPortfolioHistoryPoints = [];
 
 // Small UI helper for Google auth status text.
 function setAuthStatus(message, isError) {
@@ -90,6 +94,8 @@ function setAuthUiState(user) {
 
 function clearAuthenticatedPortfolioView() {
   replacePortfolioRows([]);
+  currentPortfolioHistoryPoints = [];
+  setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
 }
 
 // GIS callback: log token, send it to backend, and show verification status.
@@ -245,6 +251,261 @@ function setActiveActionTab(nextTab) {
     const isActive = panel.getAttribute("data-action-panel") === targetTab;
     panel.classList.toggle("is-active", isActive);
     panel.hidden = !isActive;
+  }
+}
+
+function setActivePortfolioHistoryRange(nextRange) {
+  const targetRange = PORTFOLIO_HISTORY_RANGES.includes(nextRange) ? nextRange : "30d";
+  activePortfolioHistoryRange = targetRange;
+
+  const tabs = document.querySelectorAll("[data-history-range]");
+  for (let i = 0; i < tabs.length; i++) {
+    const tab = tabs[i];
+    const isActive = tab.getAttribute("data-history-range") === targetRange;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  }
+}
+
+function setPortfolioHistoryState(message, options) {
+  const stateEl = document.getElementById("portfolioHistoryState");
+  const canvas = document.getElementById("portfolioHistoryChart");
+  const nextOptions = options && typeof options === "object" ? options : {};
+  const showState = Boolean(nextOptions.showState);
+  const isError = Boolean(nextOptions.isError);
+
+  if (stateEl) {
+    stateEl.textContent = message || "";
+    stateEl.classList.toggle("is-hidden", !showState);
+    stateEl.classList.toggle("error", isError);
+  }
+
+  if (canvas) {
+    canvas.classList.toggle("is-hidden", showState);
+  }
+}
+
+function formatCompactUsd(value) {
+  const absValue = Math.abs(value);
+  if (absValue >= 1000000) {
+    return "$" + (value / 1000000).toFixed(1) + "M";
+  }
+  if (absValue >= 1000) {
+    return "$" + (value / 1000).toFixed(1) + "K";
+  }
+  return "$" + value.toFixed(0);
+}
+
+function formatHistoryPointDate(dateString, range) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  if (range === "7d") {
+    return (
+      String(date.getMonth() + 1).padStart(2, "0") +
+      "/" +
+      String(date.getDate()).padStart(2, "0") +
+      " " +
+      String(date.getHours()).padStart(2, "0") +
+      ":00"
+    );
+  }
+
+  return (
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "/" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
+function drawPortfolioHistoryChart(points, range) {
+  const canvas = document.getElementById("portfolioHistoryChart");
+  if (!canvas) {
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+
+  const width = canvas.clientWidth || 1080;
+  const height = 320;
+  const pixelRatio = window.devicePixelRatio || 1;
+
+  canvas.width = Math.floor(width * pixelRatio);
+  canvas.height = Math.floor(height * pixelRatio);
+  canvas.style.height = height + "px";
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const chartPadding = { top: 22, right: 24, bottom: 42, left: 72 };
+  const chartWidth = width - chartPadding.left - chartPadding.right;
+  const chartHeight = height - chartPadding.top - chartPadding.bottom;
+
+  const values = points.map(function (point) {
+    return Number(point.totalUsd) || 0;
+  });
+  const minValue = Math.min.apply(null, values);
+  const maxValue = Math.max.apply(null, values);
+  const safeMinValue = minValue === maxValue ? minValue * 0.98 : minValue;
+  const safeMaxValue = minValue === maxValue ? maxValue * 1.02 + 1 : maxValue;
+
+  ctx.strokeStyle = "rgba(139, 195, 255, 0.12)";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#7c93a8";
+  ctx.font = '12px "JetBrains Mono", Menlo, monospace';
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+
+  for (let i = 0; i < 4; i++) {
+    const ratio = i / 3;
+    const y = chartPadding.top + chartHeight * ratio;
+    const gridValue = safeMaxValue - (safeMaxValue - safeMinValue) * ratio;
+    ctx.beginPath();
+    ctx.moveTo(chartPadding.left, y);
+    ctx.lineTo(chartPadding.left + chartWidth, y);
+    ctx.stroke();
+    ctx.fillText(formatCompactUsd(gridValue), chartPadding.left - 10, y);
+  }
+
+  ctx.strokeStyle = "rgba(139, 195, 255, 0.18)";
+  ctx.beginPath();
+  ctx.moveTo(chartPadding.left, chartPadding.top + chartHeight);
+  ctx.lineTo(chartPadding.left + chartWidth, chartPadding.top + chartHeight);
+  ctx.stroke();
+
+  const plottedPoints = [];
+  for (let i = 0; i < points.length; i++) {
+    const xRatio = points.length === 1 ? 0.5 : i / (points.length - 1);
+    const yRatio = (values[i] - safeMinValue) / (safeMaxValue - safeMinValue || 1);
+    plottedPoints.push({
+      x: chartPadding.left + chartWidth * xRatio,
+      y: chartPadding.top + chartHeight - chartHeight * yRatio,
+    });
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < plottedPoints.length; i++) {
+    const point = plottedPoints[i];
+    if (i === 0) {
+      ctx.moveTo(point.x, point.y);
+    } else {
+      ctx.lineTo(point.x, point.y);
+    }
+  }
+
+  ctx.strokeStyle = "#22e3a4";
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(plottedPoints[0].x, chartPadding.top + chartHeight);
+  for (let i = 0; i < plottedPoints.length; i++) {
+    ctx.lineTo(plottedPoints[i].x, plottedPoints[i].y);
+  }
+  ctx.lineTo(plottedPoints[plottedPoints.length - 1].x, chartPadding.top + chartHeight);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(34, 227, 164, 0.12)";
+  ctx.fill();
+
+  for (let i = 0; i < plottedPoints.length; i++) {
+    const point = plottedPoints[i];
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 3.2, 0, Math.PI * 2);
+    ctx.fillStyle = "#22e3a4";
+    ctx.fill();
+    ctx.strokeStyle = "#08131d";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  const labelIndexes = points.length < 3 ? [0, points.length - 1] : [0, Math.floor(points.length / 2), points.length - 1];
+  const seenIndexes = new Set();
+  ctx.fillStyle = "#7c93a8";
+  ctx.font = '12px "JetBrains Mono", Menlo, monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+
+  for (let i = 0; i < labelIndexes.length; i++) {
+    const pointIndex = labelIndexes[i];
+    if (pointIndex < 0 || pointIndex >= points.length || seenIndexes.has(pointIndex)) {
+      continue;
+    }
+    seenIndexes.add(pointIndex);
+    ctx.fillText(
+      formatHistoryPointDate(points[pointIndex].capturedAt, range),
+      plottedPoints[pointIndex].x,
+      chartPadding.top + chartHeight + 12
+    );
+  }
+}
+
+async function fetchPortfolioHistoryFromServer(range) {
+  const res = await fetch(
+    getApiUrl("/api/portfolio-history?range=" + encodeURIComponent(range)),
+    buildFetchOptions()
+  );
+
+  if (!res.ok) {
+    let message = "Failed to load portfolio history";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
+    }
+    throw new Error(message);
+  }
+
+  const payload = await res.json();
+  return Array.isArray(payload && payload.points) ? payload.points : [];
+}
+
+async function refreshPortfolioHistory(range) {
+  const nextRange = PORTFOLIO_HISTORY_RANGES.includes(range) ? range : activePortfolioHistoryRange;
+  const requestId = portfolioHistoryRequestId + 1;
+  portfolioHistoryRequestId = requestId;
+  setActivePortfolioHistoryRange(nextRange);
+
+  if (!currentLocalUserId) {
+    setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
+    return;
+  }
+
+  setPortfolioHistoryState("Loading portfolio history...", { showState: true });
+
+  try {
+    const points = await fetchPortfolioHistoryFromServer(nextRange);
+    if (requestId !== portfolioHistoryRequestId) {
+      return;
+    }
+
+    if (!Array.isArray(points) || points.length === 0) {
+      currentPortfolioHistoryPoints = [];
+      setPortfolioHistoryState("No historical snapshots yet. Your history will appear as you use the portfolio.", {
+        showState: true,
+      });
+      return;
+    }
+
+    currentPortfolioHistoryPoints = points;
+    setPortfolioHistoryState("", { showState: false });
+    drawPortfolioHistoryChart(points, nextRange);
+  } catch (error) {
+    if (requestId !== portfolioHistoryRequestId) {
+      return;
+    }
+    currentPortfolioHistoryPoints = [];
+    console.error("Failed to refresh portfolio history:", error);
+    setPortfolioHistoryState(
+      "Failed to load portfolio history. Please try again in a moment.",
+      { showState: true, isError: true }
+    );
   }
 }
 
@@ -405,6 +666,7 @@ function replacePortfolioRows(items) {
   fillPositionEditorOptions();
   fillDeleteAssetOptions();
   syncPositionInputWithSelectedAsset();
+  refreshPortfolioHistory(activePortfolioHistoryRange);
 }
 
 function getApiUrl(path) {
@@ -1388,6 +1650,7 @@ function bindPersistenceEvents() {
   const deleteAssetForm = document.getElementById("deleteAssetForm");
   const signOutButton = document.getElementById("signout-btn");
   const actionTabs = document.querySelectorAll("[data-action-tab]");
+  const historyTabs = document.querySelectorAll("[data-history-range]");
   if (positionEditorForm) {
     positionEditorForm.addEventListener("submit", applyPositionSizeUpdate);
   }
@@ -1408,13 +1671,25 @@ function bindPersistenceEvents() {
       setActiveActionTab(actionTabs[i].getAttribute("data-action-tab"));
     });
   }
+  for (let i = 0; i < historyTabs.length; i++) {
+    historyTabs[i].addEventListener("click", function () {
+      refreshPortfolioHistory(historyTabs[i].getAttribute("data-history-range"));
+    });
+  }
 
-  window.addEventListener("resize", updateAllocationChart);
+  window.addEventListener("resize", function () {
+    updateAllocationChart();
+    if (currentPortfolioHistoryPoints.length) {
+      drawPortfolioHistoryChart(currentPortfolioHistoryPoints, activePortfolioHistoryRange);
+    }
+  });
 }
 
 window.replacePortfolioRows = replacePortfolioRows;
 setAuthUiState(null);
 setActiveActionTab("edit");
+setActivePortfolioHistoryRange(activePortfolioHistoryRange);
+setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
 restoreMarketFeedSnapshot();
 migrateCnyRowsPositionPriceSwap();

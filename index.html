@@ -253,6 +253,60 @@
                 </aside>
             </section>
 
+            <section class="workspace-card history-card" aria-label="Portfolio value over time">
+                <div class="section-head history-head">
+                    <div>
+                        <h2>Portfolio Value Over Time</h2>
+                        <p>Track total portfolio value over time in USD.</p>
+                    </div>
+                    <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
+                        <button
+                            class="history-range-tab"
+                            type="button"
+                            data-history-range="7d"
+                            aria-selected="false"
+                        >
+                            7D
+                        </button>
+                        <button
+                            class="history-range-tab is-active"
+                            type="button"
+                            data-history-range="30d"
+                            aria-selected="true"
+                        >
+                            30D
+                        </button>
+                        <button
+                            class="history-range-tab"
+                            type="button"
+                            data-history-range="90d"
+                            aria-selected="false"
+                        >
+                            90D
+                        </button>
+                        <button
+                            class="history-range-tab"
+                            type="button"
+                            data-history-range="1y"
+                            aria-selected="false"
+                        >
+                            1Y
+                        </button>
+                    </div>
+                </div>
+                <div class="history-chart-shell">
+                    <canvas
+                        id="portfolioHistoryChart"
+                        width="1080"
+                        height="320"
+                        aria-label="Portfolio value history line chart"
+                    ></canvas>
+                    <div id="portfolioHistoryState" class="history-state">
+                        Sign in to load portfolio history.
+                    </div>
+                </div>
+            </section>
+
             <footer class="market-footer">
                 <p id="marketDataFooter">
                     FX USD/CNY: -- | Updated: --

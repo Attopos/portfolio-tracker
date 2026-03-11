@@ -327,6 +327,83 @@ tr.selected-asset-row td {
     text-align: right;
 }
 
+.history-card {
+    margin: 0 0.9rem 1rem;
+}
+
+.history-head {
+    align-items: center;
+}
+
+.history-range-tabs {
+    display: inline-grid;
+    grid-template-columns: repeat(4, minmax(0, auto));
+    gap: 0.45rem;
+}
+
+.history-range-tab {
+    border: 1px solid rgba(139, 195, 255, 0.18);
+    background: rgba(8, 18, 28, 0.78);
+    color: #b7d3e8;
+    border-radius: 999px;
+    padding: 0.48rem 0.78rem;
+    font: inherit;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.history-range-tab:hover {
+    border-color: rgba(139, 195, 255, 0.36);
+    background: rgba(12, 28, 42, 0.92);
+    transform: translateY(-1px);
+}
+
+.history-range-tab.is-active {
+    border-color: rgba(34, 227, 164, 0.4);
+    background: rgba(15, 49, 43, 0.9);
+    color: #dcfff1;
+}
+
+.history-chart-shell {
+    position: relative;
+    min-height: 320px;
+    padding: 1rem;
+}
+
+#portfolioHistoryChart {
+    width: 100%;
+    min-height: 320px;
+    display: block;
+}
+
+#portfolioHistoryChart.is-hidden {
+    display: none;
+}
+
+.history-state {
+    position: absolute;
+    inset: 1rem;
+    border: 1px dashed rgba(139, 195, 255, 0.18);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+    color: var(--muted);
+    background: rgba(8, 15, 23, 0.36);
+}
+
+.history-state.is-hidden {
+    display: none;
+}
+
+.history-state.error {
+    color: #ffb1b1;
+    border-color: rgba(255, 122, 122, 0.28);
+}
+
 @media (max-width: 768px) {
     .page {
         padding: 0.85rem 0.55rem;
@@ -375,12 +452,35 @@ tr.selected-asset-row td {
         grid-template-columns: 1fr;
     }
 
+    .history-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .history-range-tabs {
+        width: 100%;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .history-chart-shell {
+        min-height: 280px;
+        padding: 0.8rem;
+    }
+
+    #portfolioHistoryChart {
+        min-height: 280px;
+    }
+
     .subtitle {
         font-size: 0.82rem;
     }
 
     .table-wrap {
         padding: 0.65rem;
+    }
+
+    .history-card {
+        margin: 0 0.55rem 0.9rem;
     }
 }
 

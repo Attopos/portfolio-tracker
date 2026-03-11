@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const { recordPortfolioSnapshotForUser } = require("./portfolio-history");
 
 const router = express.Router();
 
@@ -36,6 +37,14 @@ function requireAuth(req, res, next) {
   return next();
 }
 
+async function safeRecordPortfolioSnapshot(userId) {
+  try {
+    await recordPortfolioSnapshotForUser(userId);
+  } catch (error) {
+    console.error("Failed to record portfolio snapshot:", error);
+  }
+}
+
 router.use(requireAuth);
 
 router.get("/", async (req, res) => {
@@ -44,6 +53,7 @@ router.get("/", async (req, res) => {
       "SELECT id, name, currency, position, price FROM positions WHERE user_id = $1 ORDER BY id",
       [req.userId]
     );
+    await safeRecordPortfolioSnapshot(req.userId);
     return res.json(result.rows);
   } catch (error) {
     console.error("Failed to read positions from database:", error);
@@ -73,6 +83,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Position not found" });
     }
 
+    await safeRecordPortfolioSnapshot(req.userId);
     return res.json(result.rows[0]);
   } catch (error) {
     console.error("Failed to update position in database:", error);
@@ -97,6 +108,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Position not found" });
     }
 
+    await safeRecordPortfolioSnapshot(req.userId);
     return res.json(result.rows[0]);
   } catch (error) {
     console.error("Failed to delete position in database:", error);
@@ -134,6 +146,7 @@ router.post("/", async (req, res) => {
       [req.userId, assetId, name, currency, position, price]
     );
 
+    await safeRecordPortfolioSnapshot(req.userId);
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error && error.code === "23505") {
