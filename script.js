@@ -60,8 +60,6 @@ function setAuthUiState(user) {
   const loggedInEl = document.getElementById("auth-logged-in");
   const nameEl = document.getElementById("auth-user-name");
   const emailEl = document.getElementById("auth-user-email");
-  const sessionStateEl = document.getElementById("summarySessionState");
-  const sessionMetaEl = document.getElementById("summarySessionMeta");
   const hasUser = Boolean(user && user.id);
 
   if (loggedOutEl) {
@@ -80,16 +78,6 @@ function setAuthUiState(user) {
 
   if (emailEl) {
     emailEl.textContent = hasUser ? String(user.email || "").trim() : "";
-  }
-
-  if (sessionStateEl) {
-    sessionStateEl.textContent = hasUser ? "Signed in" : "Signed out";
-  }
-
-  if (sessionMetaEl) {
-    sessionMetaEl.textContent = hasUser
-      ? String(user.email || user.name || "Backend session active").trim()
-      : "Sign in to load your portfolio.";
   }
 }
 
