@@ -285,6 +285,81 @@ function formatCompactUsd(value) {
   return "$" + value.toFixed(0);
 }
 
+function formatHistoryAxisUsd(value, span) {
+  const absValue = Math.abs(value);
+  const safeSpan = Math.abs(Number(span)) || 0;
+
+  if (absValue >= 1000000) {
+    const decimals = safeSpan >= 100000 ? 1 : safeSpan >= 10000 ? 2 : safeSpan >= 1000 ? 3 : 4;
+    return "$" + (value / 1000000).toFixed(decimals) + "M";
+  }
+
+  if (absValue >= 1000) {
+    const decimals = safeSpan >= 10000 ? 1 : safeSpan >= 1000 ? 2 : safeSpan >= 100 ? 3 : 4;
+    return "$" + (value / 1000).toFixed(decimals) + "K";
+  }
+
+  const decimals = safeSpan >= 10 ? 0 : safeSpan >= 1 ? 1 : 2;
+  return "$" + value.toFixed(decimals);
+}
+
+function normalizeHistoryValues(values) {
+  const numericValues = Array.isArray(values)
+    ? values.map(function (value) {
+        return Number(value) || 0;
+      })
+    : [];
+
+  if (numericValues.length === 0) {
+    return {
+      values: [],
+      minValue: 0,
+      maxValue: 0,
+      displayMinValue: 0,
+      displayMaxValue: 1,
+      displaySpan: 1,
+      isEffectivelyFlat: true,
+    };
+  }
+
+  const minValue = Math.min.apply(null, numericValues);
+  const maxValue = Math.max.apply(null, numericValues);
+  const valueRange = maxValue - minValue;
+  const referenceValue = Math.max(Math.abs(minValue), Math.abs(maxValue), 1);
+  const flattenTolerance = Math.max(0.01, referenceValue * 0.00001);
+  const isEffectivelyFlat = valueRange <= flattenTolerance;
+
+  if (isEffectivelyFlat) {
+    const averageValue =
+      numericValues.reduce(function (sum, value) {
+        return sum + value;
+      }, 0) / numericValues.length;
+    const padding = Math.max(flattenTolerance * 4, Math.abs(averageValue) * 0.01, 1);
+
+    return {
+      values: numericValues.map(function () {
+        return averageValue;
+      }),
+      minValue,
+      maxValue,
+      displayMinValue: averageValue - padding,
+      displayMaxValue: averageValue + padding,
+      displaySpan: padding * 2,
+      isEffectivelyFlat: true,
+    };
+  }
+
+  return {
+    values: numericValues,
+    minValue,
+    maxValue,
+    displayMinValue: minValue,
+    displayMaxValue: maxValue,
+    displaySpan: valueRange,
+    isEffectivelyFlat: false,
+  };
+}
+
 function formatHistoryPointDate(dateString, range) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) {
@@ -337,10 +412,10 @@ function drawPortfolioHistoryChart(points, range) {
   const values = points.map(function (point) {
     return Number(point.totalUsd) || 0;
   });
-  const minValue = Math.min.apply(null, values);
-  const maxValue = Math.max.apply(null, values);
-  const safeMinValue = minValue === maxValue ? minValue * 0.98 : minValue;
-  const safeMaxValue = minValue === maxValue ? maxValue * 1.02 + 1 : maxValue;
+  const normalizedValues = normalizeHistoryValues(values);
+  const safeMinValue = normalizedValues.displayMinValue;
+  const safeMaxValue = normalizedValues.displayMaxValue;
+  const safeValueSpan = safeMaxValue - safeMinValue || 1;
 
   ctx.strokeStyle = "rgba(139, 195, 255, 0.12)";
   ctx.lineWidth = 1;
@@ -357,7 +432,7 @@ function drawPortfolioHistoryChart(points, range) {
     ctx.moveTo(chartPadding.left, y);
     ctx.lineTo(chartPadding.left + chartWidth, y);
     ctx.stroke();
-    ctx.fillText(formatCompactUsd(gridValue), chartPadding.left - 10, y);
+    ctx.fillText(formatHistoryAxisUsd(gridValue, normalizedValues.displaySpan), chartPadding.left - 10, y);
   }
 
   ctx.strokeStyle = "rgba(139, 195, 255, 0.18)";
@@ -369,7 +444,7 @@ function drawPortfolioHistoryChart(points, range) {
   const plottedPoints = [];
   for (let i = 0; i < points.length; i++) {
     const xRatio = points.length === 1 ? 0.5 : i / (points.length - 1);
-    const yRatio = (values[i] - safeMinValue) / (safeMaxValue - safeMinValue || 1);
+    const yRatio = (normalizedValues.values[i] - safeMinValue) / safeValueSpan;
     plottedPoints.push({
       x: chartPadding.left + chartWidth * xRatio,
       y: chartPadding.top + chartHeight - chartHeight * yRatio,
