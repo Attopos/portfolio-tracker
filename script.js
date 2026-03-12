@@ -285,21 +285,22 @@ function formatCompactUsd(value) {
   return "$" + value.toFixed(0);
 }
 
-function formatHistoryAxisUsd(value, span) {
+function formatHistoryAxisUsd(value, span, precisionBoost) {
   const absValue = Math.abs(value);
   const safeSpan = Math.abs(Number(span)) || 0;
+  const extraPrecision = Math.max(0, Number(precisionBoost) || 0);
 
   if (absValue >= 1000000) {
-    const decimals = safeSpan >= 100000 ? 1 : safeSpan >= 10000 ? 2 : safeSpan >= 1000 ? 3 : 4;
+    const decimals = (safeSpan >= 100000 ? 1 : safeSpan >= 10000 ? 2 : safeSpan >= 1000 ? 3 : 4) + extraPrecision;
     return "$" + (value / 1000000).toFixed(decimals) + "M";
   }
 
   if (absValue >= 1000) {
-    const decimals = safeSpan >= 10000 ? 1 : safeSpan >= 1000 ? 2 : safeSpan >= 100 ? 3 : 4;
+    const decimals = (safeSpan >= 10000 ? 1 : safeSpan >= 1000 ? 2 : safeSpan >= 100 ? 3 : 4) + extraPrecision;
     return "$" + (value / 1000).toFixed(decimals) + "K";
   }
 
-  const decimals = safeSpan >= 10 ? 0 : safeSpan >= 1 ? 1 : 2;
+  const decimals = (safeSpan >= 10 ? 0 : safeSpan >= 1 ? 1 : 2) + extraPrecision;
   return "$" + value.toFixed(decimals);
 }
 
@@ -360,6 +361,123 @@ function normalizeHistoryValues(values) {
   };
 }
 
+function getHistoryDateKey(dateString) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return (
+    String(date.getFullYear()) +
+    "-" +
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
+function preparePortfolioHistoryPoints(points, range) {
+  const normalizedPoints = Array.isArray(points)
+    ? points
+        .filter(function (point) {
+          return point && !Number.isNaN(new Date(point.capturedAt).getTime());
+        })
+        .slice()
+        .sort(function (left, right) {
+          return new Date(left.capturedAt).getTime() - new Date(right.capturedAt).getTime();
+        })
+    : [];
+
+  if (normalizedPoints.length <= 1) {
+    return normalizedPoints;
+  }
+
+  const firstPointAt = new Date(normalizedPoints[0].capturedAt).getTime();
+  const lastPointAt = new Date(normalizedPoints[normalizedPoints.length - 1].capturedAt).getTime();
+  if (lastPointAt - firstPointAt < 24 * 60 * 60 * 1000) {
+    return [normalizedPoints[normalizedPoints.length - 1]];
+  }
+
+  if (range === "7d") {
+    return normalizedPoints;
+  }
+
+  const lastPointByDay = new Map();
+  for (let i = 0; i < normalizedPoints.length; i++) {
+    const point = normalizedPoints[i];
+    const dateKey = getHistoryDateKey(point.capturedAt);
+    if (!dateKey) {
+      continue;
+    }
+    lastPointByDay.set(dateKey, point);
+  }
+
+  return Array.from(lastPointByDay.values()).sort(function (left, right) {
+    return new Date(left.capturedAt).getTime() - new Date(right.capturedAt).getTime();
+  });
+}
+
+function getNiceHistoryStep(roughStep) {
+  const safeStep = Math.abs(Number(roughStep)) || 1;
+  const exponent = Math.floor(Math.log10(safeStep));
+  const fraction = safeStep / Math.pow(10, exponent);
+  let niceFraction = 1;
+
+  if (fraction <= 1) {
+    niceFraction = 1;
+  } else if (fraction <= 2) {
+    niceFraction = 2;
+  } else if (fraction <= 5) {
+    niceFraction = 5;
+  } else {
+    niceFraction = 10;
+  }
+
+  return niceFraction * Math.pow(10, exponent);
+}
+
+function buildHistoryAxisTicks(minValue, maxValue, tickCount) {
+  const safeTickCount = Math.max(2, Number(tickCount) || 4);
+  const safeMinValue = Number(minValue) || 0;
+  const safeMaxValue = Number(maxValue) || 0;
+  const span = Math.max(safeMaxValue - safeMinValue, 1e-9);
+  const step = getNiceHistoryStep(span / (safeTickCount - 1));
+  let axisMin = Math.floor(safeMinValue / step) * step;
+  let axisMax = axisMin + step * (safeTickCount - 1);
+
+  if (axisMax < safeMaxValue) {
+    axisMax = Math.ceil(safeMaxValue / step) * step;
+    axisMin = axisMax - step * (safeTickCount - 1);
+  }
+
+  const ticks = [];
+  for (let i = 0; i < safeTickCount; i++) {
+    ticks.push(axisMin + step * i);
+  }
+
+  return {
+    minValue: axisMin,
+    maxValue: axisMax,
+    step,
+    ticks,
+  };
+}
+
+function buildHistoryAxisTickLabels(ticks, span) {
+  for (let precisionBoost = 0; precisionBoost <= 6; precisionBoost++) {
+    const labels = ticks.map(function (tick) {
+      return formatHistoryAxisUsd(tick, span, precisionBoost);
+    });
+    if (new Set(labels).size === labels.length) {
+      return labels;
+    }
+  }
+
+  return ticks.map(function (tick) {
+    return "$" + tick.toFixed(2);
+  });
+}
+
 function formatHistoryPointDate(dateString, range) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) {
@@ -413,8 +531,10 @@ function drawPortfolioHistoryChart(points, range) {
     return Number(point.totalUsd) || 0;
   });
   const normalizedValues = normalizeHistoryValues(values);
-  const safeMinValue = normalizedValues.displayMinValue;
-  const safeMaxValue = normalizedValues.displayMaxValue;
+  const axis = buildHistoryAxisTicks(normalizedValues.displayMinValue, normalizedValues.displayMaxValue, 4);
+  const axisLabels = buildHistoryAxisTickLabels(axis.ticks, axis.maxValue - axis.minValue);
+  const safeMinValue = axis.minValue;
+  const safeMaxValue = axis.maxValue;
   const safeValueSpan = safeMaxValue - safeMinValue || 1;
 
   ctx.strokeStyle = "rgba(139, 195, 255, 0.12)";
@@ -424,15 +544,15 @@ function drawPortfolioHistoryChart(points, range) {
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
 
-  for (let i = 0; i < 4; i++) {
-    const ratio = i / 3;
+  for (let i = 0; i < axis.ticks.length; i++) {
+    const ratio = i / (axis.ticks.length - 1 || 1);
     const y = chartPadding.top + chartHeight * ratio;
-    const gridValue = safeMaxValue - (safeMaxValue - safeMinValue) * ratio;
+    const labelIndex = axis.ticks.length - 1 - i;
     ctx.beginPath();
     ctx.moveTo(chartPadding.left, y);
     ctx.lineTo(chartPadding.left + chartWidth, y);
     ctx.stroke();
-    ctx.fillText(formatHistoryAxisUsd(gridValue, normalizedValues.displaySpan), chartPadding.left - 10, y);
+    ctx.fillText(axisLabels[labelIndex], chartPadding.left - 10, y);
   }
 
   ctx.strokeStyle = "rgba(139, 195, 255, 0.18)";
@@ -544,7 +664,7 @@ async function refreshPortfolioHistory(range) {
   setPortfolioHistoryState("Loading portfolio history...", { showState: true });
 
   try {
-    const points = await fetchPortfolioHistoryFromServer(nextRange);
+    const points = preparePortfolioHistoryPoints(await fetchPortfolioHistoryFromServer(nextRange), nextRange);
     if (requestId !== portfolioHistoryRequestId) {
       return;
     }
