@@ -1008,70 +1008,14 @@ tr.position-edit-success td {
 }
 
 .breakdown-content {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 1rem;
-    align-items: center;
+    display: block;
     padding: 1rem;
 }
 
 #allocationChart {
-    width: 320px;
-    max-width: 100%;
-    height: auto;
-    margin: 0 auto;
+    width: 100%;
+    min-height: 420px;
     display: block;
-}
-
-.allocation-legend {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 0.45rem;
-    align-content: start;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    border: 1px solid var(--line);
-    background: rgba(8, 15, 23, 0.8);
-    padding: 0.45rem 0.55rem;
-}
-
-.legend-left {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
-}
-
-.legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex: none;
-}
-
-.legend-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #d3e4f2;
-    font-size: 0.85rem;
-}
-
-.legend-right {
-    color: #9fffd8;
-    font-size: 0.85rem;
-}
-
-.legend-empty {
-    color: var(--muted);
-    font-size: 0.86rem;
 }
 
 .portfolio-table-card .table-wrap {
@@ -1089,12 +1033,7 @@ tr.position-edit-success td {
     }
 
     .breakdown-content {
-        grid-template-columns: 1fr;
-        justify-items: center;
-    }
-
-    .allocation-legend {
-        width: 100%;
+        padding: 0.85rem;
     }
 }
 

@@ -1709,6 +1709,19 @@ function getAllocationData() {
   return allocation;
 }
 
+function truncateAllocationLabel(label, maxLength) {
+  if (typeof label !== "string") {
+    return "";
+  }
+
+  const trimmed = label.trim();
+  if (trimmed.length <= maxLength) {
+    return trimmed;
+  }
+
+  return trimmed.slice(0, Math.max(0, maxLength - 1)) + "…";
+}
+
 function drawAllocationPieChart(items) {
   const canvas = document.getElementById("allocationChart");
   if (!canvas) {
@@ -1721,22 +1734,30 @@ function drawAllocationPieChart(items) {
   }
 
   const pixelRatio = window.devicePixelRatio || 1;
-  const size = 320;
-  canvas.width = Math.floor(size * pixelRatio);
-  canvas.height = Math.floor(size * pixelRatio);
-  canvas.style.width = size + "px";
-  canvas.style.height = size + "px";
+  const cssWidth = Math.max(320, Math.floor(canvas.clientWidth || 640));
+  const cssHeight = window.innerWidth <= 640 ? 360 : 420;
+  canvas.width = Math.floor(cssWidth * pixelRatio);
+  canvas.height = Math.floor(cssHeight * pixelRatio);
+  canvas.style.width = cssWidth + "px";
+  canvas.style.height = cssHeight + "px";
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-  ctx.clearRect(0, 0, size, size);
+  ctx.clearRect(0, 0, cssWidth, cssHeight);
 
   const total = items.reduce(function (sum, item) {
     return sum + item.value;
   }, 0);
 
-  const centerX = size / 2;
-  const centerY = size / 2;
-  const radius = 124;
+  const centerX = cssWidth <= 720 ? cssWidth / 2 : Math.round(cssWidth * 0.43);
+  const centerY = Math.round(cssHeight / 2);
+  const outerRadius = Math.min(128, Math.max(92, Math.round(cssWidth * 0.17)));
+  const innerRadius = Math.round(outerRadius * 0.58);
+  const connectorRadius = outerRadius + 12;
+  const labelMargin = 18;
+  const rightAnchorX = cssWidth - 18;
+  const leftAnchorX = 18;
+  const percentGap = 6;
+  const valueFont = window.innerWidth <= 640 ? "bold 16px JetBrains Mono, Menlo, monospace" : "bold 20px JetBrains Mono, Menlo, monospace";
 
   if (!total) {
     ctx.fillStyle = "#7c93a8";
@@ -1746,76 +1767,154 @@ function drawAllocationPieChart(items) {
     return;
   }
 
+  const segments = [];
   let startAngle = -Math.PI / 2;
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     const angle = (item.value / total) * Math.PI * 2;
     const endAngle = startAngle + angle;
+    const color = PIE_COLORS[i % PIE_COLORS.length];
 
     ctx.beginPath();
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+    ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
     ctx.closePath();
-    ctx.fillStyle = PIE_COLORS[i % PIE_COLORS.length];
+    ctx.fillStyle = color;
     ctx.fill();
+
+    segments.push({
+      color,
+      label: item.label,
+      percent: (item.value / total) * 100,
+      midAngle: startAngle + angle / 2,
+    });
 
     startAngle = endAngle;
   }
 
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, 62, 0, Math.PI * 2);
-  ctx.fillStyle = "#0a1118";
-  ctx.fill();
-
   ctx.fillStyle = "#7c93a8";
   ctx.font = "12px JetBrains Mono, Menlo, monospace";
   ctx.textAlign = "center";
-  ctx.fillText("TOTAL USD", centerX, centerY - 8);
-
-  ctx.fillStyle = "#22e3a4";
-  ctx.font = "bold 14px JetBrains Mono, Menlo, monospace";
-  ctx.fillText("$" + total.toFixed(2), centerX, centerY + 10);
+  ctx.fillText("TOTAL CNY", centerX, centerY - 18);
 
   const totalCny = total * cnyPerUsdRate;
+  ctx.fillStyle = "#22e3a4";
+  ctx.font = valueFont;
+  ctx.fillText("¥" + totalCny.toFixed(2), centerX, centerY + 8);
+
   ctx.fillStyle = "#a8ceff";
   ctx.font = "12px JetBrains Mono, Menlo, monospace";
-  ctx.fillText("¥" + totalCny.toFixed(2), centerX, centerY + 30);
-}
+  ctx.fillText("$" + total.toFixed(2), centerX, centerY + 28);
 
-function renderAllocationLegend(items) {
-  const legend = document.getElementById("allocationLegend");
-  if (!legend) {
-    return;
+  const leftLabels = [];
+  const rightLabels = [];
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    const cos = Math.cos(segment.midAngle);
+    const sin = Math.sin(segment.midAngle);
+    const elbowX = centerX + connectorRadius * cos;
+    const elbowY = centerY + connectorRadius * sin;
+    const side = cos >= 0 ? "right" : "left";
+    const anchorX = side === "right" ? rightAnchorX : leftAnchorX;
+    const label = {
+      color: segment.color,
+      label: truncateAllocationLabel(segment.label, cssWidth <= 640 ? 10 : 14),
+      percentText: segment.percent.toFixed(1) + "%",
+      dotX: side === "right" ? elbowX + labelMargin : elbowX - labelMargin,
+      elbowX,
+      elbowY,
+      anchorX,
+      targetY: elbowY,
+      side,
+    };
+
+    if (side === "right") {
+      rightLabels.push(label);
+    } else {
+      leftLabels.push(label);
+    }
   }
 
-  const total = items.reduce(function (sum, item) {
-    return sum + item.value;
-  }, 0);
+  function layoutLabels(list) {
+    const topLimit = 34;
+    const bottomLimit = cssHeight - 34;
+    const minGap = 26;
+    list.sort(function (a, b) {
+      return a.targetY - b.targetY;
+    });
 
-  if (!total || !items.length) {
-    legend.innerHTML = '<li class="legend-empty">No positions with market value yet.</li>';
-    return;
+    for (let i = 0; i < list.length; i++) {
+      if (i === 0) {
+        list[i].y = Math.max(topLimit, list[i].targetY);
+        continue;
+      }
+
+      list[i].y = Math.max(list[i].targetY, list[i - 1].y + minGap);
+    }
+
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (i === list.length - 1) {
+        list[i].y = Math.min(bottomLimit, list[i].y);
+        continue;
+      }
+
+      list[i].y = Math.min(list[i].y, list[i + 1].y - minGap);
+    }
   }
 
-  let html = "";
+  layoutLabels(leftLabels);
+  layoutLabels(rightLabels);
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const color = PIE_COLORS[i % PIE_COLORS.length];
-    const percent = ((item.value / total) * 100).toFixed(1);
+  function drawLabels(list) {
+    for (let i = 0; i < list.length; i++) {
+      const item = list[i];
+      const direction = item.side === "right" ? 1 : -1;
+      const textAlign = item.side === "right" ? "left" : "right";
+      const labelX = item.dotX + direction * 10;
+      const percentWidth = ctx.measureText(item.percentText).width;
+      const labelWidth = ctx.measureText(item.label).width;
+      const totalWidth = labelWidth + percentGap + percentWidth;
+      const endX =
+        item.side === "right"
+          ? Math.min(labelX - 6, item.anchorX - totalWidth)
+          : Math.max(labelX + 6, item.anchorX + totalWidth);
 
-    html +=
-      '<li class="legend-item">' +
-      '<span class="legend-left">' +
-      '<span class="legend-dot" style="background:' + color + '"></span>' +
-      '<span class="legend-name">' + item.label + "</span>" +
-      "</span>" +
-      '<span class="legend-right">' + percent + "%</span>" +
-      "</li>";
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX + outerRadius * Math.cos(Math.atan2(item.elbowY - centerY, item.elbowX - centerX)), centerY + outerRadius * Math.sin(Math.atan2(item.elbowY - centerY, item.elbowX - centerX)));
+      ctx.lineTo(item.elbowX, item.elbowY);
+      ctx.lineTo(endX, item.y);
+      ctx.stroke();
+
+      ctx.fillStyle = item.color;
+      ctx.beginPath();
+      ctx.arc(item.dotX, item.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.textBaseline = "middle";
+      ctx.textAlign = textAlign;
+      ctx.fillStyle = "#d3e4f2";
+      ctx.font = "13px JetBrains Mono, Menlo, monospace";
+
+      if (item.side === "right") {
+        ctx.fillText(item.label, labelX, item.y);
+        ctx.fillStyle = "#b8f7df";
+        ctx.fillText(item.percentText, item.anchorX, item.y);
+      } else {
+        ctx.fillStyle = "#b8f7df";
+        ctx.fillText(item.percentText, item.anchorX, item.y);
+        ctx.fillStyle = "#d3e4f2";
+        ctx.fillText(item.label, item.anchorX - percentWidth - percentGap, item.y);
+      }
+    }
   }
 
-  legend.innerHTML = html;
+  ctx.font = "13px JetBrains Mono, Menlo, monospace";
+  drawLabels(leftLabels);
+  drawLabels(rightLabels);
 }
 
 function updateAllocationChart() {
@@ -1823,7 +1922,6 @@ function updateAllocationChart() {
     return b.value - a.value;
   });
   drawAllocationPieChart(items);
-  renderAllocationLegend(items);
 }
 
 function updateTotals() {
