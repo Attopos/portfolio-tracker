@@ -5,6 +5,7 @@ const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const positionsRouter = require("./routes/positions");
 const portfolioHistoryRouter = require("./routes/portfolio-history").router;
+const transactionsRouter = require("./routes/transactions");
 const pool = require("./db");
 
 const app = express();
@@ -173,6 +174,7 @@ app.post("/auth/logout", (req, res) => {
 });
 
 app.use("/api/positions", positionsRouter);
+app.use("/api/transactions", transactionsRouter);
 app.use("/api/portfolio-history", portfolioHistoryRouter);
 
 app.listen(port, () => {

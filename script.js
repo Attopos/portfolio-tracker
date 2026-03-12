@@ -31,6 +31,7 @@ const GOOGLE_CLIENT_ID =
   "133813157158-6mmjhgrbtdg0okk6dton4c6r786p51m4.apps.googleusercontent.com";
 const API_BASE_URL = deriveApiBaseUrl();
 const PORTFOLIO_HISTORY_RANGES = ["7d", "30d", "90d", "1y"];
+const NEW_TRANSACTION_ASSET_VALUE = "__new__";
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let lastMarketSyncAt = "";
 let lastMarketRequestAt = 0;
@@ -42,6 +43,7 @@ let currentLocalUserProfile = null;
 let activePortfolioHistoryRange = "30d";
 let portfolioHistoryRequestId = 0;
 let currentPortfolioHistoryPoints = [];
+let currentTransactions = [];
 let positionEditSuccessTimerId = null;
 
 // Small UI helper for Google auth status text.
@@ -84,6 +86,8 @@ function setAuthUiState(user) {
 function clearAuthenticatedPortfolioView() {
   replacePortfolioRows([]);
   currentPortfolioHistoryPoints = [];
+  currentTransactions = [];
+  renderTransactionsTable([]);
   setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
 }
 
@@ -136,6 +140,7 @@ async function handleCredentialResponse(response) {
 
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
+    await refreshTransactions();
     setAuthStatus("Google token verified by backend.", false);
   } catch (error) {
     console.error("Google auth request failed:", error);
@@ -848,6 +853,7 @@ function replacePortfolioRows(items) {
   normalizeAllEditableFields();
   updateTotals();
   fillPositionEditorOptions();
+  fillTransactionAssetOptions();
   fillDeleteAssetOptions();
   syncPositionInputWithSelectedAsset();
   refreshPortfolioHistory(activePortfolioHistoryRange);
@@ -886,6 +892,130 @@ function getRowByAssetId(assetId) {
   }
 
   return null;
+}
+
+function getRowAssetName(row) {
+  const cell = row && row.cells ? row.cells[0] : null;
+  return cell ? String(cell.textContent || "").trim() : "";
+}
+
+function formatTransactionDate(dateString) {
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) {
+    return "--";
+  }
+  return parsed.toLocaleString();
+}
+
+function renderTransactionsTable(items) {
+  const tableBody = document.getElementById("transactionsTableBody");
+  if (!tableBody) {
+    return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    tableBody.innerHTML =
+      '<tr class="transactions-empty"><td colspan="6">No transactions recorded yet.</td></tr>';
+    return;
+  }
+
+  let html = "";
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const unitPriceText =
+      item && Number.isFinite(Number(item.unitPrice))
+        ? VALUE_FORMATTER.format(Number(item.unitPrice))
+        : "--";
+    html +=
+      "<tr>" +
+      "<td>" +
+      escapeHtml(formatTransactionDate(item.transactedAt)) +
+      "</td>" +
+      "<td>" +
+      escapeHtml(String(item.type || "")) +
+      "</td>" +
+      "<td>" +
+      escapeHtml(String(item.assetName || item.assetId || "")) +
+      "</td>" +
+      "<td>" +
+      POSITION_FORMATTER.format(Number(item.quantity) || 0) +
+      "</td>" +
+      "<td>" +
+      unitPriceText +
+      "</td>" +
+      "<td>" +
+      POSITION_FORMATTER.format(Number(item.positionAfter) || 0) +
+      "</td>" +
+      "</tr>";
+  }
+
+  tableBody.innerHTML = html;
+}
+
+function fillTransactionAssetOptions(preferredValue) {
+  const select = document.getElementById("transactionAssetSelect");
+  if (!select) {
+    return;
+  }
+
+  const previousValue =
+    typeof preferredValue === "string" && preferredValue.trim()
+      ? preferredValue.trim()
+      : String(select.value || "").trim();
+  const rows = getDataRows();
+  let optionsHtml = '<option value="' + NEW_TRANSACTION_ASSET_VALUE + '">New asset...</option>';
+
+  for (let i = 0; i < rows.length; i++) {
+    const assetId = getRowId(rows[i]);
+    const assetName = getRowAssetName(rows[i]);
+    if (!assetId) {
+      continue;
+    }
+    optionsHtml +=
+      '<option value="' +
+      escapeHtml(assetId) +
+      '">' +
+      escapeHtml(assetName ? assetName + " (" + assetId + ")" : assetId) +
+      "</option>";
+  }
+
+  select.innerHTML = optionsHtml;
+  let hasPreviousValue = false;
+  for (let i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === previousValue) {
+      hasPreviousValue = true;
+      break;
+    }
+  }
+  const nextValue = hasPreviousValue ? previousValue : NEW_TRANSACTION_ASSET_VALUE;
+  select.value = nextValue;
+  toggleTransactionNewAssetFields();
+}
+
+function toggleTransactionNewAssetFields() {
+  const select = document.getElementById("transactionAssetSelect");
+  const fields = document.getElementById("transactionNewAssetFields");
+  const assetNameInput = document.getElementById("transactionAssetNameInput");
+  const currencySelect = document.getElementById("transactionCurrencySelect");
+  if (!select || !fields || !assetNameInput || !currencySelect) {
+    return;
+  }
+
+  const isNewAsset = select.value === NEW_TRANSACTION_ASSET_VALUE;
+  fields.classList.toggle("is-hidden", !isNewAsset);
+  assetNameInput.required = isNewAsset;
+  currencySelect.required = isNewAsset;
+}
+
+function setDefaultTransactionDateInput() {
+  const input = document.getElementById("transactionDateInput");
+  if (!input) {
+    return;
+  }
+
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  input.value = now.toISOString().slice(0, 16);
 }
 
 function formatCurrency(value, symbol) {
@@ -1698,6 +1828,73 @@ async function deletePositionOnServer(assetId) {
   return await res.json();
 }
 
+async function fetchTransactionsFromServer() {
+  getCurrentUserIdOrThrow();
+  const res = await fetch(getApiUrl("/api/transactions"), buildFetchOptions());
+  if (!res.ok) {
+    let message = "Failed to fetch transactions";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
+    }
+    throw new Error(message);
+  }
+
+  const payload = await res.json();
+  return Array.isArray(payload && payload.transactions) ? payload.transactions : [];
+}
+
+async function createTransactionOnServer(payload) {
+  getCurrentUserIdOrThrow();
+  const res = await fetch(
+    getApiUrl("/api/transactions"),
+    buildFetchOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+  );
+
+  if (!res.ok) {
+    let message = "Failed to record transaction";
+    try {
+      const body = await res.json();
+      if (body && typeof body.error === "string" && body.error.trim()) {
+        message = body.error.trim();
+      }
+    } catch (error) {
+      // Keep default message.
+    }
+
+    throw new Error(message);
+  }
+
+  const body = await res.json();
+  return body && body.transaction ? body.transaction : null;
+}
+
+async function refreshTransactions() {
+  if (!currentLocalUserId) {
+    currentTransactions = [];
+    renderTransactionsTable([]);
+    return;
+  }
+
+  try {
+    currentTransactions = await fetchTransactionsFromServer();
+    renderTransactionsTable(currentTransactions);
+  } catch (error) {
+    console.error("Failed to refresh transactions:", error);
+    renderTransactionsTable([]);
+  }
+}
+
 async function fetchCurrentLocalUserFromSession() {
   const res = await fetch(getApiUrl("/api/me"), buildFetchOptions());
   if (res.status === 401) {
@@ -1743,6 +1940,7 @@ async function restoreAuthSession() {
     setAuthUiState(user);
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
+    await refreshTransactions();
     setAuthStatus("Session restored from backend.", false);
   } catch (error) {
     console.error("Failed to restore auth session:", error);
@@ -1856,6 +2054,89 @@ async function applyDeleteAsset(event) {
   }
 }
 
+async function applyTransaction(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("transactionForm");
+  const typeSelect = document.getElementById("transactionTypeSelect");
+  const assetSelect = document.getElementById("transactionAssetSelect");
+  const assetIdInput = document.getElementById("transactionAssetIdInput");
+  const assetNameInput = document.getElementById("transactionAssetNameInput");
+  const currencySelect = document.getElementById("transactionCurrencySelect");
+  const quantityInput = document.getElementById("transactionQuantityInput");
+  const unitPriceInput = document.getElementById("transactionUnitPriceInput");
+  const dateInput = document.getElementById("transactionDateInput");
+  const submitBtn = document.getElementById("transactionSubmitBtn");
+
+  if (
+    !form ||
+    !typeSelect ||
+    !assetSelect ||
+    !assetIdInput ||
+    !assetNameInput ||
+    !currencySelect ||
+    !quantityInput ||
+    !unitPriceInput ||
+    !dateInput ||
+    !submitBtn
+  ) {
+    return;
+  }
+
+  const quantity = parseCurrencyNumber(quantityInput.value);
+  const unitPriceText = unitPriceInput.value.trim();
+  const payload = {
+    type: typeSelect.value,
+    quantity,
+    unitPrice: unitPriceText ? parseCurrencyNumber(unitPriceText) : "",
+    transactedAt: dateInput.value,
+  };
+
+  if (assetSelect.value === NEW_TRANSACTION_ASSET_VALUE) {
+    const assetName = assetNameInput.value.trim();
+    if (!assetName) {
+      window.alert("Asset name is required for a new asset transaction.");
+      return;
+    }
+
+    const assetId = assetIdInput.value.trim().toUpperCase();
+    payload.assetId = assetId;
+    payload.assetName = assetName;
+    payload.currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+  } else {
+    payload.assetId = assetSelect.value;
+  }
+
+  const previousLabel = submitBtn.textContent;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Recording...";
+
+  try {
+    await createTransactionOnServer(payload);
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
+    await refreshTransactions();
+
+    form.reset();
+    fillTransactionAssetOptions(NEW_TRANSACTION_ASSET_VALUE);
+    document.getElementById("transactionCurrencySelect").value = "USD";
+    setDefaultTransactionDateInput();
+  } catch (error) {
+    console.error("Failed to record transaction:", error);
+    let message =
+      error && typeof error.message === "string" && error.message
+        ? error.message
+        : "Unknown error";
+    if (message === "Failed to fetch") {
+      message = message + " (API: " + getApiUrl("/api/transactions") + ")";
+    }
+    window.alert("Failed to record transaction: " + message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = previousLabel || "Record Transaction";
+  }
+}
+
 function bindPersistenceEvents() {
   const table = document.querySelector(".table-wrap table");
   if (table) {
@@ -1871,6 +2152,8 @@ function bindPersistenceEvents() {
   const positionEditorForm = document.getElementById("positionEditorForm");
   const positionAssetSelect = document.getElementById("positionAssetSelect");
   const createAssetForm = document.getElementById("createAssetForm");
+  const transactionForm = document.getElementById("transactionForm");
+  const transactionAssetSelect = document.getElementById("transactionAssetSelect");
   const deleteAssetForm = document.getElementById("deleteAssetForm");
   const signOutButton = document.getElementById("signout-btn");
   const actionTabs = document.querySelectorAll("[data-action-tab]");
@@ -1883,6 +2166,12 @@ function bindPersistenceEvents() {
   }
   if (createAssetForm) {
     createAssetForm.addEventListener("submit", applyCreateAsset);
+  }
+  if (transactionForm) {
+    transactionForm.addEventListener("submit", applyTransaction);
+  }
+  if (transactionAssetSelect) {
+    transactionAssetSelect.addEventListener("change", toggleTransactionNewAssetFields);
   }
   if (deleteAssetForm) {
     deleteAssetForm.addEventListener("submit", applyDeleteAsset);
@@ -1921,8 +2210,11 @@ normalizeAllEditableFields();
 updateTotals();
 renderMarketDataFooter();
 fillPositionEditorOptions();
+fillTransactionAssetOptions();
 fillDeleteAssetOptions();
 syncPositionInputWithSelectedAsset();
+setDefaultTransactionDateInput();
+renderTransactionsTable([]);
 bindPersistenceEvents();
 startMarketAutoRefresh();
 initGoogleSignInWhenReady(0);

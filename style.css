@@ -551,7 +551,7 @@ tr.selected-asset-row td {
 
 .action-tabs {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.5rem;
     padding: 0 1rem 0.95rem;
 }
@@ -639,6 +639,7 @@ tr.selected-asset-row td {
 .breakdown-head,
 .position-editor-head,
 .create-asset-head,
+.transaction-head,
 .delete-asset-head {
     display: flex;
     align-items: baseline;
@@ -652,6 +653,7 @@ tr.selected-asset-row td {
 .breakdown-head h2,
 .position-editor-head h2,
 .create-asset-head h2,
+.transaction-head h2,
 .delete-asset-head h2 {
     margin: 0;
     font-size: 0.96rem;
@@ -664,6 +666,7 @@ tr.selected-asset-row td {
 .breakdown-head p,
 .position-editor-head p,
 .create-asset-head p,
+.transaction-head p,
 .delete-asset-head p {
     margin: 0.22rem 0 0;
     font-size: 0.8rem;
@@ -854,6 +857,79 @@ tr.selected-asset-row td {
     filter: brightness(1.05);
 }
 
+.transaction-form {
+    padding: 0.9rem 1rem 1rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    align-items: end;
+}
+
+.transaction-field {
+    min-width: 0;
+}
+
+.transaction-form label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.transaction-form input,
+.transaction-form select {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #2b4358;
+    border-radius: 6px;
+    background: #0c1824;
+    color: #d5ebfa;
+    padding: 0.42rem 0.5rem;
+    font-size: 0.86rem;
+    font-family: inherit;
+}
+
+.transaction-form input:focus,
+.transaction-form select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(34, 227, 164, 0.2);
+}
+
+.transaction-new-asset {
+    display: grid;
+    gap: 0.6rem;
+    padding: 0.7rem;
+    border: 1px solid rgba(139, 195, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(12, 24, 36, 0.55);
+}
+
+.transaction-new-asset.is-hidden {
+    display: none;
+}
+
+.transaction-form button {
+    border: 1px solid #33cc98;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #29d79f 0%, #1ab17f 100%);
+    color: #072018;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 0.46rem 0.62rem;
+    cursor: pointer;
+    margin-top: 0.1rem;
+}
+
+.transaction-form button:hover {
+    filter: brightness(1.05);
+}
+
+.transaction-form button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .delete-asset-form {
     padding: 0.9rem 1rem 1rem;
     display: grid;
@@ -901,6 +977,19 @@ tr.selected-asset-row td {
 
 .delete-asset-form button:hover:not(:disabled) {
     filter: brightness(1.05);
+}
+
+.transactions-card {
+    margin: 0 0.9rem 1rem;
+}
+
+#transactionsTableBody .transactions-empty td {
+    text-align: left;
+    color: var(--muted);
+}
+
+#transactionsTableBody td:nth-child(2) {
+    text-transform: uppercase;
 }
 
 tr.position-edit-success td {

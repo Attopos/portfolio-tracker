@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:create-users": "node scripts/create-users-table.js",
     "db:migrate-positions-user-id": "node scripts/add-user-id-to-positions.js",
-    "db:create-portfolio-value-snapshots": "node scripts/create-portfolio-value-snapshots-table.js"
+    "db:create-portfolio-value-snapshots": "node scripts/create-portfolio-value-snapshots-table.js",
+    "db:create-transactions": "node scripts/create-transactions-table.js"
   },
   "keywords": [],
   "author": "",

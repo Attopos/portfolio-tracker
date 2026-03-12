@@ -149,6 +149,17 @@
                                 Create
                             </button>
                             <button
+                                class="action-tab"
+                                id="action-tab-transaction"
+                                type="button"
+                                role="tab"
+                                aria-selected="false"
+                                aria-controls="action-panel-transaction"
+                                data-action-tab="transaction"
+                            >
+                                Trade
+                            </button>
+                            <button
                                 class="action-tab action-tab-danger"
                                 id="action-tab-delete"
                                 type="button"
@@ -228,6 +239,66 @@
                             </section>
 
                             <section
+                                class="transaction-panel action-panel"
+                                id="action-panel-transaction"
+                                role="tabpanel"
+                                aria-labelledby="action-tab-transaction"
+                                data-action-panel="transaction"
+                                hidden
+                            >
+                                <div class="transaction-head">
+                                    <div>
+                                        <h2>Add Transaction</h2>
+                                        <p>Record a portfolio change once and let holdings update automatically.</p>
+                                    </div>
+                                </div>
+                                <form id="transactionForm" class="transaction-form">
+                                    <div class="transaction-field">
+                                        <label for="transactionTypeSelect">Type</label>
+                                        <select id="transactionTypeSelect" required>
+                                            <option value="buy" selected>Buy / Add</option>
+                                            <option value="sell">Sell / Reduce</option>
+                                            <option value="set">Set Holding</option>
+                                        </select>
+                                    </div>
+                                    <div class="transaction-field">
+                                        <label for="transactionAssetSelect">Asset</label>
+                                        <select id="transactionAssetSelect" required></select>
+                                    </div>
+                                    <div id="transactionNewAssetFields" class="transaction-new-asset">
+                                        <div class="transaction-field">
+                                            <label for="transactionAssetIdInput">Asset Code</label>
+                                            <input id="transactionAssetIdInput" type="text" placeholder="BTC" />
+                                        </div>
+                                        <div class="transaction-field">
+                                            <label for="transactionAssetNameInput">Asset Name</label>
+                                            <input id="transactionAssetNameInput" type="text" placeholder="Bitcoin" />
+                                        </div>
+                                        <div class="transaction-field">
+                                            <label for="transactionCurrencySelect">Currency</label>
+                                            <select id="transactionCurrencySelect">
+                                                <option value="USD" selected>USD</option>
+                                                <option value="CNY">CNY</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="transaction-field">
+                                        <label for="transactionQuantityInput">Quantity</label>
+                                        <input id="transactionQuantityInput" type="text" inputmode="decimal" required />
+                                    </div>
+                                    <div class="transaction-field">
+                                        <label for="transactionUnitPriceInput">Unit Price</label>
+                                        <input id="transactionUnitPriceInput" type="text" inputmode="decimal" placeholder="Optional" />
+                                    </div>
+                                    <div class="transaction-field">
+                                        <label for="transactionDateInput">Date</label>
+                                        <input id="transactionDateInput" type="datetime-local" />
+                                    </div>
+                                    <button id="transactionSubmitBtn" type="submit">Record Transaction</button>
+                                </form>
+                            </section>
+
+                            <section
                                 class="delete-asset-panel action-panel danger-card"
                                 id="action-panel-delete"
                                 role="tabpanel"
@@ -303,6 +374,31 @@
                     <div id="portfolioHistoryState" class="history-state">
                         Sign in to load portfolio history.
                     </div>
+                </div>
+            </section>
+
+            <section class="workspace-card transactions-card" aria-label="Recent transactions">
+                <div class="section-head">
+                    <div>
+                        <h2>Recent Transactions</h2>
+                        <p>Track the latest changes driving your current holdings.</p>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <caption>Recent Transaction Activity</caption>
+                        <thead>
+                            <tr class="head-row">
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Asset</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Position After</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTableBody"></tbody>
+                    </table>
                 </div>
             </section>
 
