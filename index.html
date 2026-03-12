@@ -216,10 +216,6 @@
                                 </div>
                                 <form id="createAssetForm" class="create-asset-form">
                                     <div class="create-asset-field">
-                                        <label for="createAssetIdInput">Asset Code</label>
-                                        <input id="createAssetIdInput" type="text" placeholder="BTC" />
-                                    </div>
-                                    <div class="create-asset-field">
                                         <label for="createAssetNameInput">Name</label>
                                         <input id="createAssetNameInput" type="text" required />
                                     </div>
@@ -228,13 +224,6 @@
                                         <select id="createAssetCurrencySelect" required>
                                             <option value="USD" selected>USD</option>
                                             <option value="CNY">CNY</option>
-                                        </select>
-                                    </div>
-                                    <div class="create-asset-field">
-                                        <label for="createAssetTypeSelect">Transaction Type</label>
-                                        <select id="createAssetTypeSelect" required>
-                                            <option value="buy" selected>Buy / Add</option>
-                                            <option value="set">Set Holding</option>
                                         </select>
                                     </div>
                                     <div class="create-asset-field">
@@ -269,7 +258,6 @@
                                         <select id="transactionTypeSelect" required>
                                             <option value="buy" selected>Buy / Add</option>
                                             <option value="sell">Sell / Reduce</option>
-                                            <option value="set">Set Holding</option>
                                         </select>
                                     </div>
                                     <div class="transaction-field">

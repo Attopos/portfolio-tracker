@@ -1870,20 +1870,16 @@ async function applyCreateAsset(event) {
   event.preventDefault();
 
   const form = document.getElementById("createAssetForm");
-  const assetIdInput = document.getElementById("createAssetIdInput");
   const nameInput = document.getElementById("createAssetNameInput");
   const currencySelect = document.getElementById("createAssetCurrencySelect");
-  const typeSelect = document.getElementById("createAssetTypeSelect");
   const positionInput = document.getElementById("createAssetPositionInput");
   const priceInput = document.getElementById("createAssetPriceInput");
   const submitBtn = document.getElementById("createAssetSubmitBtn");
 
   if (
     !form ||
-    !assetIdInput ||
     !nameInput ||
     !currencySelect ||
-    !typeSelect ||
     !positionInput ||
     !priceInput ||
     !submitBtn
@@ -1891,10 +1887,8 @@ async function applyCreateAsset(event) {
     return;
   }
 
-  const assetId = assetIdInput.value.trim().toUpperCase();
   const name = nameInput.value.trim();
   const currency = currencySelect.value === "CNY" ? "CNY" : "USD";
-  const type = typeSelect.value === "set" ? "set" : "buy";
   const position = parseCurrencyNumber(positionInput.value);
   const price = parseCurrencyNumber(priceInput.value);
 
@@ -1909,10 +1903,9 @@ async function applyCreateAsset(event) {
 
   try {
     await createTransactionOnServer({
-      assetId,
       assetName: name,
       currency,
-      type,
+      type: "set",
       quantity: position,
       unitPrice: price,
     });
@@ -1922,7 +1915,6 @@ async function applyCreateAsset(event) {
     await refreshTransactions();
     form.reset();
     currencySelect.value = "USD";
-    typeSelect.value = "buy";
   } catch (error) {
     console.error("Failed to add holding:", error);
     let message =
