@@ -319,34 +319,34 @@ function setPortfolioHistoryState(message, options) {
   }
 }
 
-function formatCompactUsd(value) {
+function formatCompactCny(value) {
   const absValue = Math.abs(value);
   if (absValue >= 1000000) {
-    return "$" + (value / 1000000).toFixed(1) + "M";
+    return "¥" + (value / 1000000).toFixed(1) + "M";
   }
   if (absValue >= 1000) {
-    return "$" + (value / 1000).toFixed(1) + "K";
+    return "¥" + (value / 1000).toFixed(1) + "K";
   }
-  return "$" + value.toFixed(0);
+  return "¥" + value.toFixed(0);
 }
 
-function formatHistoryAxisUsd(value, span, precisionBoost) {
+function formatHistoryAxisCny(value, span, precisionBoost) {
   const absValue = Math.abs(value);
   const safeSpan = Math.abs(Number(span)) || 0;
   const extraPrecision = Math.max(0, Number(precisionBoost) || 0);
 
   if (absValue >= 1000000) {
     const decimals = (safeSpan >= 100000 ? 1 : safeSpan >= 10000 ? 2 : safeSpan >= 1000 ? 3 : 4) + extraPrecision;
-    return "$" + (value / 1000000).toFixed(decimals) + "M";
+    return "¥" + (value / 1000000).toFixed(decimals) + "M";
   }
 
   if (absValue >= 1000) {
     const decimals = (safeSpan >= 10000 ? 1 : safeSpan >= 1000 ? 2 : safeSpan >= 100 ? 3 : 4) + extraPrecision;
-    return "$" + (value / 1000).toFixed(decimals) + "K";
+    return "¥" + (value / 1000).toFixed(decimals) + "K";
   }
 
   const decimals = (safeSpan >= 10 ? 0 : safeSpan >= 1 ? 1 : 2) + extraPrecision;
-  return "$" + value.toFixed(decimals);
+  return "¥" + value.toFixed(decimals);
 }
 
 function normalizeHistoryValues(values) {
@@ -514,7 +514,7 @@ function buildHistoryAxisTicks(minValue, maxValue, tickCount) {
 function buildHistoryAxisTickLabels(ticks, span) {
   for (let precisionBoost = 0; precisionBoost <= 6; precisionBoost++) {
     const labels = ticks.map(function (tick) {
-      return formatHistoryAxisUsd(tick, span, precisionBoost);
+      return formatHistoryAxisCny(tick, span, precisionBoost);
     });
     if (new Set(labels).size === labels.length) {
       return labels;
@@ -522,7 +522,7 @@ function buildHistoryAxisTickLabels(ticks, span) {
   }
 
   return ticks.map(function (tick) {
-    return "$" + tick.toFixed(2);
+    return "¥" + tick.toFixed(2);
   });
 }
 
@@ -576,7 +576,7 @@ function drawPortfolioHistoryChart(points, range) {
   const chartHeight = height - chartPadding.top - chartPadding.bottom;
 
   const values = points.map(function (point) {
-    return Number(point.totalUsd) || 0;
+    return (Number(point.totalUsd) || 0) * cnyPerUsdRate;
   });
   const normalizedValues = normalizeHistoryValues(values);
   const axis = buildHistoryAxisTicks(normalizedValues.displayMinValue, normalizedValues.displayMaxValue, 4);
@@ -2037,7 +2037,7 @@ async function applyCreateAsset(event) {
   }
 
   const name = nameInput.value.trim();
-  const currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+  const currency = currencySelect.value === "USD" ? "USD" : "CNY";
   const position = parseCurrencyNumber(positionInput.value);
   const price = parseCurrencyNumber(priceInput.value);
 
@@ -2063,7 +2063,7 @@ async function applyCreateAsset(event) {
     replacePortfolioRows(positions);
     await refreshTransactions();
     form.reset();
-    currencySelect.value = "USD";
+    currencySelect.value = "CNY";
   } catch (error) {
     console.error("Failed to add holding:", error);
     let message =
@@ -2176,7 +2176,7 @@ async function applyTransaction(event) {
     const assetId = assetIdInput.value.trim().toUpperCase();
     payload.assetId = assetId;
     payload.assetName = assetName;
-    payload.currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+    payload.currency = currencySelect.value === "USD" ? "USD" : "CNY";
   } else {
     payload.assetId = assetSelect.value;
   }
@@ -2193,7 +2193,7 @@ async function applyTransaction(event) {
 
     form.reset();
     fillTransactionAssetOptions(NEW_TRANSACTION_ASSET_VALUE);
-    document.getElementById("transactionCurrencySelect").value = "USD";
+    document.getElementById("transactionCurrencySelect").value = "CNY";
     setDefaultTransactionDateInput();
   } catch (error) {
     console.error("Failed to record transaction:", error);

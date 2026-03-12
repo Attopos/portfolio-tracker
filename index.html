@@ -52,13 +52,13 @@
 
             <section class="overview-grid" aria-label="Portfolio overview">
                 <article class="summary-card summary-card-accent">
-                    <p class="summary-label">Total USD</p>
-                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
-                    <p class="summary-footnote">Live aggregate market value in USD.</p>
-                </article>
-                <article class="summary-card">
                     <p class="summary-label">Total CNY</p>
                     <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
+                    <p class="summary-footnote">Live aggregate market value in CNY.</p>
+                </article>
+                <article class="summary-card">
+                    <p class="summary-label">Total USD</p>
+                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
                     <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
                 </article>
                 <article class="summary-card">
@@ -222,8 +222,8 @@
                                     <div class="create-asset-field">
                                         <label for="createAssetCurrencySelect">Currency</label>
                                         <select id="createAssetCurrencySelect" required>
-                                            <option value="USD" selected>USD</option>
-                                            <option value="CNY">CNY</option>
+                                            <option value="CNY" selected>CNY</option>
+                                            <option value="USD">USD</option>
                                         </select>
                                     </div>
                                     <div class="create-asset-field">
@@ -276,8 +276,8 @@
                                         <div class="transaction-field">
                                             <label for="transactionCurrencySelect">Currency</label>
                                             <select id="transactionCurrencySelect">
-                                                <option value="USD" selected>USD</option>
-                                                <option value="CNY">CNY</option>
+                                                <option value="CNY" selected>CNY</option>
+                                                <option value="USD">USD</option>
                                             </select>
                                         </div>
                                     </div>
@@ -326,7 +326,7 @@
                 <div class="section-head history-head">
                     <div>
                         <h2>Portfolio Value Over Time</h2>
-                        <p>Track total portfolio value over time in USD.</p>
+                        <p>Track total portfolio value over time in CNY.</p>
                     </div>
                     <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
                         <button
