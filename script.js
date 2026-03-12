@@ -32,12 +32,23 @@ const GOOGLE_CLIENT_ID =
 const API_BASE_URL = deriveApiBaseUrl();
 const PORTFOLIO_HISTORY_RANGES = ["7d", "30d", "90d", "1y"];
 const NEW_TRANSACTION_ASSET_VALUE = "__new__";
+const STANDARD_MARKET_ASSETS = {
+  BTC: {
+    symbol: "BTC",
+    aliases: ["BTC", "BITCOIN"],
+  },
+  ETH: {
+    symbol: "ETH",
+    aliases: ["ETH", "ETHEREUM"],
+  },
+};
 let cnyPerUsdRate = DEFAULT_CNY_PER_USD;
 let lastMarketSyncAt = "";
 let lastMarketRequestAt = 0;
 let marketConsecutiveFailures = 0;
 let marketRefreshTimerId = null;
 let marketRefreshInFlight = false;
+let marketPricesBySymbol = {};
 let currentLocalUserId = null;
 let currentLocalUserProfile = null;
 let activePortfolioHistoryRange = "30d";
@@ -45,6 +56,7 @@ let portfolioHistoryRequestId = 0;
 let currentPortfolioHistoryPoints = [];
 let currentTransactions = [];
 let positionEditSuccessTimerId = null;
+const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
 // Small UI helper for Google auth status text.
 function setAuthStatus(message, isError) {
@@ -87,8 +99,36 @@ function clearAuthenticatedPortfolioView() {
   replacePortfolioRows([]);
   currentPortfolioHistoryPoints = [];
   currentTransactions = [];
+  marketPricesBySymbol = {};
   renderTransactionsTable([]);
   setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
+}
+
+function buildStandardMarketAliasLookup() {
+  const map = Object.create(null);
+  const symbols = Object.keys(STANDARD_MARKET_ASSETS);
+
+  for (let i = 0; i < symbols.length; i++) {
+    const symbol = symbols[i];
+    const asset = STANDARD_MARKET_ASSETS[symbol];
+    for (let j = 0; j < asset.aliases.length; j++) {
+      map[asset.aliases[j]] = symbol;
+    }
+    map[symbol] = symbol;
+  }
+
+  return map;
+}
+
+function normalizeMarketAssetSymbol(value) {
+  const key = String(value || "")
+    .trim()
+    .toUpperCase();
+  return STANDARD_MARKET_ALIAS_LOOKUP[key] || "";
+}
+
+function detectStandardMarketSymbol(assetId, assetName) {
+  return normalizeMarketAssetSymbol(assetId) || normalizeMarketAssetSymbol(assetName);
 }
 
 // GIS callback: log token, send it to backend, and show verification status.
@@ -784,6 +824,7 @@ function normalizePortfolioRow(item) {
     currency,
     position: Number.isFinite(position) ? position : 0,
     price: Number.isFinite(price) ? price : 0,
+    standardSymbol: detectStandardMarketSymbol(id, name),
   };
 }
 
@@ -804,6 +845,10 @@ function buildPortfolioRowHtml(item) {
   return (
     '<tr data-asset-id="' +
     escapeHtml(item.id) +
+    '" data-entry-price="' +
+    escapeHtml(String(Number(item.price) || 0)) +
+    '" data-standard-symbol="' +
+    escapeHtml(item.standardSymbol || "") +
     '">' +
     "<td>" +
     escapeHtml(item.name) +
@@ -857,6 +902,7 @@ function replacePortfolioRows(items) {
   fillDeleteAssetOptions();
   syncPositionInputWithSelectedAsset();
   refreshPortfolioHistory(activePortfolioHistoryRange);
+  scheduleNextMarketRefresh(0);
 }
 
 function getApiUrl(path) {
@@ -897,6 +943,55 @@ function getRowByAssetId(assetId) {
 function getRowAssetName(row) {
   const cell = row && row.cells ? row.cells[0] : null;
   return cell ? String(cell.textContent || "").trim() : "";
+}
+
+function getRowEntryPrice(row) {
+  const raw = row ? row.getAttribute("data-entry-price") : "";
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function getRowStandardSymbol(row) {
+  const symbol = row ? String(row.getAttribute("data-standard-symbol") || "").trim().toUpperCase() : "";
+  if (symbol) {
+    return symbol;
+  }
+  return detectStandardMarketSymbol(getRowId(row), getRowAssetName(row));
+}
+
+function getTrackedMarketSymbols() {
+  const rows = getDataRows();
+  const symbols = [];
+  const seen = new Set();
+
+  for (let i = 0; i < rows.length; i++) {
+    const symbol = getRowStandardSymbol(rows[i]);
+    if (!symbol || seen.has(symbol)) {
+      continue;
+    }
+    seen.add(symbol);
+    symbols.push(symbol);
+  }
+
+  return symbols;
+}
+
+function getEffectivePriceForRow(row) {
+  const symbol = getRowStandardSymbol(row);
+  const entryPrice = getRowEntryPrice(row);
+  if (!symbol) {
+    return entryPrice;
+  }
+
+  const market = marketPricesBySymbol[symbol];
+  if (!market || typeof market !== "object") {
+    return entryPrice;
+  }
+
+  const currencySelect = row ? row.querySelector(".currency-select") : null;
+  const currency = currencySelect && currencySelect.value === "CNY" ? "CNY" : "USD";
+  const marketPrice = currency === "CNY" ? Number(market.cny) : Number(market.usd);
+  return Number.isFinite(marketPrice) && marketPrice > 0 ? marketPrice : entryPrice;
 }
 
 function formatTransactionDate(dateString) {
@@ -1050,11 +1145,24 @@ function renderMarketDataFooter() {
     return;
   }
 
+  const marketSymbols = Object.keys(marketPricesBySymbol);
+  const marketSummary = [];
+  for (let i = 0; i < marketSymbols.length; i++) {
+    const symbol = marketSymbols[i];
+    const market = marketPricesBySymbol[symbol];
+    const usd = Number(market && market.usd);
+    if (!Number.isFinite(usd) || usd <= 0) {
+      continue;
+    }
+    marketSummary.push(symbol + " $" + VALUE_FORMATTER.format(usd));
+  }
+
   footerEl.textContent =
     "FX USD/CNY: " +
     formatRate(cnyPerUsdRate) +
     " | Updated: " +
-    (lastMarketSyncAt || "--");
+    (lastMarketSyncAt || "--") +
+    (marketSummary.length ? " | " + marketSummary.join(" | ") : "");
 }
 
 function saveMarketFeedSnapshot() {
@@ -1113,25 +1221,63 @@ async function refreshUsdCnyRate() {
   return rate;
 }
 
+async function fetchMarketPricesFromServer(symbols) {
+  const safeSymbols = Array.isArray(symbols)
+    ? symbols
+        .map(function (symbol) {
+          return normalizeMarketAssetSymbol(symbol);
+        })
+        .filter(Boolean)
+    : [];
+
+  if (safeSymbols.length === 0) {
+    return {};
+  }
+
+  const res = await fetch(
+    getApiUrl("/api/market-prices?assets=" + encodeURIComponent(safeSymbols.join(","))),
+    buildFetchOptions()
+  );
+
+  if (!res.ok) {
+    let message = "Failed to fetch market prices";
+    try {
+      const payload = await res.json();
+      if (payload && typeof payload.error === "string" && payload.error.trim()) {
+        message = payload.error.trim();
+      }
+    } catch (error) {
+      // keep default message
+    }
+    throw new Error(message);
+  }
+
+  const payload = await res.json();
+  return payload && payload.prices && typeof payload.prices === "object" ? payload.prices : {};
+}
+
 async function refreshMarketData() {
-  setCryptoStatus("FX auto-update: syncing exchange rate...", false);
+  setCryptoStatus("Market auto-update: syncing FX and crypto prices...", false);
 
   try {
-    cnyPerUsdRate = await refreshUsdCnyRate();
+    const trackedSymbols = getTrackedMarketSymbols();
+    const results = await Promise.all([refreshUsdCnyRate(), fetchMarketPricesFromServer(trackedSymbols)]);
+    cnyPerUsdRate = results[0];
+    marketPricesBySymbol = results[1];
     lastMarketSyncAt = new Date().toLocaleString();
 
     updateTotals();
     saveMarketFeedSnapshot();
     renderMarketDataFooter();
 
-    setCryptoStatus("FX auto-update: synced at " + lastMarketSyncAt, false);
+    setCryptoStatus("Market auto-update: synced at " + lastMarketSyncAt, false);
     return true;
   } catch (error) {
     console.error("Failed to refresh FX data:", error);
     lastMarketSyncAt = new Date().toLocaleString();
     saveMarketFeedSnapshot();
     renderMarketDataFooter();
-    setCryptoStatus("FX auto-update: failed at " + lastMarketSyncAt, true);
+    setCryptoStatus("Market auto-update: failed at " + lastMarketSyncAt, true);
     return false;
   }
 }
@@ -1183,7 +1329,7 @@ async function runMarketRefreshCycle() {
   const retryDelayMs = getRetryDelayMs(marketConsecutiveFailures);
   const retryMinutes = Math.round(retryDelayMs / 60000);
   setCryptoStatus(
-    "FX auto-update: failed at " +
+    "Market auto-update: failed at " +
       lastMarketSyncAt +
       " | retry in " +
       retryMinutes +
@@ -1225,7 +1371,8 @@ function updateMarketValues() {
     }
 
     const position = parseCurrencyNumber(positionCell.textContent);
-    const price = parseCurrencyNumber(priceCell.textContent);
+    const price = getEffectivePriceForRow(row);
+    priceCell.textContent = VALUE_FORMATTER.format(price);
     const baseValue = position * price;
 
     let usdValue = 0;
@@ -1471,14 +1618,13 @@ async function applyPositionSizeUpdate(event) {
   }
 
   const positionCell = row.querySelector(".position");
-  const priceCell = row.querySelector(".price");
-  if (!positionCell || !priceCell) {
+  if (!positionCell) {
     return;
   }
 
   const nextValue = parseCurrencyNumber(input.value);
   const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
-  const currentUnitPrice = parseCurrencyNumber(priceCell.textContent);
+  const currentUnitPrice = getRowEntryPrice(row);
   const applyBtnLabel = applyBtn ? applyBtn.querySelector("span") : null;
   const previousButtonText = applyBtnLabel ? applyBtnLabel.textContent : "";
 
@@ -1942,8 +2088,7 @@ async function applyDeleteAsset(event) {
 
   const assetId = select.value;
   const row = getRowByAssetId(assetId);
-  const priceCell = row ? row.querySelector(".price") : null;
-  const currentUnitPrice = priceCell ? parseCurrencyNumber(priceCell.textContent) : 0;
+  const currentUnitPrice = row ? getRowEntryPrice(row) : 0;
   const confirmed = window.confirm("Set holding " + assetId + " to zero?");
   if (!confirmed) {
     return;
