@@ -18,6 +18,7 @@ const PIE_COLORS = [
   "#ffa94d",
   "#8ecae6",
 ];
+const MAX_ALLOCATION_SEGMENTS = 6;
 const POSITION_FORMATTER = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,
@@ -1722,6 +1723,32 @@ function truncateAllocationLabel(label, maxLength) {
   return trimmed.slice(0, Math.max(0, maxLength - 1)) + "…";
 }
 
+function buildAllocationSegments(items) {
+  const sortedItems = items.slice().sort(function (a, b) {
+    return b.value - a.value;
+  });
+
+  if (sortedItems.length <= MAX_ALLOCATION_SEGMENTS) {
+    return sortedItems;
+  }
+
+  const visibleItems = sortedItems.slice(0, MAX_ALLOCATION_SEGMENTS - 1);
+  let othersValue = 0;
+
+  for (let i = MAX_ALLOCATION_SEGMENTS - 1; i < sortedItems.length; i++) {
+    othersValue += sortedItems[i].value;
+  }
+
+  if (othersValue > 0) {
+    visibleItems.push({
+      label: "Others",
+      value: othersValue,
+    });
+  }
+
+  return visibleItems;
+}
+
 function drawAllocationPieChart(items) {
   const canvas = document.getElementById("allocationChart");
   if (!canvas) {
@@ -1748,14 +1775,18 @@ function drawAllocationPieChart(items) {
     return sum + item.value;
   }, 0);
 
-  const centerX = cssWidth <= 720 ? cssWidth / 2 : Math.round(cssWidth * 0.43);
+  const isCompact = cssWidth <= 720;
+  const centerX = isCompact ? Math.round(cssWidth * 0.5) : Math.round(cssWidth * 0.36);
   const centerY = Math.round(cssHeight / 2);
-  const outerRadius = Math.min(128, Math.max(92, Math.round(cssWidth * 0.17)));
+  const outerRadius = isCompact
+    ? Math.min(112, Math.max(90, Math.round(cssWidth * 0.21)))
+    : Math.min(136, Math.max(110, Math.round(cssWidth * 0.15)));
   const innerRadius = Math.round(outerRadius * 0.58);
-  const connectorRadius = outerRadius + 12;
-  const labelMargin = 18;
-  const rightAnchorX = cssWidth - 18;
-  const leftAnchorX = 18;
+  const connectorRadius = outerRadius + 14;
+  const labelMargin = isCompact ? 24 : 34;
+  const labelBlockWidth = isCompact ? 150 : 176;
+  const rightColumnX = Math.min(cssWidth - labelBlockWidth - 24, centerX + outerRadius + labelMargin);
+  const leftColumnX = Math.max(24, centerX - outerRadius - labelMargin - labelBlockWidth);
   const percentGap = 6;
   const valueFont = window.innerWidth <= 640 ? "bold 16px JetBrains Mono, Menlo, monospace" : "bold 20px JetBrains Mono, Menlo, monospace";
 
@@ -1817,15 +1848,13 @@ function drawAllocationPieChart(items) {
     const elbowX = centerX + connectorRadius * cos;
     const elbowY = centerY + connectorRadius * sin;
     const side = cos >= 0 ? "right" : "left";
-    const anchorX = side === "right" ? rightAnchorX : leftAnchorX;
     const label = {
       color: segment.color,
-      label: truncateAllocationLabel(segment.label, cssWidth <= 640 ? 10 : 14),
+      label: truncateAllocationLabel(segment.label, isCompact ? 10 : 14),
       percentText: segment.percent.toFixed(1) + "%",
-      dotX: side === "right" ? elbowX + labelMargin : elbowX - labelMargin,
       elbowX,
       elbowY,
-      anchorX,
+      blockX: side === "right" ? rightColumnX : leftColumnX,
       targetY: elbowY,
       side,
     };
@@ -1840,7 +1869,7 @@ function drawAllocationPieChart(items) {
   function layoutLabels(list) {
     const topLimit = 34;
     const bottomLimit = cssHeight - 34;
-    const minGap = 26;
+    const minGap = isCompact ? 32 : 34;
     list.sort(function (a, b) {
       return a.targetY - b.targetY;
     });
@@ -1868,59 +1897,61 @@ function drawAllocationPieChart(items) {
   layoutLabels(rightLabels);
 
   function drawLabels(list) {
+    ctx.font = "13px JetBrains Mono, Menlo, monospace";
+    ctx.textBaseline = "middle";
+
     for (let i = 0; i < list.length; i++) {
       const item = list[i];
-      const direction = item.side === "right" ? 1 : -1;
-      const textAlign = item.side === "right" ? "left" : "right";
-      const labelX = item.dotX + direction * 10;
+      const angle = Math.atan2(item.elbowY - centerY, item.elbowX - centerX);
+      const lineStartX = centerX + outerRadius * Math.cos(angle);
+      const lineStartY = centerY + outerRadius * Math.sin(angle);
+      const dotX = item.side === "right" ? item.blockX : item.blockX + labelBlockWidth;
+      const lineEndX = item.side === "right" ? dotX - 10 : dotX + 10;
       const percentWidth = ctx.measureText(item.percentText).width;
-      const labelWidth = ctx.measureText(item.label).width;
-      const totalWidth = labelWidth + percentGap + percentWidth;
-      const endX =
-        item.side === "right"
-          ? Math.min(labelX - 6, item.anchorX - totalWidth)
-          : Math.max(labelX + 6, item.anchorX + totalWidth);
+      const maxLabelWidth = Math.max(48, labelBlockWidth - percentWidth - percentGap - 14);
+      let labelText = item.label;
+
+      while (ctx.measureText(labelText).width > maxLabelWidth && labelText.length > 4) {
+        labelText = truncateAllocationLabel(labelText, labelText.length - 1);
+      }
 
       ctx.strokeStyle = item.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(centerX + outerRadius * Math.cos(Math.atan2(item.elbowY - centerY, item.elbowX - centerX)), centerY + outerRadius * Math.sin(Math.atan2(item.elbowY - centerY, item.elbowX - centerX)));
+      ctx.moveTo(lineStartX, lineStartY);
       ctx.lineTo(item.elbowX, item.elbowY);
-      ctx.lineTo(endX, item.y);
+      ctx.lineTo(lineEndX, item.y);
       ctx.stroke();
 
       ctx.fillStyle = item.color;
       ctx.beginPath();
-      ctx.arc(item.dotX, item.y, 4.5, 0, Math.PI * 2);
+      ctx.arc(dotX, item.y, 4.5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.textBaseline = "middle";
-      ctx.textAlign = textAlign;
-      ctx.fillStyle = "#d3e4f2";
-      ctx.font = "13px JetBrains Mono, Menlo, monospace";
-
       if (item.side === "right") {
-        ctx.fillText(item.label, labelX, item.y);
-        ctx.fillStyle = "#b8f7df";
-        ctx.fillText(item.percentText, item.anchorX, item.y);
-      } else {
-        ctx.fillStyle = "#b8f7df";
-        ctx.fillText(item.percentText, item.anchorX, item.y);
+        ctx.textAlign = "left";
         ctx.fillStyle = "#d3e4f2";
-        ctx.fillText(item.label, item.anchorX - percentWidth - percentGap, item.y);
+        ctx.fillText(labelText, dotX + 12, item.y);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#b8f7df";
+        ctx.fillText(item.percentText, item.blockX + labelBlockWidth, item.y);
+      } else {
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#d3e4f2";
+        ctx.fillText(labelText, item.blockX, item.y);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#b8f7df";
+        ctx.fillText(item.percentText, item.blockX + labelBlockWidth, item.y);
       }
     }
   }
 
-  ctx.font = "13px JetBrains Mono, Menlo, monospace";
   drawLabels(leftLabels);
   drawLabels(rightLabels);
 }
 
 function updateAllocationChart() {
-  const items = getAllocationData().sort(function (a, b) {
-    return b.value - a.value;
-  });
+  const items = buildAllocationSegments(getAllocationData());
   drawAllocationPieChart(items);
 }
 
