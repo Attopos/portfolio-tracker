@@ -146,7 +146,7 @@
                                 aria-controls="action-panel-create"
                                 data-action-tab="create"
                             >
-                                Create
+                                Add Holding
                             </button>
                             <button
                                 class="action-tab"
@@ -168,7 +168,7 @@
                                 aria-controls="action-panel-delete"
                                 data-action-tab="delete"
                             >
-                                Delete
+                                Close
                             </button>
                         </div>
                         <div class="action-panels">
@@ -210,11 +210,15 @@
                             >
                                 <div class="create-asset-head">
                                     <div>
-                                        <h2>Create Asset</h2>
-                                        <p>Add a new position to portfolio.</p>
+                                        <h2>Add Holding</h2>
+                                        <p>Create a new holding by recording its first transaction.</p>
                                     </div>
                                 </div>
                                 <form id="createAssetForm" class="create-asset-form">
+                                    <div class="create-asset-field">
+                                        <label for="createAssetIdInput">Asset Code</label>
+                                        <input id="createAssetIdInput" type="text" placeholder="BTC" />
+                                    </div>
                                     <div class="create-asset-field">
                                         <label for="createAssetNameInput">Name</label>
                                         <input id="createAssetNameInput" type="text" required />
@@ -227,14 +231,21 @@
                                         </select>
                                     </div>
                                     <div class="create-asset-field">
-                                        <label for="createAssetPositionInput">Position Size</label>
+                                        <label for="createAssetTypeSelect">Transaction Type</label>
+                                        <select id="createAssetTypeSelect" required>
+                                            <option value="buy" selected>Buy / Add</option>
+                                            <option value="set">Set Holding</option>
+                                        </select>
+                                    </div>
+                                    <div class="create-asset-field">
+                                        <label for="createAssetPositionInput">Quantity</label>
                                         <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
                                     </div>
                                     <div class="create-asset-field">
-                                        <label for="createAssetPriceInput">Market Price</label>
+                                        <label for="createAssetPriceInput">Unit Price</label>
                                         <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
                                     </div>
-                                    <button id="createAssetSubmitBtn" type="submit">Create</button>
+                                    <button id="createAssetSubmitBtn" type="submit">Add Holding</button>
                                 </form>
                             </section>
 
@@ -308,14 +319,14 @@
                             >
                                 <div class="delete-asset-head">
                                     <div>
-                                        <h2>Delete Asset</h2>
-                                        <p>Remove an asset from portfolio.</p>
+                                        <h2>Close Holding</h2>
+                                        <p>Set a holding to zero so it disappears from the current portfolio.</p>
                                     </div>
                                 </div>
                                 <form id="deleteAssetForm" class="delete-asset-form">
                                     <label for="deleteAssetSelect">Asset</label>
                                     <select id="deleteAssetSelect" required></select>
-                                    <button id="deleteAssetSubmitBtn" type="submit" disabled>Delete</button>
+                                    <button id="deleteAssetSubmitBtn" type="submit" disabled>Close Holding</button>
                                 </form>
                             </section>
                         </div>

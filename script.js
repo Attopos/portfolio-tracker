@@ -1471,12 +1471,14 @@ async function applyPositionSizeUpdate(event) {
   }
 
   const positionCell = row.querySelector(".position");
-  if (!positionCell) {
+  const priceCell = row.querySelector(".price");
+  if (!positionCell || !priceCell) {
     return;
   }
 
   const nextValue = parseCurrencyNumber(input.value);
   const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
+  const currentUnitPrice = parseCurrencyNumber(priceCell.textContent);
   const applyBtnLabel = applyBtn ? applyBtn.querySelector("span") : null;
   const previousButtonText = applyBtnLabel ? applyBtnLabel.textContent : "";
 
@@ -1491,14 +1493,18 @@ async function applyPositionSizeUpdate(event) {
   input.disabled = true;
 
   try {
-    const updated = await updatePositionOnServer(select.value, safeValue);
-    const updatedPosition = Number(updated && updated.position);
-    const appliedValue = Number.isFinite(updatedPosition) ? updatedPosition : safeValue;
+    await createTransactionOnServer({
+      assetId: select.value,
+      type: "set",
+      quantity: safeValue,
+      unitPrice: Number.isFinite(currentUnitPrice) ? currentUnitPrice : "",
+    });
 
-    positionCell.textContent = POSITION_FORMATTER.format(appliedValue);
-    updateTotals();
+    const positions = await fetchPositionsFromServer();
+    replacePortfolioRows(positions);
+    await refreshTransactions();
     syncPositionInputWithSelectedAsset();
-    showPositionEditSuccessFeedback(row);
+    showPositionEditSuccessFeedback(getRowByAssetId(select.value));
     setPositionEditVisualState("saved");
     if (positionEditSuccessTimerId !== null) {
       window.clearTimeout(positionEditSuccessTimerId);
@@ -1737,97 +1743,6 @@ async function fetchPositionsFromServer() {
   return await res.json();
 }
 
-async function updatePositionOnServer(assetId, position) {
-  getCurrentUserIdOrThrow();
-  const res = await fetch(
-    getApiUrl("/api/positions/" + encodeURIComponent(assetId)),
-    buildFetchOptions({
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ position }),
-    })
-  );
-
-  if (!res.ok) {
-    let message = "Failed to update position";
-    try {
-      const payload = await res.json();
-      if (payload && typeof payload.error === "string" && payload.error.trim()) {
-        message = payload.error.trim();
-      }
-    } catch (error) {
-      // keep default message
-    }
-    throw new Error(message);
-  }
-
-  return await res.json();
-}
-
-async function createPositionOnServer(payload) {
-  getCurrentUserIdOrThrow();
-  const res = await fetch(
-    getApiUrl("/api/positions"),
-    buildFetchOptions({
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: payload.name,
-        currency: payload.currency,
-        position: payload.position,
-        price: payload.price,
-      }),
-    })
-  );
-
-  if (!res.ok) {
-    let message = "Failed to create asset";
-    try {
-      const body = await res.json();
-      if (body && typeof body.error === "string" && body.error.trim()) {
-        message = body.error.trim();
-      }
-    } catch (error) {
-      // Keep default message.
-    }
-
-    throw new Error(message);
-  }
-
-  return await res.json();
-}
-
-async function deletePositionOnServer(assetId) {
-  getCurrentUserIdOrThrow();
-  const deleteUrl = getApiUrl("/api/positions/" + encodeURIComponent(assetId));
-  const res = await fetch(
-    deleteUrl,
-    buildFetchOptions({
-      method: "DELETE",
-    })
-  );
-
-  if (!res.ok) {
-    let message = "Failed to delete asset";
-    try {
-      const body = await res.json();
-      if (body && typeof body.error === "string" && body.error.trim()) {
-        message = body.error.trim();
-      }
-    } catch (error) {
-      // Keep default message.
-    }
-
-    throw new Error(message);
-  }
-
-  return await res.json();
-}
-
 async function fetchTransactionsFromServer() {
   getCurrentUserIdOrThrow();
   const res = await fetch(getApiUrl("/api/transactions"), buildFetchOptions());
@@ -1955,16 +1870,20 @@ async function applyCreateAsset(event) {
   event.preventDefault();
 
   const form = document.getElementById("createAssetForm");
+  const assetIdInput = document.getElementById("createAssetIdInput");
   const nameInput = document.getElementById("createAssetNameInput");
   const currencySelect = document.getElementById("createAssetCurrencySelect");
+  const typeSelect = document.getElementById("createAssetTypeSelect");
   const positionInput = document.getElementById("createAssetPositionInput");
   const priceInput = document.getElementById("createAssetPriceInput");
   const submitBtn = document.getElementById("createAssetSubmitBtn");
 
   if (
     !form ||
+    !assetIdInput ||
     !nameInput ||
     !currencySelect ||
+    !typeSelect ||
     !positionInput ||
     !priceInput ||
     !submitBtn
@@ -1972,8 +1891,10 @@ async function applyCreateAsset(event) {
     return;
   }
 
+  const assetId = assetIdInput.value.trim().toUpperCase();
   const name = nameInput.value.trim();
   const currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+  const type = typeSelect.value === "set" ? "set" : "buy";
   const position = parseCurrencyNumber(positionInput.value);
   const price = parseCurrencyNumber(priceInput.value);
 
@@ -1984,33 +1905,37 @@ async function applyCreateAsset(event) {
 
   const previousBtnText = submitBtn.textContent;
   submitBtn.disabled = true;
-  submitBtn.textContent = "Creating...";
+  submitBtn.textContent = "Adding...";
 
   try {
-    await createPositionOnServer({
-      name,
+    await createTransactionOnServer({
+      assetId,
+      assetName: name,
       currency,
-      position,
-      price,
+      type,
+      quantity: position,
+      unitPrice: price,
     });
 
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
+    await refreshTransactions();
     form.reset();
     currencySelect.value = "USD";
+    typeSelect.value = "buy";
   } catch (error) {
-    console.error("Failed to create asset:", error);
+    console.error("Failed to add holding:", error);
     let message =
       error && typeof error.message === "string" && error.message
         ? error.message
         : "Unknown error";
     if (message === "Failed to fetch") {
-      message = message + " (API: " + getApiUrl("/api/positions") + ")";
+      message = message + " (API: " + getApiUrl("/api/transactions") + ")";
     }
-    window.alert("Failed to create asset: " + message);
+    window.alert("Failed to add holding: " + message);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = previousBtnText || "Create";
+    submitBtn.textContent = previousBtnText || "Add Holding";
   }
 }
 
@@ -2024,32 +1949,41 @@ async function applyDeleteAsset(event) {
   }
 
   const assetId = select.value;
-  const confirmed = window.confirm("Delete asset " + assetId + "?");
+  const row = getRowByAssetId(assetId);
+  const priceCell = row ? row.querySelector(".price") : null;
+  const currentUnitPrice = priceCell ? parseCurrencyNumber(priceCell.textContent) : 0;
+  const confirmed = window.confirm("Set holding " + assetId + " to zero?");
   if (!confirmed) {
     return;
   }
 
   const previousBtnText = submitBtn.textContent;
   submitBtn.disabled = true;
-  submitBtn.textContent = "Deleting...";
+  submitBtn.textContent = "Closing...";
 
   try {
-    await deletePositionOnServer(assetId);
+    await createTransactionOnServer({
+      assetId,
+      type: "set",
+      quantity: 0,
+      unitPrice: Number.isFinite(currentUnitPrice) ? currentUnitPrice : "",
+    });
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
+    await refreshTransactions();
   } catch (error) {
-    console.error("Failed to delete asset:", error);
+    console.error("Failed to close holding:", error);
     let message =
       error && typeof error.message === "string" && error.message
         ? error.message
         : "Unknown error";
     if (message === "Failed to fetch") {
-      message = message + " (API: " + getApiUrl("/api/positions/" + encodeURIComponent(assetId)) + ")";
+      message = message + " (API: " + getApiUrl("/api/transactions") + ")";
     }
-    window.alert("Failed to delete asset: " + message);
+    window.alert("Failed to close holding: " + message);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = previousBtnText || "Delete";
+    submitBtn.textContent = previousBtnText || "Close Holding";
     fillDeleteAssetOptions();
   }
 }
