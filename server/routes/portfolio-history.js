@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const { detectMarketSymbol, fetchCoinGeckoPrices } = require("../services/market-prices");
 
 const router = express.Router();
 
@@ -75,32 +76,60 @@ async function fetchUsdCnyRate() {
 async function calculatePortfolioSnapshot(userId) {
   const usdCnyRate = await fetchUsdCnyRate();
   const result = await pool.query(
-    `
-      SELECT
-        COUNT(*)::int AS asset_count,
-        COALESCE(
-          SUM(
-            CASE
-              WHEN currency = 'CNY' THEN (position * price) / $2
-              ELSE position * price
-            END
-          ),
-          0
-        )::numeric AS total_usd
-      FROM positions
-      WHERE user_id = $1
-    `,
-    [userId, usdCnyRate]
+    "SELECT id, name, currency, position, price FROM positions WHERE user_id = $1 ORDER BY id",
+    [userId]
   );
 
-  const row = result.rows[0];
-  const assetCount = Number(row && row.asset_count);
-  if (!Number.isInteger(assetCount) || assetCount <= 0) {
+  const positions = Array.isArray(result.rows) ? result.rows : [];
+  if (positions.length === 0) {
     return null;
   }
 
+  const marketSymbols = Array.from(
+    new Set(
+      positions
+        .map((row) => detectMarketSymbol(row.id, row.name))
+        .filter(Boolean)
+    )
+  );
+  let marketPricesBySymbol = {};
+
+  if (marketSymbols.length > 0) {
+    try {
+      marketPricesBySymbol = await fetchCoinGeckoPrices(marketSymbols);
+    } catch (error) {
+      console.error("Failed to load CoinGecko prices for snapshot, using stored prices:", error);
+    }
+  }
+
+  let totalUsd = 0;
+  for (let i = 0; i < positions.length; i++) {
+    const row = positions[i];
+    const symbol = detectMarketSymbol(row.id, row.name);
+    const marketPrice = symbol ? marketPricesBySymbol[symbol] : null;
+    const currency = String(row.currency || "").trim().toUpperCase() === "CNY" ? "CNY" : "USD";
+    const position = Number(row.position);
+    const fallbackPrice = Number(row.price);
+    const effectivePrice =
+      marketPrice && typeof marketPrice === "object"
+        ? currency === "CNY"
+          ? Number(marketPrice.cny)
+          : Number(marketPrice.usd)
+        : fallbackPrice;
+
+    if (!Number.isFinite(position) || !Number.isFinite(effectivePrice)) {
+      continue;
+    }
+
+    if (currency === "CNY") {
+      totalUsd += (position * effectivePrice) / usdCnyRate;
+    } else {
+      totalUsd += position * effectivePrice;
+    }
+  }
+
   return {
-    totalUsd: Number(row.total_usd),
+    totalUsd,
   };
 }
 

@@ -395,13 +395,16 @@ function normalizeHistoryValues(values) {
     };
   }
 
+  const bottomPadding = Math.max(valueRange * 0.2, referenceValue * 0.005, 1);
+  const topPadding = Math.max(valueRange * 0.08, referenceValue * 0.002, 1);
+
   return {
     values: numericValues,
     minValue,
     maxValue,
-    displayMinValue: minValue,
-    displayMaxValue: maxValue,
-    displaySpan: valueRange,
+    displayMinValue: minValue - bottomPadding,
+    displayMaxValue: maxValue + topPadding,
+    displaySpan: valueRange + bottomPadding + topPadding,
     isEffectivelyFlat: false,
   };
 }
