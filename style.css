@@ -1067,7 +1067,8 @@ tr.position-edit-success td {
 
 #allocationChart {
     width: 100%;
-    min-height: 420px;
+    height: 420px;
+    min-height: 360px;
     display: block;
 }
 
@@ -1088,11 +1089,20 @@ tr.position-edit-success td {
     .breakdown-content {
         padding: 0.85rem;
     }
+
+    #allocationChart {
+        height: 380px;
+    }
 }
 
 @media (max-width: 640px) {
     .overview-grid {
         grid-template-columns: 1fr;
+    }
+
+    #allocationChart {
+        height: 360px;
+        min-height: 320px;
     }
 
     .workspace-grid {

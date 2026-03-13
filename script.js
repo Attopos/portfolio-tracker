@@ -58,6 +58,7 @@ let currentPortfolioHistoryPoints = [];
 let currentTransactions = [];
 let currentPortfolioRows = [];
 let positionEditSuccessTimerId = null;
+let allocationChartInstance = null;
 const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
 // Small UI helper for Google auth status text.
@@ -1766,205 +1767,186 @@ function buildAllocationSegments(items) {
   return visibleItems;
 }
 
+function getAllocationChartInstance() {
+  const chartEl = document.getElementById("allocationChart");
+  if (!chartEl || typeof window.echarts === "undefined") {
+    return null;
+  }
+
+  if (!allocationChartInstance || allocationChartInstance.isDisposed()) {
+    allocationChartInstance = window.echarts.init(chartEl, null, {
+      renderer: "canvas",
+    });
+  }
+
+  return allocationChartInstance;
+}
+
 function drawAllocationPieChart(items) {
-  const canvas = document.getElementById("allocationChart");
-  if (!canvas) {
+  const chart = getAllocationChartInstance();
+  if (!chart) {
     return;
   }
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-
-  const pixelRatio = window.devicePixelRatio || 1;
-  const cssWidth = Math.max(320, Math.floor(canvas.clientWidth || 640));
-  const cssHeight = window.innerWidth <= 640 ? 360 : 420;
-  canvas.width = Math.floor(cssWidth * pixelRatio);
-  canvas.height = Math.floor(cssHeight * pixelRatio);
-  canvas.style.width = cssWidth + "px";
-  canvas.style.height = cssHeight + "px";
-  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-  ctx.clearRect(0, 0, cssWidth, cssHeight);
 
   const total = items.reduce(function (sum, item) {
     return sum + item.value;
   }, 0);
-
-  const isCompact = cssWidth <= 720;
-  const centerX = isCompact ? Math.round(cssWidth * 0.5) : Math.round(cssWidth * 0.36);
-  const centerY = Math.round(cssHeight / 2);
-  const outerRadius = isCompact
-    ? Math.min(112, Math.max(90, Math.round(cssWidth * 0.21)))
-    : Math.min(136, Math.max(110, Math.round(cssWidth * 0.15)));
-  const innerRadius = Math.round(outerRadius * 0.58);
-  const connectorRadius = outerRadius + 14;
-  const labelMargin = isCompact ? 24 : 34;
-  const labelBlockWidth = isCompact ? 150 : 176;
-  const rightColumnX = Math.min(cssWidth - labelBlockWidth - 24, centerX + outerRadius + labelMargin);
-  const leftColumnX = Math.max(24, centerX - outerRadius - labelMargin - labelBlockWidth);
-  const percentGap = 6;
-  const valueFont = window.innerWidth <= 640 ? "bold 16px JetBrains Mono, Menlo, monospace" : "bold 20px JetBrains Mono, Menlo, monospace";
+  const isCompact = window.innerWidth <= 640;
+  const totalCny = total * cnyPerUsdRate;
 
   if (!total) {
-    ctx.fillStyle = "#7c93a8";
-    ctx.font = "14px JetBrains Mono, Menlo, monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("No allocation data", centerX, centerY);
+    chart.clear();
+    chart.setOption({
+      animation: false,
+      title: {
+        text: "No allocation data",
+        left: "center",
+        top: "center",
+        textStyle: {
+          color: "#7c93a8",
+          fontSize: 14,
+          fontFamily: "JetBrains Mono, Menlo, monospace",
+          fontWeight: "normal",
+        },
+      },
+    });
     return;
   }
 
-  const segments = [];
-  let startAngle = -Math.PI / 2;
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const angle = (item.value / total) * Math.PI * 2;
-    const endAngle = startAngle + angle;
-    const color = PIE_COLORS[i % PIE_COLORS.length];
-
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
-    ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-
-    segments.push({
-      color,
-      label: item.label,
-      percent: (item.value / total) * 100,
-      midAngle: startAngle + angle / 2,
-    });
-
-    startAngle = endAngle;
-  }
-
-  ctx.fillStyle = "#7c93a8";
-  ctx.font = "12px JetBrains Mono, Menlo, monospace";
-  ctx.textAlign = "center";
-  ctx.fillText("TOTAL CNY", centerX, centerY - 18);
-
-  const totalCny = total * cnyPerUsdRate;
-  ctx.fillStyle = "#22e3a4";
-  ctx.font = valueFont;
-  ctx.fillText("¥" + totalCny.toFixed(2), centerX, centerY + 8);
-
-  ctx.fillStyle = "#a8ceff";
-  ctx.font = "12px JetBrains Mono, Menlo, monospace";
-  ctx.fillText("$" + total.toFixed(2), centerX, centerY + 28);
-
-  const leftLabels = [];
-  const rightLabels = [];
-
-  for (let i = 0; i < segments.length; i++) {
-    const segment = segments[i];
-    const cos = Math.cos(segment.midAngle);
-    const sin = Math.sin(segment.midAngle);
-    const elbowX = centerX + connectorRadius * cos;
-    const elbowY = centerY + connectorRadius * sin;
-    const side = cos >= 0 ? "right" : "left";
-    const label = {
-      color: segment.color,
-      label: truncateAllocationLabel(segment.label, isCompact ? 10 : 14),
-      percentText: segment.percent.toFixed(1) + "%",
-      elbowX,
-      elbowY,
-      blockX: side === "right" ? rightColumnX : leftColumnX,
-      targetY: elbowY,
-      side,
+  const data = items.map(function (item, index) {
+    return {
+      value: Number(item.value),
+      name: item.label,
+      itemStyle: {
+        color: PIE_COLORS[index % PIE_COLORS.length],
+      },
     };
+  });
 
-    if (side === "right") {
-      rightLabels.push(label);
-    } else {
-      leftLabels.push(label);
-    }
-  }
-
-  function layoutLabels(list) {
-    const topLimit = 34;
-    const bottomLimit = cssHeight - 34;
-    const minGap = isCompact ? 32 : 34;
-    list.sort(function (a, b) {
-      return a.targetY - b.targetY;
-    });
-
-    for (let i = 0; i < list.length; i++) {
-      if (i === 0) {
-        list[i].y = Math.max(topLimit, list[i].targetY);
-        continue;
-      }
-
-      list[i].y = Math.max(list[i].targetY, list[i - 1].y + minGap);
-    }
-
-    for (let i = list.length - 1; i >= 0; i--) {
-      if (i === list.length - 1) {
-        list[i].y = Math.min(bottomLimit, list[i].y);
-        continue;
-      }
-
-      list[i].y = Math.min(list[i].y, list[i + 1].y - minGap);
-    }
-  }
-
-  layoutLabels(leftLabels);
-  layoutLabels(rightLabels);
-
-  function drawLabels(list) {
-    ctx.font = "13px JetBrains Mono, Menlo, monospace";
-    ctx.textBaseline = "middle";
-
-    for (let i = 0; i < list.length; i++) {
-      const item = list[i];
-      const angle = Math.atan2(item.elbowY - centerY, item.elbowX - centerX);
-      const lineStartX = centerX + outerRadius * Math.cos(angle);
-      const lineStartY = centerY + outerRadius * Math.sin(angle);
-      const dotX = item.side === "right" ? item.blockX : item.blockX + labelBlockWidth;
-      const lineEndX = item.side === "right" ? dotX - 10 : dotX + 10;
-      const percentWidth = ctx.measureText(item.percentText).width;
-      const maxLabelWidth = Math.max(48, labelBlockWidth - percentWidth - percentGap - 14);
-      let labelText = item.label;
-
-      while (ctx.measureText(labelText).width > maxLabelWidth && labelText.length > 4) {
-        labelText = truncateAllocationLabel(labelText, labelText.length - 1);
-      }
-
-      ctx.strokeStyle = item.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(lineStartX, lineStartY);
-      ctx.lineTo(item.elbowX, item.elbowY);
-      ctx.lineTo(lineEndX, item.y);
-      ctx.stroke();
-
-      ctx.fillStyle = item.color;
-      ctx.beginPath();
-      ctx.arc(dotX, item.y, 4.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (item.side === "right") {
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#d3e4f2";
-        ctx.fillText(labelText, dotX + 12, item.y);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#b8f7df";
-        ctx.fillText(item.percentText, item.blockX + labelBlockWidth, item.y);
-      } else {
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#d3e4f2";
-        ctx.fillText(labelText, item.blockX, item.y);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#b8f7df";
-        ctx.fillText(item.percentText, item.blockX + labelBlockWidth, item.y);
-      }
-    }
-  }
-
-  drawLabels(leftLabels);
-  drawLabels(rightLabels);
+  chart.setOption(
+    {
+      animationDuration: 500,
+      animationDurationUpdate: 350,
+      tooltip: {
+        trigger: "item",
+        backgroundColor: "rgba(8, 18, 32, 0.94)",
+        borderColor: "rgba(146, 195, 255, 0.24)",
+        borderWidth: 1,
+        textStyle: {
+          color: "#e8f2ff",
+          fontFamily: "JetBrains Mono, Menlo, monospace",
+          fontSize: 12,
+        },
+        formatter: function (params) {
+          const usdValue = "$" + VALUE_FORMATTER.format(params.value);
+          const cnyValue = "¥" + VALUE_FORMATTER.format(params.value * cnyPerUsdRate);
+          return [
+            String(params.name || ""),
+            params.percent.toFixed(1) + "%",
+            usdValue,
+            cnyValue,
+          ].join("<br/>");
+        },
+      },
+      series: [
+        {
+          name: "Allocation",
+          type: "pie",
+          radius: isCompact ? ["44%", "68%"] : ["48%", "74%"],
+          center: ["50%", "50%"],
+          startAngle: 90,
+          clockwise: true,
+          minAngle: 4,
+          avoidLabelOverlap: true,
+          selectedMode: false,
+          roseType: false,
+          itemStyle: {
+            borderColor: "#111b2a",
+            borderWidth: 2,
+          },
+          emphasis: {
+            scale: true,
+            scaleSize: isCompact ? 6 : 8,
+            itemStyle: {
+              shadowBlur: 18,
+              shadowColor: "rgba(0, 0, 0, 0.22)",
+            },
+          },
+          label: {
+            show: true,
+            position: "outside",
+            color: "#d3e4f2",
+            fontSize: isCompact ? 11 : 12,
+            fontFamily: "JetBrains Mono, Menlo, monospace",
+            lineHeight: isCompact ? 15 : 17,
+            formatter: function (params) {
+              const percentText = params.percent.toFixed(1) + "%";
+              const labelText = truncateAllocationLabel(String(params.name || ""), isCompact ? 10 : 14);
+              return percentText + "\n" + labelText;
+            },
+          },
+          labelLine: {
+            show: true,
+            length: isCompact ? 10 : 14,
+            length2: isCompact ? 12 : 18,
+            smooth: false,
+            lineStyle: {
+              width: 1.8,
+              color: "inherit",
+            },
+          },
+          labelLayout: function (params) {
+            const isRight = params.labelRect.x >= chart.getWidth() / 2;
+            return {
+              x: isRight ? params.labelRect.x + 8 : params.labelRect.x - 8,
+              align: isRight ? "left" : "right",
+              verticalAlign: "middle",
+            };
+          },
+          data,
+        },
+      ],
+      graphic: [
+        {
+          type: "text",
+          left: "center",
+          top: isCompact ? "41%" : "40%",
+          silent: true,
+          style: {
+            text: "Portfolio",
+            fill: "#7c93a8",
+            font: (isCompact ? "12px" : "13px") + " JetBrains Mono, Menlo, monospace",
+            textAlign: "center",
+          },
+        },
+        {
+          type: "text",
+          left: "center",
+          top: isCompact ? "47%" : "46.5%",
+          silent: true,
+          style: {
+            text: "¥" + VALUE_FORMATTER.format(totalCny),
+            fill: "#22e3a4",
+            font: "700 " + (isCompact ? "18px" : "22px") + " JetBrains Mono, Menlo, monospace",
+            textAlign: "center",
+          },
+        },
+        {
+          type: "text",
+          left: "center",
+          top: isCompact ? "55.5%" : "55%",
+          silent: true,
+          style: {
+            text: "$" + VALUE_FORMATTER.format(total),
+            fill: "#a8ceff",
+            font: (isCompact ? "11px" : "12px") + " JetBrains Mono, Menlo, monospace",
+            textAlign: "center",
+          },
+        },
+      ],
+    },
+    true
+  );
 }
 
 function updateAllocationChart() {
