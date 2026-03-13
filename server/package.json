@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:create-users": "node scripts/create-users-table.js",
+    "db:create-sessions": "node scripts/create-sessions-table.js",
     "db:migrate-positions-user-id": "node scripts/add-user-id-to-positions.js",
     "db:create-portfolio-value-snapshots": "node scripts/create-portfolio-value-snapshots-table.js",
     "db:create-transactions": "node scripts/create-transactions-table.js"
@@ -16,6 +17,7 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
+    "connect-pg-simple": "^10.0.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",

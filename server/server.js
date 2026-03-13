@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
+const connectPgSimple = require("connect-pg-simple");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const positionsRouter = require("./routes/positions");
@@ -15,6 +16,9 @@ const port = Number(process.env.PORT) || 3000;
 const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
 const sessionSecret = String(process.env.SESSION_SECRET || "").trim();
 const googleClient = new OAuth2Client(googleClientId);
+const PgSession = connectPgSimple(session);
+const sessionTtlDays = Number(process.env.SESSION_TTL_DAYS) || 30;
+const sessionCookieMaxAgeMs = Math.max(sessionTtlDays, 1) * 24 * 60 * 60 * 1000;
 const allowedOrigins = new Set(
   String(
     process.env.APP_ORIGINS ||
@@ -50,10 +54,16 @@ app.use(
     secret: sessionSecret || "local-dev-session-secret",
     resave: false,
     saveUninitialized: false,
+    store: new PgSession({
+      pool,
+      tableName: "user_sessions",
+      createTableIfMissing: false,
+    }),
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: sessionCookieMaxAgeMs,
     },
   })
 );
