@@ -1100,7 +1100,18 @@ function formatTransactionDate(dateString) {
   return parsed.toLocaleString();
 }
 
+function updateTransactionsSummary(items) {
+  const summaryTransactionsEl = document.getElementById("summaryTransactionsCount");
+  if (!summaryTransactionsEl) {
+    return;
+  }
+
+  summaryTransactionsEl.textContent = String(Array.isArray(items) ? items.length : 0);
+}
+
 function renderTransactionsTable(items) {
+  updateTransactionsSummary(items);
+
   const tableBody = document.getElementById("transactionsTableBody");
   if (!tableBody) {
     return;

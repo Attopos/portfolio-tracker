@@ -492,6 +492,15 @@ tr.selected-asset-row td {
     padding: 1rem 0.9rem 0;
 }
 
+.overview-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-links-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: 1rem;
+}
+
 .summary-card {
     padding: 0.95rem 1rem 1rem;
     border: 1px solid var(--line-strong);
@@ -1083,6 +1092,10 @@ tr.position-edit-success td {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .dashboard-links-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .workspace-grid {
         grid-template-columns: 1fr;
     }
@@ -1098,6 +1111,10 @@ tr.position-edit-success td {
 
 @media (max-width: 640px) {
     .overview-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-links-grid {
         grid-template-columns: 1fr;
     }
 
