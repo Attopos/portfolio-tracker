@@ -44,10 +44,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="status-strip">
-                    <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
-                    <p id="marketUpdateStatus" class="subtitle market-status">Market auto-update: waiting for first sync...</p>
-                </div>
             </header>
 
             <div class="app-shell">
@@ -73,76 +69,74 @@
                         </article>
                     </section>
 
-                    <section class="workspace-grid">
-                        <div class="workspace-main">
-                            <section class="breakdown-panel workspace-card" aria-label="Asset allocation">
-                                <div class="breakdown-head">
-                                    <div>
-                                        <h2>Asset Allocation</h2>
-                                    </div>
+                    <section class="charts-grid" aria-label="Portfolio charts">
+                        <section class="breakdown-panel workspace-card chart-card" aria-label="Asset allocation">
+                            <div class="breakdown-head">
+                                <div>
+                                    <h2>Asset Allocation</h2>
                                 </div>
-                                <div class="breakdown-content">
-                                    <div id="allocationChart" role="img" aria-label="Portfolio allocation pie chart"></div>
-                                </div>
-                            </section>
-                        </div>
-                    </section>
+                            </div>
+                            <div class="breakdown-content">
+                                <div id="allocationChart" role="img" aria-label="Portfolio allocation pie chart"></div>
+                            </div>
+                        </section>
 
-                    <section class="workspace-card history-card" aria-label="Portfolio value over time">
-                        <div class="section-head history-head">
-                            <div>
-                                <h2>Portfolio Value Over Time</h2>
+                        <section class="workspace-card history-card chart-card" aria-label="Portfolio value over time">
+                            <div class="section-head history-head">
+                                <div>
+                                    <h2>Portfolio Value Over Time</h2>
+                                </div>
+                                <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
+                                    <button
+                                        class="history-range-tab"
+                                        type="button"
+                                        data-history-range="7d"
+                                        aria-selected="false"
+                                    >
+                                        7D
+                                    </button>
+                                    <button
+                                        class="history-range-tab is-active"
+                                        type="button"
+                                        data-history-range="30d"
+                                        aria-selected="true"
+                                    >
+                                        30D
+                                    </button>
+                                    <button
+                                        class="history-range-tab"
+                                        type="button"
+                                        data-history-range="90d"
+                                        aria-selected="false"
+                                    >
+                                        90D
+                                    </button>
+                                    <button
+                                        class="history-range-tab"
+                                        type="button"
+                                        data-history-range="1y"
+                                        aria-selected="false"
+                                    >
+                                        1Y
+                                    </button>
+                                </div>
                             </div>
-                            <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
-                                <button
-                                    class="history-range-tab"
-                                    type="button"
-                                    data-history-range="7d"
-                                    aria-selected="false"
-                                >
-                                    7D
-                                </button>
-                                <button
-                                    class="history-range-tab is-active"
-                                    type="button"
-                                    data-history-range="30d"
-                                    aria-selected="true"
-                                >
-                                    30D
-                                </button>
-                                <button
-                                    class="history-range-tab"
-                                    type="button"
-                                    data-history-range="90d"
-                                    aria-selected="false"
-                                >
-                                    90D
-                                </button>
-                                <button
-                                    class="history-range-tab"
-                                    type="button"
-                                    data-history-range="1y"
-                                    aria-selected="false"
-                                >
-                                    1Y
-                                </button>
+                            <div class="history-chart-shell">
+                                <div
+                                    id="portfolioHistoryChart"
+                                    role="img"
+                                    aria-label="Portfolio value history line chart"
+                                ></div>
+                                <div id="portfolioHistoryState" class="history-state">
+                                    Sign in to load portfolio history.
+                                </div>
                             </div>
-                        </div>
-                        <div class="history-chart-shell">
-                            <div
-                                id="portfolioHistoryChart"
-                                role="img"
-                                aria-label="Portfolio value history line chart"
-                            ></div>
-                            <div id="portfolioHistoryState" class="history-state">
-                                Sign in to load portfolio history.
-                            </div>
-                        </div>
+                        </section>
                     </section>
 
                     <footer class="market-footer">
                         <p id="marketDataFooter">
-                            FX USD/CNY: -- | Updated: --
+                            FX USD/CNY: --
                         </p>
                     </footer>
                 </div>

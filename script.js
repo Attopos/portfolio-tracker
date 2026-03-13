@@ -1268,8 +1268,6 @@ function renderMarketDataFooter() {
   footerEl.textContent =
     "FX USD/CNY: " +
     formatRate(cnyPerUsdRate) +
-    " | Updated: " +
-    (lastMarketSyncAt || "--") +
     (marketSummary.length ? " | " + marketSummary.join(" | ") : "");
 }
 
