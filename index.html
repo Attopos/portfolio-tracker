@@ -52,15 +52,24 @@
 
             <div class="app-shell">
                 <div class="content-column">
-                    <section class="overview-grid overview-grid-compact" aria-label="Portfolio overview">
-                        <article class="summary-card summary-card-accent">
-                            <p class="summary-label">Total CNY</p>
-                            <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
-                            <p class="summary-footnote">Live aggregate market value in CNY.</p>
+                    <section class="overview-grid overview-grid-compact dashboard-links-grid" aria-label="Portfolio overview">
+                        <article class="summary-card summary-shortcut-card">
+                            <div class="summary-shortcut-top">
+                                <p class="summary-label">Quick Link</p>
+                                <p id="summaryHoldingsCount" class="summary-value summary-shortcut-value">0</p>
+                            </div>
+                            <p class="summary-shortcut-title">Holdings</p>
+                            <p class="summary-footnote">Jump straight to your tracked positions and scan the full table.</p>
+                            <a class="summary-card-link summary-shortcut-link" href="holdings.html">Open Holdings</a>
                         </article>
-                        <article class="summary-card">
-                            <p class="summary-label">Total USD</p>
-                            <p id="summaryUsdTotal" class="summary-value">$0.00</p>
+                        <article class="summary-card summary-card-accent summary-shortcut-card">
+                            <div class="summary-shortcut-top">
+                                <p class="summary-label">Quick Link</p>
+                                <p id="summaryTransactionsCount" class="summary-value summary-shortcut-value">0</p>
+                            </div>
+                            <p class="summary-shortcut-title">Recent Transactions</p>
+                            <p class="summary-footnote">Open the ledger view to review the latest activity and edits.</p>
+                            <a class="summary-card-link summary-shortcut-link" href="transactions.html">Open Transactions</a>
                         </article>
                     </section>
 
@@ -129,21 +138,6 @@
                                 Sign in to load portfolio history.
                             </div>
                         </div>
-                    </section>
-
-                    <section class="overview-grid dashboard-links-grid" aria-label="Portfolio detail pages">
-                        <article class="summary-card">
-                            <p class="summary-label">Holdings</p>
-                            <p id="summaryHoldingsCount" class="summary-value">0</p>
-                            <p class="summary-footnote">Tracked positions in the current portfolio.</p>
-                            <a class="summary-card-link" href="holdings.html">Open details</a>
-                        </article>
-                        <article class="summary-card summary-card-accent">
-                            <p class="summary-label">Recent Transactions</p>
-                            <p id="summaryTransactionsCount" class="summary-value">0</p>
-                            <p class="summary-footnote">Review the latest ledger activity without crowding the dashboard.</p>
-                            <a class="summary-card-link" href="transactions.html">Open details</a>
-                        </article>
                     </section>
 
                     <footer class="market-footer">

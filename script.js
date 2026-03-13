@@ -2055,17 +2055,7 @@ function updateTotals() {
     cnyTotalCell.textContent = "¥" + cnyTotal.toFixed(2);
   }
 
-  const summaryUsdEl = document.getElementById("summaryUsdTotal");
-  const summaryCnyEl = document.getElementById("summaryCnyTotal");
   const summaryHoldingsEl = document.getElementById("summaryHoldingsCount");
-
-  if (summaryUsdEl) {
-    summaryUsdEl.textContent = "$" + usdTotal.toFixed(2);
-  }
-
-  if (summaryCnyEl) {
-    summaryCnyEl.textContent = "¥" + cnyTotal.toFixed(2);
-  }
 
   if (summaryHoldingsEl) {
     summaryHoldingsEl.textContent = String(holdingsCount);
