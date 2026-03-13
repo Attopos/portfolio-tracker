@@ -373,6 +373,7 @@ tr.selected-asset-row td {
 
 #portfolioHistoryChart {
     width: 100%;
+    height: 320px;
     min-height: 320px;
     display: block;
 }

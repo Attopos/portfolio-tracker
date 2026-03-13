@@ -59,6 +59,7 @@ let currentTransactions = [];
 let currentPortfolioRows = [];
 let positionEditSuccessTimerId = null;
 let allocationChartInstance = null;
+let portfolioHistoryChartInstance = null;
 const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
 // Small UI helper for Google auth status text.
@@ -427,6 +428,51 @@ function getHistoryDateKey(dateString) {
   );
 }
 
+function getHistoryMonthKey(dateString) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return String(date.getFullYear()) + "-" + String(date.getMonth() + 1).padStart(2, "0");
+}
+
+function formatHistoryAxisDate(dateString, range) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  if (range === "1y") {
+    return String(date.getMonth() + 1).padStart(2, "0") + "/" + String(date.getFullYear()).slice(-2);
+  }
+
+  return (
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "/" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
+function formatHistoryTooltipDate(dateString, range) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  if (range === "1y") {
+    return String(date.getFullYear()) + "-" + String(date.getMonth() + 1).padStart(2, "0");
+  }
+
+  return (
+    String(date.getFullYear()) +
+    "-" +
+    String(date.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(date.getDate()).padStart(2, "0")
+  );
+}
+
 function preparePortfolioHistoryPoints(points, range) {
   const normalizedPoints = Array.isArray(points)
     ? points
@@ -449,21 +495,18 @@ function preparePortfolioHistoryPoints(points, range) {
     return [normalizedPoints[normalizedPoints.length - 1]];
   }
 
-  if (range === "7d") {
-    return normalizedPoints;
-  }
-
-  const lastPointByDay = new Map();
+  const bucketKeyBuilder = range === "1y" ? getHistoryMonthKey : getHistoryDateKey;
+  const lastPointByBucket = new Map();
   for (let i = 0; i < normalizedPoints.length; i++) {
     const point = normalizedPoints[i];
-    const dateKey = getHistoryDateKey(point.capturedAt);
-    if (!dateKey) {
+    const bucketKey = bucketKeyBuilder(point.capturedAt);
+    if (!bucketKey) {
       continue;
     }
-    lastPointByDay.set(dateKey, point);
+    lastPointByBucket.set(bucketKey, point);
   }
 
-  return Array.from(lastPointByDay.values()).sort(function (left, right) {
+  return Array.from(lastPointByBucket.values()).sort(function (left, right) {
     return new Date(left.capturedAt).getTime() - new Date(right.capturedAt).getTime();
   });
 }
@@ -529,153 +572,168 @@ function buildHistoryAxisTickLabels(ticks, span) {
   });
 }
 
-function formatHistoryPointDate(dateString, range) {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) {
-    return "";
+function getPortfolioHistoryChartInstance() {
+  const chartEl = document.getElementById("portfolioHistoryChart");
+  if (!chartEl || typeof window.echarts === "undefined") {
+    return null;
   }
 
-  if (range === "7d") {
-    return (
-      String(date.getMonth() + 1).padStart(2, "0") +
-      "/" +
-      String(date.getDate()).padStart(2, "0") +
-      " " +
-      String(date.getHours()).padStart(2, "0") +
-      ":00"
-    );
+  if (!portfolioHistoryChartInstance || portfolioHistoryChartInstance.isDisposed()) {
+    portfolioHistoryChartInstance = window.echarts.init(chartEl, null, {
+      renderer: "canvas",
+    });
   }
 
-  return (
-    String(date.getMonth() + 1).padStart(2, "0") +
-    "/" +
-    String(date.getDate()).padStart(2, "0")
-  );
+  return portfolioHistoryChartInstance;
 }
 
 function drawPortfolioHistoryChart(points, range) {
-  const canvas = document.getElementById("portfolioHistoryChart");
-  if (!canvas) {
+  const chart = getPortfolioHistoryChartInstance();
+  if (!chart || !Array.isArray(points) || !points.length) {
     return;
   }
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-
-  const width = canvas.clientWidth || 1080;
-  const height = 320;
-  const pixelRatio = window.devicePixelRatio || 1;
-
-  canvas.width = Math.floor(width * pixelRatio);
-  canvas.height = Math.floor(height * pixelRatio);
-  canvas.style.height = height + "px";
-  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  ctx.clearRect(0, 0, width, height);
-
-  const chartPadding = { top: 22, right: 24, bottom: 42, left: 72 };
-  const chartWidth = width - chartPadding.left - chartPadding.right;
-  const chartHeight = height - chartPadding.top - chartPadding.bottom;
 
   const values = points.map(function (point) {
     return (Number(point.totalUsd) || 0) * cnyPerUsdRate;
   });
   const normalizedValues = normalizeHistoryValues(values);
   const axis = buildHistoryAxisTicks(normalizedValues.displayMinValue, normalizedValues.displayMaxValue, 4);
-  const axisLabels = buildHistoryAxisTickLabels(axis.ticks, axis.maxValue - axis.minValue);
-  const safeMinValue = axis.minValue;
-  const safeMaxValue = axis.maxValue;
-  const safeValueSpan = safeMaxValue - safeMinValue || 1;
+  const categories = points.map(function (point) {
+    return formatHistoryAxisDate(point.capturedAt, range);
+  });
+  const seriesData = points.map(function (point, index) {
+    return {
+      value: normalizedValues.values[index],
+      rawDate: point.capturedAt,
+      rawUsd: Number(point.totalUsd) || 0,
+    };
+  });
+  const splitNumber = range === "1y" ? Math.min(6, Math.max(3, categories.length)) : Math.min(7, Math.max(3, categories.length));
 
-  ctx.strokeStyle = "rgba(139, 195, 255, 0.12)";
-  ctx.lineWidth = 1;
-  ctx.fillStyle = "#7c93a8";
-  ctx.font = '12px "JetBrains Mono", Menlo, monospace';
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
+  chart.setOption(
+    {
+      animationDuration: 450,
+      animationDurationUpdate: 300,
+      grid: {
+        top: 24,
+        right: 24,
+        bottom: 44,
+        left: 76,
+      },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "rgba(8, 18, 32, 0.94)",
+        borderColor: "rgba(146, 195, 255, 0.24)",
+        borderWidth: 1,
+        textStyle: {
+          color: "#e8f2ff",
+          fontFamily: "JetBrains Mono, Menlo, monospace",
+          fontSize: 12,
+        },
+        axisPointer: {
+          type: "line",
+          lineStyle: {
+            color: "rgba(139, 195, 255, 0.28)",
+            width: 1,
+          },
+        },
+        formatter: function (items) {
+          const point = Array.isArray(items) && items.length ? items[0] : null;
+          if (!point || !point.data) {
+            return "";
+          }
 
-  for (let i = 0; i < axis.ticks.length; i++) {
-    const ratio = i / (axis.ticks.length - 1 || 1);
-    const y = chartPadding.top + chartHeight * ratio;
-    const labelIndex = axis.ticks.length - 1 - i;
-    ctx.beginPath();
-    ctx.moveTo(chartPadding.left, y);
-    ctx.lineTo(chartPadding.left + chartWidth, y);
-    ctx.stroke();
-    ctx.fillText(axisLabels[labelIndex], chartPadding.left - 10, y);
-  }
-
-  ctx.strokeStyle = "rgba(139, 195, 255, 0.18)";
-  ctx.beginPath();
-  ctx.moveTo(chartPadding.left, chartPadding.top + chartHeight);
-  ctx.lineTo(chartPadding.left + chartWidth, chartPadding.top + chartHeight);
-  ctx.stroke();
-
-  const plottedPoints = [];
-  for (let i = 0; i < points.length; i++) {
-    const xRatio = points.length === 1 ? 0.5 : i / (points.length - 1);
-    const yRatio = (normalizedValues.values[i] - safeMinValue) / safeValueSpan;
-    plottedPoints.push({
-      x: chartPadding.left + chartWidth * xRatio,
-      y: chartPadding.top + chartHeight - chartHeight * yRatio,
-    });
-  }
-
-  ctx.beginPath();
-  for (let i = 0; i < plottedPoints.length; i++) {
-    const point = plottedPoints[i];
-    if (i === 0) {
-      ctx.moveTo(point.x, point.y);
-    } else {
-      ctx.lineTo(point.x, point.y);
-    }
-  }
-
-  ctx.strokeStyle = "#22e3a4";
-  ctx.lineWidth = 2.4;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(plottedPoints[0].x, chartPadding.top + chartHeight);
-  for (let i = 0; i < plottedPoints.length; i++) {
-    ctx.lineTo(plottedPoints[i].x, plottedPoints[i].y);
-  }
-  ctx.lineTo(plottedPoints[plottedPoints.length - 1].x, chartPadding.top + chartHeight);
-  ctx.closePath();
-  ctx.fillStyle = "rgba(34, 227, 164, 0.12)";
-  ctx.fill();
-
-  for (let i = 0; i < plottedPoints.length; i++) {
-    const point = plottedPoints[i];
-    ctx.beginPath();
-    ctx.arc(point.x, point.y, 3.2, 0, Math.PI * 2);
-    ctx.fillStyle = "#22e3a4";
-    ctx.fill();
-    ctx.strokeStyle = "#08131d";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-
-  const labelIndexes = points.length < 3 ? [0, points.length - 1] : [0, Math.floor(points.length / 2), points.length - 1];
-  const seenIndexes = new Set();
-  ctx.fillStyle = "#7c93a8";
-  ctx.font = '12px "JetBrains Mono", Menlo, monospace';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-
-  for (let i = 0; i < labelIndexes.length; i++) {
-    const pointIndex = labelIndexes[i];
-    if (pointIndex < 0 || pointIndex >= points.length || seenIndexes.has(pointIndex)) {
-      continue;
-    }
-    seenIndexes.add(pointIndex);
-    ctx.fillText(
-      formatHistoryPointDate(points[pointIndex].capturedAt, range),
-      plottedPoints[pointIndex].x,
-      chartPadding.top + chartHeight + 12
-    );
-  }
+          return [
+            formatHistoryTooltipDate(point.data.rawDate, range),
+            "¥" + VALUE_FORMATTER.format(point.data.value),
+            "$" + VALUE_FORMATTER.format(point.data.rawUsd),
+          ].join("<br/>");
+        },
+      },
+      xAxis: {
+        type: "category",
+        boundaryGap: false,
+        data: categories,
+        axisTick: {
+          show: false,
+        },
+        axisLine: {
+          lineStyle: {
+            color: "rgba(139, 195, 255, 0.18)",
+          },
+        },
+        axisLabel: {
+          color: "#7c93a8",
+          fontFamily: "JetBrains Mono, Menlo, monospace",
+          fontSize: 11,
+          interval: "auto",
+          hideOverlap: true,
+        },
+        splitNumber,
+      },
+      yAxis: {
+        type: "value",
+        min: axis.minValue,
+        max: axis.maxValue,
+        interval: axis.step,
+        axisTick: {
+          show: false,
+        },
+        axisLine: {
+          show: false,
+        },
+        splitLine: {
+          lineStyle: {
+            color: "rgba(139, 195, 255, 0.12)",
+          },
+        },
+        axisLabel: {
+          color: "#7c93a8",
+          fontFamily: "JetBrains Mono, Menlo, monospace",
+          fontSize: 11,
+          formatter: function (value) {
+            return formatHistoryAxisCny(value, axis.maxValue - axis.minValue, 0);
+          },
+        },
+      },
+      series: [
+        {
+          type: "line",
+          data: seriesData,
+          smooth: true,
+          symbol: "circle",
+          symbolSize: range === "1y" ? 7 : 6,
+          showSymbol: true,
+          lineStyle: {
+            width: 3,
+            color: "#22e3a4",
+          },
+          itemStyle: {
+            color: "#22e3a4",
+            borderColor: "#08131d",
+            borderWidth: 2,
+          },
+          areaStyle: {
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: "rgba(34, 227, 164, 0.28)" },
+                { offset: 1, color: "rgba(34, 227, 164, 0.03)" },
+              ],
+            },
+          },
+          emphasis: {
+            focus: "series",
+          },
+        },
+      ],
+    },
+    true
+  );
 }
 
 async function fetchPortfolioHistoryFromServer(range) {
