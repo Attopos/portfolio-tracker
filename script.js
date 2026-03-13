@@ -56,6 +56,7 @@ let activePortfolioHistoryRange = "30d";
 let portfolioHistoryRequestId = 0;
 let currentPortfolioHistoryPoints = [];
 let currentTransactions = [];
+let currentPortfolioRows = [];
 let positionEditSuccessTimerId = null;
 const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
@@ -873,25 +874,32 @@ function buildPortfolioRowHtml(item) {
 }
 
 function renderPortfolioRows(items) {
+  const normalizedItems = [];
+  if (Array.isArray(items)) {
+    for (let i = 0; i < items.length; i++) {
+      const normalized = normalizePortfolioRow(items[i]);
+      if (normalized) {
+        normalizedItems.push(normalized);
+      }
+    }
+  }
+
+  currentPortfolioRows = normalizedItems;
+
   const tableBody = document.getElementById("portfolioTableBody");
   if (!tableBody) {
     return;
   }
 
-  if (!Array.isArray(items) || !items.length) {
+  if (!normalizedItems.length) {
     tableBody.innerHTML = "";
     return;
   }
 
   let html = "";
 
-  for (let i = 0; i < items.length; i++) {
-    const normalized = normalizePortfolioRow(items[i]);
-    if (!normalized) {
-      continue;
-    }
-
-    html += buildPortfolioRowHtml(normalized);
+  for (let i = 0; i < normalizedItems.length; i++) {
+    html += buildPortfolioRowHtml(normalizedItems[i]);
   }
 
   tableBody.innerHTML = html;
@@ -915,16 +923,7 @@ function getApiUrl(path) {
 }
 
 function getDataRows() {
-  const rows = document.querySelectorAll("table tr");
-  const dataRows = [];
-
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i].querySelector(".usd") && rows[i].querySelector(".cny")) {
-      dataRows.push(rows[i]);
-    }
-  }
-
-  return dataRows;
+  return document.querySelectorAll("#portfolioTableBody tr");
 }
 
 function getRowId(row) {
@@ -938,6 +937,17 @@ function getRowByAssetId(assetId) {
   for (let i = 0; i < rows.length; i++) {
     if (getRowId(rows[i]) === assetId) {
       return rows[i];
+    }
+  }
+
+  return null;
+}
+
+function getPortfolioItemById(assetId) {
+  const safeAssetId = String(assetId || "").trim();
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    if (currentPortfolioRows[i].id === safeAssetId) {
+      return currentPortfolioRows[i];
     }
   }
 
@@ -964,12 +974,11 @@ function getRowStandardSymbol(row) {
 }
 
 function getTrackedMarketSymbols() {
-  const rows = getDataRows();
   const symbols = [];
   const seen = new Set();
 
-  for (let i = 0; i < rows.length; i++) {
-    const symbol = getRowStandardSymbol(rows[i]);
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const symbol = currentPortfolioRows[i].standardSymbol || "";
     if (!symbol || seen.has(symbol)) {
       continue;
     }
@@ -980,22 +989,48 @@ function getTrackedMarketSymbols() {
   return symbols;
 }
 
-function getEffectivePriceForRow(row) {
-  const symbol = getRowStandardSymbol(row);
-  const entryPrice = getRowEntryPrice(row);
+function syncPortfolioRowsFromTable() {
+  const rows = getDataRows();
+  if (!rows.length || !currentPortfolioRows.length) {
+    return;
+  }
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const item = getPortfolioItemById(getRowId(row));
+    const currencySelect = row.querySelector(".currency-select");
+    if (!item || !currencySelect) {
+      continue;
+    }
+
+    item.currency = currencySelect.value === "CNY" ? "CNY" : "USD";
+  }
+}
+
+function getEffectivePriceForItem(item) {
+  const symbol = item && item.standardSymbol ? item.standardSymbol : "";
+  const entryPrice = Number(item && item.price);
   if (!symbol) {
-    return entryPrice;
+    return Number.isFinite(entryPrice) ? entryPrice : 0;
   }
 
   const market = marketPricesBySymbol[symbol];
   if (!market || typeof market !== "object") {
-    return entryPrice;
+    return Number.isFinite(entryPrice) ? entryPrice : 0;
   }
 
-  const currencySelect = row ? row.querySelector(".currency-select") : null;
-  const currency = currencySelect && currencySelect.value === "CNY" ? "CNY" : "USD";
+  const currency = item && item.currency === "CNY" ? "CNY" : "USD";
   const marketPrice = currency === "CNY" ? Number(market.cny) : Number(market.usd);
-  return Number.isFinite(marketPrice) && marketPrice > 0 ? marketPrice : entryPrice;
+  if (Number.isFinite(marketPrice) && marketPrice > 0) {
+    return marketPrice;
+  }
+
+  return Number.isFinite(entryPrice) ? entryPrice : 0;
+}
+
+function getEffectivePriceForRow(row) {
+  const item = getPortfolioItemById(getRowId(row));
+  return getEffectivePriceForItem(item);
 }
 
 function formatTransactionDate(dateString) {
@@ -1061,12 +1096,11 @@ function fillTransactionAssetOptions(preferredValue) {
     typeof preferredValue === "string" && preferredValue.trim()
       ? preferredValue.trim()
       : String(select.value || "").trim();
-  const rows = getDataRows();
   let optionsHtml = '<option value="' + NEW_TRANSACTION_ASSET_VALUE + '">New asset...</option>';
 
-  for (let i = 0; i < rows.length; i++) {
-    const assetId = getRowId(rows[i]);
-    const assetName = getRowAssetName(rows[i]);
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const assetId = currentPortfolioRows[i].id;
+    const assetName = currentPortfolioRows[i].name;
     if (!assetId) {
       continue;
     }
@@ -1364,6 +1398,7 @@ function updateMarketValues() {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
+    const item = getPortfolioItemById(getRowId(row));
     const currencySelect = row.querySelector(".currency-select");
     const positionCell = row.querySelector(".position");
     const priceCell = row.querySelector(".price");
@@ -1374,8 +1409,8 @@ function updateMarketValues() {
       continue;
     }
 
-    const position = parseCurrencyNumber(positionCell.textContent);
-    const price = getEffectivePriceForRow(row);
+    const position = item ? Number(item.position) : parseCurrencyNumber(positionCell.textContent);
+    const price = item ? getEffectivePriceForItem(item) : getEffectivePriceForRow(row);
     priceCell.textContent = VALUE_FORMATTER.format(price);
     const baseValue = position * price;
 
@@ -1447,19 +1482,15 @@ function fillPositionEditorOptions() {
     return;
   }
 
-  const rows = getDataRows();
   let html = '<option value="" selected>Select an asset...</option>';
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowId = getRowId(row);
-    const displayNameCell = row.querySelector("td:nth-child(1)");
-    if (!rowId || !displayNameCell) {
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const item = currentPortfolioRows[i];
+    if (!item.id || !item.name) {
       continue;
     }
 
-    const label = displayNameCell.textContent.trim();
-    html += '<option value="' + rowId + '">' + label + "</option>";
+    html += '<option value="' + item.id + '">' + item.name + "</option>";
   }
 
   select.innerHTML = html;
@@ -1473,8 +1504,7 @@ function fillDeleteAssetOptions() {
   }
 
   const currentValue = select.value;
-  const rows = getDataRows();
-  if (!rows.length) {
+  if (!currentPortfolioRows.length) {
     select.innerHTML = '<option value="" selected>No assets available</option>';
     select.disabled = true;
     if (submitBtn) {
@@ -1484,16 +1514,13 @@ function fillDeleteAssetOptions() {
   }
 
   let html = "";
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowId = getRowId(row);
-    const displayNameCell = row.querySelector("td:nth-child(1)");
-    if (!rowId || !displayNameCell) {
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const item = currentPortfolioRows[i];
+    if (!item.id || !item.name) {
       continue;
     }
 
-    const label = displayNameCell.textContent.trim();
-    html += '<option value="' + rowId + '">' + label + "</option>";
+    html += '<option value="' + item.id + '">' + item.name + "</option>";
   }
 
   select.innerHTML = html;
@@ -1544,9 +1571,9 @@ function syncPositionInputWithSelectedAsset() {
   }
 
   const row = getRowByAssetId(select.value);
-  const positionCell = row ? row.querySelector(".position") : null;
-  const position = positionCell ? parseCurrencyNumber(positionCell.textContent) : 0;
-  input.value = position.toString();
+  const item = getPortfolioItemById(select.value);
+  const position = item ? Number(item.position) : 0;
+  input.value = String(Number.isFinite(position) ? position : 0);
 }
 
 function showPositionEditSuccessFeedback(row) {
@@ -1616,19 +1643,14 @@ async function applyPositionSizeUpdate(event) {
     return;
   }
 
-  const row = getRowByAssetId(select.value);
-  if (!row) {
-    return;
-  }
-
-  const positionCell = row.querySelector(".position");
-  if (!positionCell) {
+  const item = getPortfolioItemById(select.value);
+  if (!item) {
     return;
   }
 
   const nextValue = parseCurrencyNumber(input.value);
   const safeValue = Number.isFinite(nextValue) ? nextValue : 0;
-  const currentUnitPrice = getRowEntryPrice(row);
+  const currentUnitPrice = Number(item.price);
   const applyBtnLabel = applyBtn ? applyBtn.querySelector("span") : null;
   const previousButtonText = applyBtnLabel ? applyBtnLabel.textContent : "";
 
@@ -1684,25 +1706,20 @@ async function applyPositionSizeUpdate(event) {
 }
 
 function getAllocationData() {
-  const rows = getDataRows();
   const allocation = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const nameCell = row.querySelector("td:nth-child(1)");
-    const usdCell = row.querySelector(".usd");
-
-    if (!nameCell || !usdCell) {
-      continue;
-    }
-
-    const value = parseCurrencyNumber(usdCell.textContent);
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const item = currentPortfolioRows[i];
+    const price = getEffectivePriceForItem(item);
+    const baseValue = Number(item.position) * price;
+    const value =
+      item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
     if (value <= 0) {
       continue;
     }
 
     allocation.push({
-      label: nameCell.textContent.trim(),
+      label: item.name,
       value,
     });
   }
@@ -1956,21 +1973,24 @@ function updateAllocationChart() {
 }
 
 function updateTotals() {
+  syncPortfolioRowsFromTable();
   updateMarketValues();
-
-  const usdCells = document.querySelectorAll(".usd");
-  const cnyCells = document.querySelectorAll(".cny");
-  const holdingsCount = getDataRows().length;
 
   let usdTotal = 0;
   let cnyTotal = 0;
+  const holdingsCount = currentPortfolioRows.length;
 
-  for (let i = 0; i < usdCells.length; i++) {
-    usdTotal += parseCurrencyNumber(usdCells[i].textContent);
-  }
-
-  for (let i = 0; i < cnyCells.length; i++) {
-    cnyTotal += parseCurrencyNumber(cnyCells[i].textContent);
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const item = currentPortfolioRows[i];
+    const price = getEffectivePriceForItem(item);
+    const baseValue = Number(item.position) * price;
+    if (item.currency === "CNY") {
+      cnyTotal += baseValue;
+      usdTotal += baseValue / cnyPerUsdRate;
+    } else {
+      usdTotal += baseValue;
+      cnyTotal += baseValue * cnyPerUsdRate;
+    }
   }
 
   const usdTotalCell = document.getElementById("usdTotal");
