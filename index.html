@@ -50,37 +50,115 @@
                 </div>
             </header>
 
-            <section class="overview-grid overview-grid-compact" aria-label="Portfolio overview">
-                <article class="summary-card summary-card-accent">
-                    <p class="summary-label">Total CNY</p>
-                    <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
-                    <p class="summary-footnote">Live aggregate market value in CNY.</p>
-                </article>
-                <article class="summary-card">
-                    <p class="summary-label">Total USD</p>
-                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
-                </article>
-            </section>
+            <div class="app-shell">
+                <div class="content-column">
+                    <section class="overview-grid overview-grid-compact" aria-label="Portfolio overview">
+                        <article class="summary-card summary-card-accent">
+                            <p class="summary-label">Total CNY</p>
+                            <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
+                            <p class="summary-footnote">Live aggregate market value in CNY.</p>
+                        </article>
+                        <article class="summary-card">
+                            <p class="summary-label">Total USD</p>
+                            <p id="summaryUsdTotal" class="summary-value">$0.00</p>
+                        </article>
+                    </section>
 
-            <section class="workspace-grid">
-                <div class="workspace-main">
-                    <section class="breakdown-panel workspace-card" aria-label="Asset allocation">
-                        <div class="breakdown-head">
-                            <div>
-                                <h2>Asset Allocation</h2>
-                            </div>
-                        </div>
-                        <div class="breakdown-content">
-                            <div id="allocationChart" role="img" aria-label="Portfolio allocation pie chart"></div>
+                    <section class="workspace-grid">
+                        <div class="workspace-main">
+                            <section class="breakdown-panel workspace-card" aria-label="Asset allocation">
+                                <div class="breakdown-head">
+                                    <div>
+                                        <h2>Asset Allocation</h2>
+                                    </div>
+                                </div>
+                                <div class="breakdown-content">
+                                    <div id="allocationChart" role="img" aria-label="Portfolio allocation pie chart"></div>
+                                </div>
+                            </section>
                         </div>
                     </section>
+
+                    <section class="workspace-card history-card" aria-label="Portfolio value over time">
+                        <div class="section-head history-head">
+                            <div>
+                                <h2>Portfolio Value Over Time</h2>
+                            </div>
+                            <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
+                                <button
+                                    class="history-range-tab"
+                                    type="button"
+                                    data-history-range="7d"
+                                    aria-selected="false"
+                                >
+                                    7D
+                                </button>
+                                <button
+                                    class="history-range-tab is-active"
+                                    type="button"
+                                    data-history-range="30d"
+                                    aria-selected="true"
+                                >
+                                    30D
+                                </button>
+                                <button
+                                    class="history-range-tab"
+                                    type="button"
+                                    data-history-range="90d"
+                                    aria-selected="false"
+                                >
+                                    90D
+                                </button>
+                                <button
+                                    class="history-range-tab"
+                                    type="button"
+                                    data-history-range="1y"
+                                    aria-selected="false"
+                                >
+                                    1Y
+                                </button>
+                            </div>
+                        </div>
+                        <div class="history-chart-shell">
+                            <div
+                                id="portfolioHistoryChart"
+                                role="img"
+                                aria-label="Portfolio value history line chart"
+                            ></div>
+                            <div id="portfolioHistoryState" class="history-state">
+                                Sign in to load portfolio history.
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="overview-grid dashboard-links-grid" aria-label="Portfolio detail pages">
+                        <article class="summary-card">
+                            <p class="summary-label">Holdings</p>
+                            <p id="summaryHoldingsCount" class="summary-value">0</p>
+                            <p class="summary-footnote">Tracked positions in the current portfolio.</p>
+                            <a class="summary-card-link" href="holdings.html">Open details</a>
+                        </article>
+                        <article class="summary-card summary-card-accent">
+                            <p class="summary-label">Recent Transactions</p>
+                            <p id="summaryTransactionsCount" class="summary-value">0</p>
+                            <p class="summary-footnote">Review the latest ledger activity without crowding the dashboard.</p>
+                            <a class="summary-card-link" href="transactions.html">Open details</a>
+                        </article>
+                    </section>
+
+                    <footer class="market-footer">
+                        <p id="marketDataFooter">
+                            FX USD/CNY: -- | Updated: --
+                        </p>
+                    </footer>
                 </div>
 
-                <aside class="workspace-sidebar" aria-label="Portfolio actions">
-                    <section class="workspace-card action-stack" aria-label="Portfolio actions">
+                <aside class="actions-rail" aria-label="Portfolio actions">
+                    <section class="workspace-card action-stack actions-rail-inner" aria-label="Portfolio actions">
                         <div class="section-head action-stack-head">
                             <div>
                                 <h2>Portfolio Actions</h2>
+                                <p>Switch tasks without leaving the workspace.</p>
                             </div>
                         </div>
                         <div class="action-tabs" role="tablist" aria-label="Portfolio action tabs">
@@ -277,80 +355,7 @@
                         </div>
                     </section>
                 </aside>
-            </section>
-
-            <section class="workspace-card history-card" aria-label="Portfolio value over time">
-                <div class="section-head history-head">
-                    <div>
-                        <h2>Portfolio Value Over Time</h2>
-                    </div>
-                    <div class="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
-                        <button
-                            class="history-range-tab"
-                            type="button"
-                            data-history-range="7d"
-                            aria-selected="false"
-                        >
-                            7D
-                        </button>
-                        <button
-                            class="history-range-tab is-active"
-                            type="button"
-                            data-history-range="30d"
-                            aria-selected="true"
-                        >
-                            30D
-                        </button>
-                        <button
-                            class="history-range-tab"
-                            type="button"
-                            data-history-range="90d"
-                            aria-selected="false"
-                        >
-                            90D
-                        </button>
-                        <button
-                            class="history-range-tab"
-                            type="button"
-                            data-history-range="1y"
-                            aria-selected="false"
-                        >
-                            1Y
-                        </button>
-                    </div>
-                </div>
-                <div class="history-chart-shell">
-                    <div
-                        id="portfolioHistoryChart"
-                        role="img"
-                        aria-label="Portfolio value history line chart"
-                    ></div>
-                    <div id="portfolioHistoryState" class="history-state">
-                        Sign in to load portfolio history.
-                    </div>
-                </div>
-            </section>
-
-            <section class="overview-grid dashboard-links-grid" aria-label="Portfolio detail pages">
-                <article class="summary-card">
-                    <p class="summary-label">Holdings</p>
-                    <p id="summaryHoldingsCount" class="summary-value">0</p>
-                    <p class="summary-footnote">Tracked positions in the current portfolio.</p>
-                    <a class="summary-card-link" href="holdings.html">Open details</a>
-                </article>
-                <article class="summary-card summary-card-accent">
-                    <p class="summary-label">Recent Transactions</p>
-                    <p id="summaryTransactionsCount" class="summary-value">0</p>
-                    <p class="summary-footnote">Review the latest ledger activity without crowding the dashboard.</p>
-                    <a class="summary-card-link" href="transactions.html">Open details</a>
-                </article>
-            </section>
-
-            <footer class="market-footer">
-                <p id="marketDataFooter">
-                    FX USD/CNY: -- | Updated: --
-                </p>
-            </footer>
+            </div>
         </section>
     </main>
 </body>

@@ -50,63 +50,73 @@
                 </div>
             </header>
 
-            <section class="overview-grid" aria-label="Holdings overview">
-                <article class="summary-card">
-                    <p class="summary-label">Total CNY</p>
-                    <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
-                    <p class="summary-footnote">Live aggregate market value in CNY.</p>
-                </article>
-                <article class="summary-card">
-                    <p class="summary-label">Total USD</p>
-                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
-                    <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
-                </article>
-                <article class="summary-card summary-card-accent">
-                    <p class="summary-label">Holdings</p>
-                    <p id="summaryHoldingsCount" class="summary-value">0</p>
-                    <p class="summary-footnote">Every active position currently tracked in your portfolio.</p>
-                </article>
-            </section>
+            <div class="app-shell">
+                <div class="content-column">
+                    <section class="overview-grid" aria-label="Holdings overview">
+                        <article class="summary-card">
+                            <p class="summary-label">Total CNY</p>
+                            <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
+                            <p class="summary-footnote">Live aggregate market value in CNY.</p>
+                        </article>
+                        <article class="summary-card">
+                            <p class="summary-label">Total USD</p>
+                            <p id="summaryUsdTotal" class="summary-value">$0.00</p>
+                            <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
+                        </article>
+                        <article class="summary-card summary-card-accent">
+                            <p class="summary-label">Holdings</p>
+                            <p id="summaryHoldingsCount" class="summary-value">0</p>
+                            <p class="summary-footnote">Every active position currently tracked in your portfolio.</p>
+                        </article>
+                    </section>
 
-            <section class="workspace-grid workspace-grid-detail">
-                <div class="workspace-main">
-                    <section class="workspace-card portfolio-table-card" aria-label="Portfolio details">
-                        <div class="section-head section-head-detail">
-                            <div>
-                                <h2>Portfolio Details</h2>
-                                <p>Review currency choice, position size, live market price, and mark-to-market value.</p>
-                            </div>
-                            <a class="section-head-link" href="index.html">Back to Dashboard</a>
-                        </div>
-                        <div class="table-wrap">
-                            <table>
-                                <caption>Portfolio in Details</caption>
-                                <thead>
-                                    <tr class="head-row">
-                                        <th>Name</th>
-                                        <th>Currency</th>
-                                        <th>Position Size</th>
-                                        <th>Market Price</th>
-                                        <th>Market Value (USD)</th>
-                                        <th>Market Value (CNY)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="portfolioTableBody"></tbody>
-                                <tfoot>
-                                    <tr class="total-row">
-                                        <td>Total</td>
-                                        <td colspan="3"></td>
-                                        <td id="usdTotal"></td>
-                                        <td id="cnyTotal"></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                    <section class="workspace-grid workspace-grid-detail">
+                        <div class="workspace-main">
+                            <section class="workspace-card portfolio-table-card" aria-label="Portfolio details">
+                                <div class="section-head section-head-detail">
+                                    <div>
+                                        <h2>Portfolio Details</h2>
+                                        <p>Review currency choice, position size, live market price, and mark-to-market value.</p>
+                                    </div>
+                                    <a class="section-head-link" href="index.html">Back to Dashboard</a>
+                                </div>
+                                <div class="table-wrap">
+                                    <table>
+                                        <caption>Portfolio in Details</caption>
+                                        <thead>
+                                            <tr class="head-row">
+                                                <th>Name</th>
+                                                <th>Currency</th>
+                                                <th>Position Size</th>
+                                                <th>Market Price</th>
+                                                <th>Market Value (USD)</th>
+                                                <th>Market Value (CNY)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="portfolioTableBody"></tbody>
+                                        <tfoot>
+                                            <tr class="total-row">
+                                                <td>Total</td>
+                                                <td colspan="3"></td>
+                                                <td id="usdTotal"></td>
+                                                <td id="cnyTotal"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </section>
                         </div>
                     </section>
+
+                    <footer class="market-footer">
+                        <p id="marketDataFooter">
+                            FX USD/CNY: -- | Updated: --
+                        </p>
+                    </footer>
                 </div>
 
-                <aside class="workspace-sidebar" aria-label="Holdings actions">
-                    <section class="workspace-card action-stack" aria-label="Portfolio actions">
+                <aside class="actions-rail" aria-label="Holdings actions">
+                    <section class="workspace-card action-stack actions-rail-inner" aria-label="Portfolio actions">
                         <div class="section-head action-stack-head">
                             <div>
                                 <h2>Portfolio Actions</h2>
@@ -308,13 +318,7 @@
                         </div>
                     </section>
                 </aside>
-            </section>
-
-            <footer class="market-footer">
-                <p id="marketDataFooter">
-                    FX USD/CNY: -- | Updated: --
-                </p>
-            </footer>
+            </div>
         </section>
     </main>
 </body>

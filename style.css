@@ -501,6 +501,31 @@ tr.selected-asset-row td {
     padding-bottom: 1rem;
 }
 
+.app-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 0.9rem;
+    padding: 0.95rem 0.9rem 1rem;
+    align-items: start;
+}
+
+.content-column {
+    display: grid;
+    gap: 0.95rem;
+    min-width: 0;
+}
+
+.actions-rail {
+    min-width: 0;
+}
+
+.actions-rail-inner {
+    position: sticky;
+    top: 0.95rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
 .summary-card {
     padding: 0.95rem 1rem 1rem;
     border: 1px solid var(--line-strong);
@@ -561,9 +586,9 @@ tr.selected-asset-row td {
 
 .workspace-grid {
     display: grid;
-    grid-template-columns: minmax(0, 2.05fr) minmax(280px, 0.78fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.9rem;
-    padding: 0.95rem 0.9rem 1rem;
+    padding: 0;
     align-items: start;
 }
 
@@ -1043,7 +1068,7 @@ tr.selected-asset-row td {
 }
 
 .transactions-card {
-    margin: 0 0.9rem 1rem;
+    margin: 0;
 }
 
 #transactionsTableBody .transactions-empty td {
@@ -1096,8 +1121,14 @@ tr.position-edit-success td {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .workspace-grid {
+    .app-shell {
         grid-template-columns: 1fr;
+    }
+
+    .actions-rail-inner {
+        position: static;
+        max-height: none;
+        overflow-y: visible;
     }
 
     .breakdown-content {

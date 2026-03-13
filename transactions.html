@@ -50,55 +50,65 @@
                 </div>
             </header>
 
-            <section class="overview-grid" aria-label="Transactions overview">
-                <article class="summary-card">
-                    <p class="summary-label">Total CNY</p>
-                    <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
-                    <p class="summary-footnote">Live aggregate market value in CNY.</p>
-                </article>
-                <article class="summary-card">
-                    <p class="summary-label">Total USD</p>
-                    <p id="summaryUsdTotal" class="summary-value">$0.00</p>
-                    <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
-                </article>
-                <article class="summary-card summary-card-accent">
-                    <p class="summary-label">Recent Transactions</p>
-                    <p id="summaryTransactionsCount" class="summary-value">0</p>
-                    <p class="summary-footnote">Latest recorded changes across all tracked assets.</p>
-                </article>
-            </section>
+            <div class="app-shell">
+                <div class="content-column">
+                    <section class="overview-grid" aria-label="Transactions overview">
+                        <article class="summary-card">
+                            <p class="summary-label">Total CNY</p>
+                            <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
+                            <p class="summary-footnote">Live aggregate market value in CNY.</p>
+                        </article>
+                        <article class="summary-card">
+                            <p class="summary-label">Total USD</p>
+                            <p id="summaryUsdTotal" class="summary-value">$0.00</p>
+                            <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
+                        </article>
+                        <article class="summary-card summary-card-accent">
+                            <p class="summary-label">Recent Transactions</p>
+                            <p id="summaryTransactionsCount" class="summary-value">0</p>
+                            <p class="summary-footnote">Latest recorded changes across all tracked assets.</p>
+                        </article>
+                    </section>
 
-            <section class="workspace-grid workspace-grid-detail">
-                <div class="workspace-main">
-                    <section class="workspace-card transactions-card" aria-label="Recent transactions">
-                        <div class="section-head section-head-detail">
-                            <div>
-                                <h2>Recent Transactions</h2>
-                                <p>Review date, side, quantity, and resulting position from your latest ledger entries.</p>
-                            </div>
-                            <a class="section-head-link" href="index.html">Back to Dashboard</a>
-                        </div>
-                        <div class="table-wrap">
-                            <table>
-                                <caption>Recent Transaction Activity</caption>
-                                <thead>
-                                    <tr class="head-row">
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th>Asset</th>
-                                        <th>Quantity</th>
-                                        <th>Entry Price</th>
-                                        <th>Position After</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="transactionsTableBody"></tbody>
-                            </table>
+                    <section class="workspace-grid workspace-grid-detail">
+                        <div class="workspace-main">
+                            <section class="workspace-card transactions-card" aria-label="Recent transactions">
+                                <div class="section-head section-head-detail">
+                                    <div>
+                                        <h2>Recent Transactions</h2>
+                                        <p>Review date, side, quantity, and resulting position from your latest ledger entries.</p>
+                                    </div>
+                                    <a class="section-head-link" href="index.html">Back to Dashboard</a>
+                                </div>
+                                <div class="table-wrap">
+                                    <table>
+                                        <caption>Recent Transaction Activity</caption>
+                                        <thead>
+                                            <tr class="head-row">
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Asset</th>
+                                                <th>Quantity</th>
+                                                <th>Entry Price</th>
+                                                <th>Position After</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transactionsTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </section>
                         </div>
                     </section>
+
+                    <footer class="market-footer">
+                        <p id="marketDataFooter">
+                            FX USD/CNY: -- | Updated: --
+                        </p>
+                    </footer>
                 </div>
 
-                <aside class="workspace-sidebar" aria-label="Transactions actions">
-                    <section class="workspace-card action-stack" aria-label="Portfolio actions">
+                <aside class="actions-rail" aria-label="Transactions actions">
+                    <section class="workspace-card action-stack actions-rail-inner" aria-label="Portfolio actions">
                         <div class="section-head action-stack-head">
                             <div>
                                 <h2>Portfolio Actions</h2>
@@ -300,13 +310,7 @@
                         </div>
                     </section>
                 </aside>
-            </section>
-
-            <footer class="market-footer">
-                <p id="marketDataFooter">
-                    FX USD/CNY: -- | Updated: --
-                </p>
-            </footer>
+            </div>
         </section>
     </main>
 </body>
