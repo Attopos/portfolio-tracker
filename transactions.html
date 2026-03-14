@@ -86,10 +86,6 @@
                             <div id="page-action-panel" class="page-action-panel" hidden>
                                 <section class="workspace-card action-stack page-action-card" aria-label="Trade dialog">
                                     <div class="section-head action-stack-head">
-                                        <div>
-                                            <h2>New Transaction</h2>
-                                            <p>Record a trade and let holdings update from the ledger automatically.</p>
-                                        </div>
                                         <button
                                             id="page-action-close"
                                             class="page-action-close"
@@ -109,39 +105,18 @@
                                             data-action-panel="transaction"
                                         >
                                             <div class="transaction-head">
-                                                <div>
-                                                    <h2>Add Transaction</h2>
-                                                    <p>Capture buys and sells without leaving the transactions view.</p>
-                                                </div>
                                             </div>
                                             <form id="transactionForm" class="transaction-form">
                                                 <div class="transaction-field">
                                                     <label for="transactionTypeSelect">Type</label>
                                                     <select id="transactionTypeSelect" required>
-                                                        <option value="buy" selected>Buy / Add</option>
-                                                        <option value="sell">Sell / Reduce</option>
+                                                        <option value="buy" selected>Buy</option>
+                                                        <option value="sell">Sell</option>
                                                     </select>
                                                 </div>
                                                 <div class="transaction-field">
                                                     <label for="transactionAssetSelect">Asset</label>
                                                     <select id="transactionAssetSelect" required></select>
-                                                </div>
-                                                <div id="transactionNewAssetFields" class="transaction-new-asset">
-                                                    <div class="transaction-field">
-                                                        <label for="transactionAssetIdInput">Asset Code</label>
-                                                        <input id="transactionAssetIdInput" type="text" placeholder="BTC" />
-                                                    </div>
-                                                    <div class="transaction-field">
-                                                        <label for="transactionAssetNameInput">Asset Name</label>
-                                                        <input id="transactionAssetNameInput" type="text" placeholder="Bitcoin" />
-                                                    </div>
-                                                    <div class="transaction-field">
-                                                        <label for="transactionCurrencySelect">Currency</label>
-                                                        <select id="transactionCurrencySelect">
-                                                            <option value="CNY" selected>CNY</option>
-                                                            <option value="USD">USD</option>
-                                                        </select>
-                                                    </div>
                                                 </div>
                                                 <div class="transaction-field">
                                                     <label for="transactionQuantityInput">Quantity</label>

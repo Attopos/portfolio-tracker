@@ -1364,7 +1364,7 @@ function fillTransactionAssetOptions(preferredValue) {
     typeof preferredValue === "string" && preferredValue.trim()
       ? preferredValue.trim()
       : String(select.value || "").trim();
-  let optionsHtml = '<option value="' + NEW_TRANSACTION_ASSET_VALUE + '">New asset...</option>';
+  let optionsHtml = '<option value="">Select holding</option>';
 
   for (let i = 0; i < currentPortfolioRows.length; i++) {
     const assetId = currentPortfolioRows[i].id;
@@ -1388,7 +1388,11 @@ function fillTransactionAssetOptions(preferredValue) {
       break;
     }
   }
-  const nextValue = hasPreviousValue ? previousValue : NEW_TRANSACTION_ASSET_VALUE;
+  const nextValue = hasPreviousValue
+    ? previousValue
+    : currentPortfolioRows.length > 0
+      ? String(currentPortfolioRows[0].id || "").trim()
+      : "";
   select.value = nextValue;
   toggleTransactionNewAssetFields();
 }
@@ -2533,9 +2537,6 @@ async function applyTransaction(event) {
   const form = document.getElementById("transactionForm");
   const typeSelect = document.getElementById("transactionTypeSelect");
   const assetSelect = document.getElementById("transactionAssetSelect");
-  const assetIdInput = document.getElementById("transactionAssetIdInput");
-  const assetNameInput = document.getElementById("transactionAssetNameInput");
-  const currencySelect = document.getElementById("transactionCurrencySelect");
   const quantityInput = document.getElementById("transactionQuantityInput");
   const unitPriceInput = document.getElementById("transactionUnitPriceInput");
   const dateInput = document.getElementById("transactionDateInput");
@@ -2545,9 +2546,6 @@ async function applyTransaction(event) {
     !form ||
     !typeSelect ||
     !assetSelect ||
-    !assetIdInput ||
-    !assetNameInput ||
-    !currencySelect ||
     !quantityInput ||
     !unitPriceInput ||
     !dateInput ||
@@ -2560,24 +2558,15 @@ async function applyTransaction(event) {
   const unitPriceText = unitPriceInput.value.trim();
   const payload = {
     type: typeSelect.value,
+    assetId: String(assetSelect.value || "").trim(),
     quantity,
     unitPrice: unitPriceText ? parseCurrencyNumber(unitPriceText) : "",
     transactedAt: dateInput.value,
   };
 
-  if (assetSelect.value === NEW_TRANSACTION_ASSET_VALUE) {
-    const assetName = assetNameInput.value.trim();
-    if (!assetName) {
-      window.alert("Asset name is required for a new asset transaction.");
-      return;
-    }
-
-    const assetId = assetIdInput.value.trim().toUpperCase();
-    payload.assetId = assetId;
-    payload.assetName = assetName;
-    payload.currency = currencySelect.value === "USD" ? "USD" : "CNY";
-  } else {
-    payload.assetId = assetSelect.value;
+  if (!payload.assetId) {
+    window.alert("Please select a holding first.");
+    return;
   }
 
   const previousLabel = submitBtn.textContent;
@@ -2591,8 +2580,7 @@ async function applyTransaction(event) {
     await refreshTransactions();
 
     form.reset();
-    fillTransactionAssetOptions(NEW_TRANSACTION_ASSET_VALUE);
-    document.getElementById("transactionCurrencySelect").value = "CNY";
+    fillTransactionAssetOptions("");
     setDefaultTransactionDateInput();
   } catch (error) {
     console.error("Failed to record transaction:", error);
