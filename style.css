@@ -85,6 +85,38 @@ body {
     margin-right: auto;
 }
 
+.topbar-tools {
+    display: flex;
+    align-items: center;
+    margin-right: 0.5rem;
+}
+
+.add-menu {
+    position: relative;
+}
+
+.topbar-add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.66rem 1rem;
+    border: 1px solid rgba(34, 227, 164, 0.22);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(16, 38, 35, 0.92) 0%, rgba(11, 24, 23, 0.98) 100%);
+    color: #d9fff0;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.topbar-add-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(34, 227, 164, 0.44);
+    background: linear-gradient(180deg, rgba(18, 46, 41, 0.96) 0%, rgba(12, 30, 28, 1) 100%);
+}
+
 .topbar-link {
     display: inline-flex;
     align-items: center;
@@ -124,6 +156,7 @@ body {
     align-items: center;
     justify-content: flex-end;
     min-width: 0;
+    margin-right: 0.35rem;
 }
 
 .topbar-auth-state {
@@ -202,6 +235,7 @@ body {
 }
 
 .auth-menu-panel {
+.topbar-menu-panel {
     position: absolute;
     top: calc(100% + 0.6rem);
     right: 0;
@@ -213,6 +247,7 @@ body {
     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
 }
 
+.topbar-menu-link,
 .auth-menu-item {
     width: 100%;
     border: 0;
@@ -226,8 +261,22 @@ body {
     transition: background 0.18s ease, color 0.18s ease;
 }
 
+.topbar-menu-link {
+    display: block;
+    text-decoration: none;
+}
+
+.topbar-menu-link:hover,
 .auth-menu-item:hover {
     background: rgba(255, 122, 122, 0.12);
+}
+
+.topbar-menu-link:hover {
+    color: #edf6ff;
+    background: rgba(139, 195, 255, 0.12);
+}
+
+.auth-menu-item:hover {
     color: #ffd5d5;
 }
 
@@ -560,6 +609,16 @@ tr.selected-asset-row td {
         margin-right: 0;
     }
 
+    .topbar-tools {
+        width: 100%;
+        margin-right: 0;
+        justify-content: center;
+    }
+
+    .topbar-add-button {
+        width: 100%;
+    }
+
     .topbar-link {
         min-width: 0;
         padding: 0.72rem 0.5rem;
@@ -569,6 +628,7 @@ tr.selected-asset-row td {
     .topbar-auth {
         width: 100%;
         justify-content: center;
+        margin-right: 0;
     }
 
     .topbar-auth-link {

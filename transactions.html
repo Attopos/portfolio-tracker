@@ -17,6 +17,24 @@
                 <a class="topbar-link" href="holdings.html">Portfolio</a>
                 <a class="topbar-link is-active" href="transactions.html" aria-current="page">Transaction</a>
             </div>
+            <div class="topbar-tools">
+                <div class="add-menu">
+                    <button
+                        id="add-menu-trigger"
+                        class="topbar-add-button"
+                        type="button"
+                        aria-label="Open add menu"
+                        aria-expanded="false"
+                        aria-haspopup="menu"
+                    >
+                        +Add
+                    </button>
+                    <div id="add-menu-panel" class="topbar-menu-panel" role="menu" hidden>
+                        <a class="topbar-menu-link" href="transactions.html?action=transaction" role="menuitem">Add transaction</a>
+                        <a class="topbar-menu-link" href="holdings.html?action=create" role="menuitem">Add portfolio</a>
+                    </div>
+                </div>
+            </div>
             <div class="topbar-auth" aria-label="Authentication">
                 <div id="auth-logged-out" class="auth-state topbar-auth-state">
                     <a class="topbar-auth-link" href="signin.html?next=transactions.html">Sign in</a>
