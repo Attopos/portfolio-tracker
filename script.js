@@ -160,13 +160,6 @@ function setPageActionOpen(nextOpen) {
   syncTopbarOffset();
 }
 
-function pageActionSupportsHover() {
-  return Boolean(
-    window.matchMedia &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches
-  );
-}
-
 function getDefaultActionTab() {
   const firstPanel = document.querySelector("[data-action-panel]");
   return firstPanel ? String(firstPanel.getAttribute("data-action-panel") || "").trim() : "";
@@ -2688,19 +2681,9 @@ function bindPersistenceEvents() {
     });
   }
   if (pageActionClose) {
-    pageActionClose.addEventListener("click", function () {
+    pageActionClose.addEventListener("click", function (event) {
+      event.stopPropagation();
       setPageActionOpen(false);
-    });
-  }
-  const pageActionRoot = document.querySelector(".page-action-widget");
-  if (pageActionRoot) {
-    pageActionRoot.addEventListener("mouseenter", function () {
-      if (!pageActionSupportsHover()) {
-        return;
-      }
-      setAuthMenuOpen(false);
-      setAddMenuOpen(false);
-      setPageActionOpen(true);
     });
   }
   if (pageActionPanel) {
