@@ -73,12 +73,26 @@ function setAuthStatus(message, isError) {
   statusEl.style.color = isError ? "#ff9f9f" : "";
 }
 
+function syncTopbarOffset() {
+  const topbarEl = document.querySelector(".topbar");
+  if (!topbarEl) {
+    return;
+  }
+
+  const height = Math.ceil(topbarEl.getBoundingClientRect().height);
+  if (height > 0) {
+    document.documentElement.style.setProperty("--topbar-height", height + "px");
+  }
+}
+
 function setAuthUiState(user) {
   const loggedOutEl = document.getElementById("auth-logged-out");
   const loggedInEl = document.getElementById("auth-logged-in");
-  const nameEl = document.getElementById("auth-user-name");
-  const emailEl = document.getElementById("auth-user-email");
+  const avatarEl = document.getElementById("auth-user-avatar");
+  const avatarFallbackEl = document.getElementById("auth-user-avatar-fallback");
+  const signOutButton = document.getElementById("signout-btn");
   const hasUser = Boolean(user && user.id);
+  const avatarUrl = hasUser ? String(user.avatar_url || user.picture || "").trim() : "";
 
   if (loggedOutEl) {
     loggedOutEl.classList.toggle("auth-state-hidden", hasUser);
@@ -88,15 +102,38 @@ function setAuthUiState(user) {
     loggedInEl.classList.toggle("auth-state-hidden", !hasUser);
   }
 
-  if (nameEl) {
-    nameEl.textContent = hasUser
-      ? String(user.name || user.email || "Google user").trim() || "Google user"
-      : "Google user";
+  if (avatarEl) {
+    if (hasUser && avatarUrl) {
+      avatarEl.src = avatarUrl;
+      avatarEl.onerror = function () {
+        avatarEl.removeAttribute("src");
+        avatarEl.classList.add("auth-state-hidden");
+        if (avatarFallbackEl) {
+          avatarFallbackEl.classList.remove("auth-state-hidden");
+        }
+        syncTopbarOffset();
+      };
+      avatarEl.classList.remove("auth-state-hidden");
+    } else {
+      avatarEl.removeAttribute("src");
+      avatarEl.onerror = null;
+      avatarEl.classList.add("auth-state-hidden");
+    }
   }
 
-  if (emailEl) {
-    emailEl.textContent = hasUser ? String(user.email || "").trim() : "";
+  if (avatarFallbackEl) {
+    avatarFallbackEl.classList.toggle("auth-state-hidden", hasUser && Boolean(avatarUrl));
   }
+
+  if (signOutButton) {
+    const label = hasUser
+      ? String(user.name || user.email || "Google user").trim() || "Google user"
+      : "Guest";
+    signOutButton.setAttribute("aria-label", "Sign out " + label);
+    signOutButton.title = "Sign out";
+  }
+
+  syncTopbarOffset();
 }
 
 function clearAuthenticatedPortfolioView() {
@@ -225,6 +262,7 @@ function initGoogleSignIn() {
   });
 
   setAuthStatus("Google sign-in button ready.", false);
+  syncTopbarOffset();
 }
 
 // Wait for GIS script to be available before initializing.
@@ -2453,6 +2491,7 @@ function bindPersistenceEvents() {
   }
 
   window.addEventListener("resize", function () {
+    syncTopbarOffset();
     updateAllocationChart();
     if (currentPortfolioHistoryPoints.length) {
       drawPortfolioHistoryChart(currentPortfolioHistoryPoints, activePortfolioHistoryRange);
@@ -2462,6 +2501,7 @@ function bindPersistenceEvents() {
 
 window.replacePortfolioRows = replacePortfolioRows;
 setAuthUiState(null);
+syncTopbarOffset();
 setActiveActionTab("edit");
 setActivePortfolioHistoryRange(activePortfolioHistoryRange);
 setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });

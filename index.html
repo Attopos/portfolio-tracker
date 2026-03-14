@@ -18,6 +18,34 @@
                 <a class="topbar-link" href="holdings.html">Portfolio</a>
                 <a class="topbar-link" href="transactions.html">Transaction</a>
             </div>
+            <div class="topbar-auth" aria-label="Authentication">
+                <div id="auth-logged-out" class="auth-state topbar-auth-state">
+                    <div class="topbar-auth-actions">
+                        <div id="google-signin-btn"></div>
+                        <div id="google-signup-btn"></div>
+                    </div>
+                </div>
+                <div id="auth-logged-in" class="auth-state auth-state-hidden topbar-auth-state">
+                    <button
+                        id="signout-btn"
+                        class="auth-avatar-button"
+                        type="button"
+                        aria-label="Sign out"
+                        title="Sign out"
+                    >
+                        <img
+                            id="auth-user-avatar"
+                            class="auth-avatar-image auth-state-hidden"
+                            alt="User avatar"
+                        />
+                        <span
+                            id="auth-user-avatar-fallback"
+                            class="auth-avatar-fallback"
+                            aria-hidden="true"
+                        ></span>
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
     <main class="page">
@@ -27,31 +55,6 @@
                     <div class="panel-title-block">
                         <p class="eyebrow">Wealth Dashboard</p>
                         <h1>Portfolio Tracker</h1>
-                    </div>
-                    <div class="auth-panel" aria-label="Authentication">
-                        <div id="auth-logged-out" class="auth-state">
-                            <div class="auth-panel-head">
-                                <p class="auth-panel-label">Account</p>
-                                <p class="auth-panel-copy">Use Google to sign in or create your account.</p>
-                            </div>
-                            <div class="auth-actions">
-                                <div id="google-signin-btn"></div>
-                                <div id="google-signup-btn"></div>
-                            </div>
-                        </div>
-                        <div id="auth-logged-in" class="auth-state auth-state-hidden">
-                            <div class="auth-panel-head">
-                                <p class="auth-panel-label">Signed In</p>
-                                <p class="auth-panel-copy">Backend session is active for this browser.</p>
-                            </div>
-                            <div class="auth-user-row">
-                                <div>
-                                    <p id="auth-user-name" class="auth-user-name">Google user</p>
-                                    <p id="auth-user-email" class="auth-user-email"></p>
-                                </div>
-                                <button id="signout-btn" class="auth-signout-btn" type="button">Sign out</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </header>
