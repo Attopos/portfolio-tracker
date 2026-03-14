@@ -160,6 +160,18 @@ function setPageActionOpen(nextOpen) {
   syncTopbarOffset();
 }
 
+function pageActionSupportsHover() {
+  return Boolean(
+    window.matchMedia &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  );
+}
+
+function getDefaultActionTab() {
+  const firstPanel = document.querySelector("[data-action-panel]");
+  return firstPanel ? String(firstPanel.getAttribute("data-action-panel") || "").trim() : "";
+}
+
 function getRequestedActionTab() {
   const params = new URLSearchParams(window.location.search);
   const action = String(params.get("action") || "").trim();
@@ -426,7 +438,7 @@ function buildFetchOptions(options) {
 }
 
 function setActiveActionTab(nextTab) {
-  const targetTab = String(nextTab || "").trim() || "edit";
+  const targetTab = String(nextTab || "").trim() || getDefaultActionTab();
   const tabButtons = document.querySelectorAll("[data-action-tab]");
   const panels = document.querySelectorAll("[data-action-panel]");
 
@@ -2627,6 +2639,8 @@ function bindPersistenceEvents() {
   const authAvatarTrigger = document.getElementById("auth-avatar-trigger");
   const addMenuTrigger = document.getElementById("add-menu-trigger");
   const pageActionTrigger = document.getElementById("page-action-trigger");
+  const pageActionClose = document.getElementById("page-action-close");
+  const pageActionPanel = document.getElementById("page-action-panel");
   const actionTabs = document.querySelectorAll("[data-action-tab]");
   const historyTabs = document.querySelectorAll("[data-history-range]");
   if (positionEditorForm) {
@@ -2671,6 +2685,29 @@ function bindPersistenceEvents() {
       setAuthMenuOpen(false);
       setAddMenuOpen(false);
       setPageActionOpen(!isPageActionOpen);
+    });
+  }
+  if (pageActionClose) {
+    pageActionClose.addEventListener("click", function () {
+      setPageActionOpen(false);
+    });
+  }
+  const pageActionRoot = document.querySelector(".page-action-widget");
+  if (pageActionRoot) {
+    pageActionRoot.addEventListener("mouseenter", function () {
+      if (!pageActionSupportsHover()) {
+        return;
+      }
+      setAuthMenuOpen(false);
+      setAddMenuOpen(false);
+      setPageActionOpen(true);
+    });
+  }
+  if (pageActionPanel) {
+    pageActionPanel.addEventListener("click", function (event) {
+      if (event.target === pageActionPanel) {
+        setPageActionOpen(false);
+      }
     });
   }
   for (let i = 0; i < actionTabs.length; i++) {
@@ -2727,7 +2764,7 @@ window.replacePortfolioRows = replacePortfolioRows;
 setAuthUiState(null);
 syncTopbarOffset();
 const requestedActionTab = getRequestedActionTab();
-setActiveActionTab(requestedActionTab || "edit");
+setActiveActionTab(requestedActionTab || getDefaultActionTab());
 if (requestedActionTab) {
   setPageActionOpen(true);
 }
