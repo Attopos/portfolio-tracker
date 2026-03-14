@@ -234,7 +234,7 @@ body {
             center / cover no-repeat;
 }
 
-.auth-menu-panel {
+.auth-menu-panel,
 .topbar-menu-panel {
     position: absolute;
     top: calc(100% + 0.6rem);
