@@ -646,6 +646,38 @@ function preparePortfolioHistoryPoints(points, range) {
   });
 }
 
+function buildInitialPortfolioHistoryPoint() {
+  if (!Array.isArray(currentPortfolioRows) || currentPortfolioRows.length === 0) {
+    return null;
+  }
+
+  let totalUsd = 0;
+  for (let i = 0; i < currentPortfolioRows.length; i++) {
+    const item = currentPortfolioRows[i];
+    const price = getEffectivePriceForItem(item);
+    const baseValue = Number(item.position) * price;
+
+    if (!Number.isFinite(baseValue)) {
+      continue;
+    }
+
+    if (item.currency === "CNY") {
+      totalUsd += baseValue / cnyPerUsdRate;
+    } else {
+      totalUsd += baseValue;
+    }
+  }
+
+  if (!Number.isFinite(totalUsd) || totalUsd <= 0) {
+    return null;
+  }
+
+  return {
+    totalUsd,
+    capturedAt: new Date().toISOString(),
+  };
+}
+
 function getNiceHistoryStep(roughStep) {
   const safeStep = Math.abs(Number(roughStep)) || 1;
   const exponent = Math.floor(Math.log10(safeStep));
@@ -914,10 +946,18 @@ async function refreshPortfolioHistory(range) {
     }
 
     if (!Array.isArray(points) || points.length === 0) {
-      currentPortfolioHistoryPoints = [];
-      setPortfolioHistoryState("No historical snapshots yet. Your history will appear as you use the portfolio.", {
-        showState: true,
-      });
+      const initialPoint = buildInitialPortfolioHistoryPoint();
+      if (!initialPoint) {
+        currentPortfolioHistoryPoints = [];
+        setPortfolioHistoryState("No historical snapshots yet. Your history will appear as you use the portfolio.", {
+          showState: true,
+        });
+        return;
+      }
+
+      currentPortfolioHistoryPoints = [initialPoint];
+      setPortfolioHistoryState("", { showState: false });
+      drawPortfolioHistoryChart([initialPoint], nextRange);
       return;
     }
 
@@ -2059,7 +2099,7 @@ function drawAllocationPieChart(items) {
           startAngle: 90,
           clockwise: true,
           minAngle: 4,
-          avoidLabelOverlap: true,
+          avoidLabelOverlap: false,
           selectedMode: false,
           roseType: false,
           itemStyle: {
@@ -2075,35 +2115,10 @@ function drawAllocationPieChart(items) {
             },
           },
           label: {
-            show: true,
-            position: "outside",
-            color: "#d3e4f2",
-            fontSize: isCompact ? 11 : 12,
-            fontFamily: "JetBrains Mono, Menlo, monospace",
-            lineHeight: isCompact ? 15 : 17,
-            formatter: function (params) {
-              const percentText = params.percent.toFixed(1) + "%";
-              const labelText = truncateAllocationLabel(String(params.name || ""), isCompact ? 10 : 14);
-              return percentText + "\n" + labelText;
-            },
+            show: false,
           },
           labelLine: {
-            show: true,
-            length: isCompact ? 10 : 14,
-            length2: isCompact ? 12 : 18,
-            smooth: false,
-            lineStyle: {
-              width: 1.8,
-              color: "inherit",
-            },
-          },
-          labelLayout: function (params) {
-            const isRight = params.labelRect.x >= chart.getWidth() / 2;
-            return {
-              x: isRight ? params.labelRect.x + 8 : params.labelRect.x - 8,
-              align: isRight ? "left" : "right",
-              verticalAlign: "middle",
-            };
+            show: false,
           },
           data,
         },

@@ -70,40 +70,8 @@
     </nav>
     <main class="page">
         <section class="panel">
-            <header class="panel-header">
-                <div class="panel-header-top">
-                    <div class="panel-title-block">
-                        <p class="eyebrow">Wealth Dashboard</p>
-                        <h1>Transactions Details</h1>
-                        <p class="subtitle">Inspect recent ledger activity, trace position changes, and manage trading actions away from the main dashboard.</p>
-                    </div>
-                </div>
-                <div class="status-strip">
-                    <p id="auth-status" class="subtitle">Google auth: not signed in.</p>
-                    <p id="marketUpdateStatus" class="subtitle market-status">Market auto-update: waiting for first sync...</p>
-                </div>
-            </header>
-
             <div class="app-shell app-shell-detail">
                 <div class="content-column">
-                    <section class="overview-grid" aria-label="Transactions overview">
-                        <article class="summary-card">
-                            <p class="summary-label">Total CNY</p>
-                            <p id="summaryCnyTotal" class="summary-value">¥0.00</p>
-                            <p class="summary-footnote">Live aggregate market value in CNY.</p>
-                        </article>
-                        <article class="summary-card">
-                            <p class="summary-label">Total USD</p>
-                            <p id="summaryUsdTotal" class="summary-value">$0.00</p>
-                            <p class="summary-footnote">Converted using the latest USD/CNY rate.</p>
-                        </article>
-                        <article class="summary-card summary-card-accent">
-                            <p class="summary-label">Recent Transactions</p>
-                            <p id="summaryTransactionsCount" class="summary-value">0</p>
-                            <p class="summary-footnote">Latest recorded changes across all tracked assets.</p>
-                        </article>
-                    </section>
-
                     <section class="page-action-bar" aria-label="Transaction actions">
                         <div class="page-action-widget">
                             <button
@@ -327,13 +295,10 @@
                                 <div class="section-head section-head-detail">
                                     <div>
                                         <h2>Recent Transactions</h2>
-                                        <p>Review date, side, quantity, and resulting position from your latest ledger entries.</p>
                                     </div>
-                                    <a class="section-head-link" href="index.html">Back to Dashboard</a>
                                 </div>
                                 <div class="table-wrap">
                                     <table>
-                                        <caption>Recent Transaction Activity</caption>
                                         <thead>
                                             <tr class="head-row">
                                                 <th>Date</th>

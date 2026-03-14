@@ -774,11 +774,8 @@ tr.selected-asset-row td {
 }
 
 .app-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 0.75rem;
+    display: block;
     padding: 0.58rem 0.75rem 0.85rem;
-    align-items: start;
 }
 
 .content-column {
