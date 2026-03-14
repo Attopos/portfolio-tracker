@@ -382,6 +382,10 @@ body {
     backdrop-filter: blur(6px);
 }
 
+.page-action-panel[hidden] {
+    display: none !important;
+}
+
 .page-action-card {
     width: min(640px, calc(100vw - 2.5rem));
     max-height: min(760px, calc(100vh - var(--topbar-height) - 2.5rem));
