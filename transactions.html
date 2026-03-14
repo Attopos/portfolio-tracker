@@ -15,7 +15,7 @@
             <div class="topbar-nav">
                 <a class="topbar-link" href="index.html">Dashboard</a>
                 <a class="topbar-link" href="holdings.html">Portfolio</a>
-                <a class="topbar-link is-active" href="transactions.html" aria-current="page">Transaction</a>
+                <a class="topbar-link is-active" href="transactions.html" aria-current="page">Transactions</a>
             </div>
             <div class="topbar-tools">
                 <div class="add-menu">
@@ -84,7 +84,7 @@
                 </div>
             </header>
 
-            <div class="app-shell">
+            <div class="app-shell app-shell-detail">
                 <div class="content-column">
                     <section class="overview-grid" aria-label="Transactions overview">
                         <article class="summary-card">
@@ -102,6 +102,223 @@
                             <p id="summaryTransactionsCount" class="summary-value">0</p>
                             <p class="summary-footnote">Latest recorded changes across all tracked assets.</p>
                         </article>
+                    </section>
+
+                    <section class="page-action-bar" aria-label="Transaction actions">
+                        <div class="page-action-widget">
+                            <button
+                                id="page-action-trigger"
+                                class="page-action-trigger"
+                                type="button"
+                                aria-expanded="false"
+                                aria-haspopup="dialog"
+                            >
+                                + Add
+                            </button>
+                            <div id="page-action-panel" class="page-action-panel" hidden>
+                                <section class="workspace-card action-stack page-action-card" aria-label="Portfolio actions">
+                                    <div class="section-head action-stack-head">
+                                        <div>
+                                            <h2>Portfolio Actions</h2>
+                                            <p>Record trades and update holdings from the ledger view.</p>
+                                        </div>
+                                    </div>
+                                    <div class="action-tabs" role="tablist" aria-label="Portfolio action tabs">
+                                        <button
+                                            class="action-tab is-active"
+                                            id="action-tab-edit"
+                                            type="button"
+                                            role="tab"
+                                            aria-selected="true"
+                                            aria-controls="action-panel-edit"
+                                            data-action-tab="edit"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            class="action-tab"
+                                            id="action-tab-create"
+                                            type="button"
+                                            role="tab"
+                                            aria-selected="false"
+                                            aria-controls="action-panel-create"
+                                            data-action-tab="create"
+                                        >
+                                            Add Holding
+                                        </button>
+                                        <button
+                                            class="action-tab"
+                                            id="action-tab-transaction"
+                                            type="button"
+                                            role="tab"
+                                            aria-selected="false"
+                                            aria-controls="action-panel-transaction"
+                                            data-action-tab="transaction"
+                                        >
+                                            Trade
+                                        </button>
+                                        <button
+                                            class="action-tab action-tab-danger"
+                                            id="action-tab-delete"
+                                            type="button"
+                                            role="tab"
+                                            aria-selected="false"
+                                            aria-controls="action-panel-delete"
+                                            data-action-tab="delete"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <div class="action-panels">
+                                        <section
+                                            class="position-editor-panel action-panel is-active"
+                                            id="action-panel-edit"
+                                            role="tabpanel"
+                                            aria-labelledby="action-tab-edit"
+                                            data-action-panel="edit"
+                                        >
+                                            <div class="position-editor-head">
+                                                <div>
+                                                    <h2>Edit Position</h2>
+                                                    <p>Fast path for your most common portfolio adjustment.</p>
+                                                </div>
+                                                <span id="positionEditSignal" class="position-edit-signal" aria-hidden="true"></span>
+                                            </div>
+                                            <form id="positionEditorForm" class="position-editor-form">
+                                                <label for="positionAssetSelect">Asset</label>
+                                                <select id="positionAssetSelect" required></select>
+
+                                                <label for="positionSizeInput">Position Size</label>
+                                                <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
+
+                                                <button id="positionApplyBtn" type="submit" disabled>
+                                                    <span>Apply</span>
+                                                    <span class="position-apply-check" aria-hidden="true"></span>
+                                                </button>
+                                            </form>
+                                        </section>
+
+                                        <section
+                                            class="create-asset-panel action-panel"
+                                            id="action-panel-create"
+                                            role="tabpanel"
+                                            aria-labelledby="action-tab-create"
+                                            data-action-panel="create"
+                                            hidden
+                                        >
+                                            <div class="create-asset-head">
+                                                <div>
+                                                    <h2>Add Holding</h2>
+                                                    <p>Create a new holding by recording its first transaction.</p>
+                                                </div>
+                                            </div>
+                                            <form id="createAssetForm" class="create-asset-form">
+                                                <div class="create-asset-field">
+                                                    <label for="createAssetNameInput">Name</label>
+                                                    <input id="createAssetNameInput" type="text" required />
+                                                </div>
+                                                <div class="create-asset-field">
+                                                    <label for="createAssetCurrencySelect">Currency</label>
+                                                    <select id="createAssetCurrencySelect" required>
+                                                        <option value="CNY" selected>CNY</option>
+                                                        <option value="USD">USD</option>
+                                                    </select>
+                                                </div>
+                                                <div class="create-asset-field">
+                                                    <label for="createAssetPositionInput">Quantity</label>
+                                                    <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
+                                                </div>
+                                                <div class="create-asset-field">
+                                                    <label for="createAssetPriceInput">Entry Price</label>
+                                                    <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
+                                                </div>
+                                                <button id="createAssetSubmitBtn" type="submit">Add Holding</button>
+                                            </form>
+                                        </section>
+
+                                        <section
+                                            class="transaction-panel action-panel"
+                                            id="action-panel-transaction"
+                                            role="tabpanel"
+                                            aria-labelledby="action-tab-transaction"
+                                            data-action-panel="transaction"
+                                            hidden
+                                        >
+                                            <div class="transaction-head">
+                                                <div>
+                                                    <h2>Add Transaction</h2>
+                                                    <p>Record a portfolio change once and let holdings update automatically.</p>
+                                                </div>
+                                            </div>
+                                            <form id="transactionForm" class="transaction-form">
+                                                <div class="transaction-field">
+                                                    <label for="transactionTypeSelect">Type</label>
+                                                    <select id="transactionTypeSelect" required>
+                                                        <option value="buy" selected>Buy / Add</option>
+                                                        <option value="sell">Sell / Reduce</option>
+                                                    </select>
+                                                </div>
+                                                <div class="transaction-field">
+                                                    <label for="transactionAssetSelect">Asset</label>
+                                                    <select id="transactionAssetSelect" required></select>
+                                                </div>
+                                                <div id="transactionNewAssetFields" class="transaction-new-asset">
+                                                    <div class="transaction-field">
+                                                        <label for="transactionAssetIdInput">Asset Code</label>
+                                                        <input id="transactionAssetIdInput" type="text" placeholder="BTC" />
+                                                    </div>
+                                                    <div class="transaction-field">
+                                                        <label for="transactionAssetNameInput">Asset Name</label>
+                                                        <input id="transactionAssetNameInput" type="text" placeholder="Bitcoin" />
+                                                    </div>
+                                                    <div class="transaction-field">
+                                                        <label for="transactionCurrencySelect">Currency</label>
+                                                        <select id="transactionCurrencySelect">
+                                                            <option value="CNY" selected>CNY</option>
+                                                            <option value="USD">USD</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="transaction-field">
+                                                    <label for="transactionQuantityInput">Quantity</label>
+                                                    <input id="transactionQuantityInput" type="text" inputmode="decimal" required />
+                                                </div>
+                                                <div class="transaction-field">
+                                                    <label for="transactionUnitPriceInput">Entry Price</label>
+                                                    <input id="transactionUnitPriceInput" type="text" inputmode="decimal" placeholder="Optional" />
+                                                </div>
+                                                <div class="transaction-field">
+                                                    <label for="transactionDateInput">Date</label>
+                                                    <input id="transactionDateInput" type="datetime-local" />
+                                                </div>
+                                                <button id="transactionSubmitBtn" type="submit">Record Transaction</button>
+                                            </form>
+                                        </section>
+
+                                        <section
+                                            class="delete-asset-panel action-panel danger-card"
+                                            id="action-panel-delete"
+                                            role="tabpanel"
+                                            aria-labelledby="action-tab-delete"
+                                            data-action-panel="delete"
+                                            hidden
+                                        >
+                                            <div class="delete-asset-head">
+                                                <div>
+                                                    <h2>Close Holding</h2>
+                                                    <p>Set a holding to zero so it disappears from the current portfolio.</p>
+                                                </div>
+                                            </div>
+                                            <form id="deleteAssetForm" class="delete-asset-form">
+                                                <label for="deleteAssetSelect">Asset</label>
+                                                <select id="deleteAssetSelect" required></select>
+                                                <button id="deleteAssetSubmitBtn" type="submit" disabled>Close Holding</button>
+                                            </form>
+                                        </section>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
                     </section>
 
                     <section class="workspace-grid workspace-grid-detail">
@@ -140,210 +357,6 @@
                         </p>
                     </footer>
                 </div>
-
-                <aside class="actions-rail" aria-label="Transactions actions">
-                    <section class="workspace-card action-stack actions-rail-inner" aria-label="Portfolio actions">
-                        <div class="section-head action-stack-head">
-                            <div>
-                                <h2>Portfolio Actions</h2>
-                                <p>Record trades and update holdings from the ledger view.</p>
-                            </div>
-                        </div>
-                        <div class="action-tabs" role="tablist" aria-label="Portfolio action tabs">
-                            <button
-                                class="action-tab is-active"
-                                id="action-tab-edit"
-                                type="button"
-                                role="tab"
-                                aria-selected="true"
-                                aria-controls="action-panel-edit"
-                                data-action-tab="edit"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                class="action-tab"
-                                id="action-tab-create"
-                                type="button"
-                                role="tab"
-                                aria-selected="false"
-                                aria-controls="action-panel-create"
-                                data-action-tab="create"
-                            >
-                                Add Holding
-                            </button>
-                            <button
-                                class="action-tab"
-                                id="action-tab-transaction"
-                                type="button"
-                                role="tab"
-                                aria-selected="false"
-                                aria-controls="action-panel-transaction"
-                                data-action-tab="transaction"
-                            >
-                                Trade
-                            </button>
-                            <button
-                                class="action-tab action-tab-danger"
-                                id="action-tab-delete"
-                                type="button"
-                                role="tab"
-                                aria-selected="false"
-                                aria-controls="action-panel-delete"
-                                data-action-tab="delete"
-                            >
-                                Close
-                            </button>
-                        </div>
-                        <div class="action-panels">
-                            <section
-                                class="position-editor-panel action-panel is-active"
-                                id="action-panel-edit"
-                                role="tabpanel"
-                                aria-labelledby="action-tab-edit"
-                                data-action-panel="edit"
-                            >
-                                <div class="position-editor-head">
-                                    <div>
-                                        <h2>Edit Position</h2>
-                                        <p>Fast path for your most common portfolio adjustment.</p>
-                                    </div>
-                                    <span id="positionEditSignal" class="position-edit-signal" aria-hidden="true"></span>
-                                </div>
-                                <form id="positionEditorForm" class="position-editor-form">
-                                    <label for="positionAssetSelect">Asset</label>
-                                    <select id="positionAssetSelect" required></select>
-
-                                    <label for="positionSizeInput">Position Size</label>
-                                    <input id="positionSizeInput" type="text" inputmode="decimal" required disabled />
-
-                                    <button id="positionApplyBtn" type="submit" disabled>
-                                        <span>Apply</span>
-                                        <span class="position-apply-check" aria-hidden="true"></span>
-                                    </button>
-                                </form>
-                            </section>
-
-                            <section
-                                class="create-asset-panel action-panel"
-                                id="action-panel-create"
-                                role="tabpanel"
-                                aria-labelledby="action-tab-create"
-                                data-action-panel="create"
-                                hidden
-                            >
-                                <div class="create-asset-head">
-                                    <div>
-                                        <h2>Add Holding</h2>
-                                        <p>Create a new holding by recording its first transaction.</p>
-                                    </div>
-                                </div>
-                                <form id="createAssetForm" class="create-asset-form">
-                                    <div class="create-asset-field">
-                                        <label for="createAssetNameInput">Name</label>
-                                        <input id="createAssetNameInput" type="text" required />
-                                    </div>
-                                    <div class="create-asset-field">
-                                        <label for="createAssetCurrencySelect">Currency</label>
-                                        <select id="createAssetCurrencySelect" required>
-                                            <option value="CNY" selected>CNY</option>
-                                            <option value="USD">USD</option>
-                                        </select>
-                                    </div>
-                                    <div class="create-asset-field">
-                                        <label for="createAssetPositionInput">Quantity</label>
-                                        <input id="createAssetPositionInput" type="text" inputmode="decimal" required />
-                                    </div>
-                                    <div class="create-asset-field">
-                                        <label for="createAssetPriceInput">Entry Price</label>
-                                        <input id="createAssetPriceInput" type="text" inputmode="decimal" required />
-                                    </div>
-                                    <button id="createAssetSubmitBtn" type="submit">Add Holding</button>
-                                </form>
-                            </section>
-
-                            <section
-                                class="transaction-panel action-panel"
-                                id="action-panel-transaction"
-                                role="tabpanel"
-                                aria-labelledby="action-tab-transaction"
-                                data-action-panel="transaction"
-                                hidden
-                            >
-                                <div class="transaction-head">
-                                    <div>
-                                        <h2>Add Transaction</h2>
-                                        <p>Record a portfolio change once and let holdings update automatically.</p>
-                                    </div>
-                                </div>
-                                <form id="transactionForm" class="transaction-form">
-                                    <div class="transaction-field">
-                                        <label for="transactionTypeSelect">Type</label>
-                                        <select id="transactionTypeSelect" required>
-                                            <option value="buy" selected>Buy / Add</option>
-                                            <option value="sell">Sell / Reduce</option>
-                                        </select>
-                                    </div>
-                                    <div class="transaction-field">
-                                        <label for="transactionAssetSelect">Asset</label>
-                                        <select id="transactionAssetSelect" required></select>
-                                    </div>
-                                    <div id="transactionNewAssetFields" class="transaction-new-asset">
-                                        <div class="transaction-field">
-                                            <label for="transactionAssetIdInput">Asset Code</label>
-                                            <input id="transactionAssetIdInput" type="text" placeholder="BTC" />
-                                        </div>
-                                        <div class="transaction-field">
-                                            <label for="transactionAssetNameInput">Asset Name</label>
-                                            <input id="transactionAssetNameInput" type="text" placeholder="Bitcoin" />
-                                        </div>
-                                        <div class="transaction-field">
-                                            <label for="transactionCurrencySelect">Currency</label>
-                                            <select id="transactionCurrencySelect">
-                                                <option value="CNY" selected>CNY</option>
-                                                <option value="USD">USD</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="transaction-field">
-                                        <label for="transactionQuantityInput">Quantity</label>
-                                        <input id="transactionQuantityInput" type="text" inputmode="decimal" required />
-                                    </div>
-                                    <div class="transaction-field">
-                                        <label for="transactionUnitPriceInput">Entry Price</label>
-                                        <input id="transactionUnitPriceInput" type="text" inputmode="decimal" placeholder="Optional" />
-                                    </div>
-                                    <div class="transaction-field">
-                                        <label for="transactionDateInput">Date</label>
-                                        <input id="transactionDateInput" type="datetime-local" />
-                                    </div>
-                                    <button id="transactionSubmitBtn" type="submit">Record Transaction</button>
-                                </form>
-                            </section>
-
-                            <section
-                                class="delete-asset-panel action-panel danger-card"
-                                id="action-panel-delete"
-                                role="tabpanel"
-                                aria-labelledby="action-tab-delete"
-                                data-action-panel="delete"
-                                hidden
-                            >
-                                <div class="delete-asset-head">
-                                    <div>
-                                        <h2>Close Holding</h2>
-                                        <p>Set a holding to zero so it disappears from the current portfolio.</p>
-                                    </div>
-                                </div>
-                                <form id="deleteAssetForm" class="delete-asset-form">
-                                    <label for="deleteAssetSelect">Asset</label>
-                                    <select id="deleteAssetSelect" required></select>
-                                    <button id="deleteAssetSubmitBtn" type="submit" disabled>Close Holding</button>
-                                </form>
-                            </section>
-                        </div>
-                    </section>
-                </aside>
             </div>
         </section>
     </main>

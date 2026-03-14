@@ -264,6 +264,7 @@ body {
 .topbar-menu-link {
     display: block;
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .topbar-menu-link:hover,
@@ -329,6 +330,55 @@ body {
     margin: 1rem 0 0;
     color: var(--muted);
     font-size: 0.8rem;
+}
+
+.app-shell-detail {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.page-action-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 0.75rem;
+}
+
+.page-action-widget {
+    position: relative;
+}
+
+.page-action-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0.78rem 1.15rem;
+    border: 1px solid rgba(139, 195, 255, 0.18);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(67, 72, 94, 0.96) 0%, rgba(58, 63, 84, 0.98) 100%);
+    color: #f3f7ff;
+    font: inherit;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.page-action-trigger:hover {
+    transform: translateY(-1px);
+    border-color: rgba(139, 195, 255, 0.28);
+    background: linear-gradient(180deg, rgba(76, 82, 107, 0.98) 0%, rgba(64, 70, 92, 1) 100%);
+}
+
+.page-action-panel {
+    position: absolute;
+    top: calc(100% + 0.85rem);
+    right: 0;
+    z-index: 20;
+    width: min(360px, calc(100vw - 2rem));
+}
+
+.page-action-card {
+    overflow: hidden;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.34);
 }
 
 .page {
@@ -632,6 +682,24 @@ tr.selected-asset-row td {
     }
 
     .topbar-auth-link {
+        width: 100%;
+    }
+
+    .page-action-bar {
+        padding: 0 0.55rem;
+    }
+
+    .page-action-widget,
+    .page-action-panel {
+        width: 100%;
+    }
+
+    .page-action-panel {
+        position: static;
+        margin-top: 0.65rem;
+    }
+
+    .page-action-trigger {
         width: 100%;
     }
 

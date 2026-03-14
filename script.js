@@ -62,6 +62,7 @@ let allocationChartInstance = null;
 let portfolioHistoryChartInstance = null;
 let isAuthMenuOpen = false;
 let isAddMenuOpen = false;
+let isPageActionOpen = false;
 const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
 // Small UI helper for Google auth status text.
@@ -136,6 +137,24 @@ function setAddMenuOpen(nextOpen) {
 
   if (menuTriggerEl) {
     menuTriggerEl.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+  }
+
+  syncTopbarOffset();
+}
+
+function setPageActionOpen(nextOpen) {
+  const panelEl = document.getElementById("page-action-panel");
+  const triggerEl = document.getElementById("page-action-trigger");
+  const shouldOpen = Boolean(nextOpen && panelEl && triggerEl);
+
+  isPageActionOpen = shouldOpen;
+
+  if (panelEl) {
+    panelEl.hidden = !shouldOpen;
+  }
+
+  if (triggerEl) {
+    triggerEl.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
   }
 
   syncTopbarOffset();
@@ -2540,6 +2559,7 @@ function bindPersistenceEvents() {
   const signOutButton = document.getElementById("signout-btn");
   const authAvatarTrigger = document.getElementById("auth-avatar-trigger");
   const addMenuTrigger = document.getElementById("add-menu-trigger");
+  const pageActionTrigger = document.getElementById("page-action-trigger");
   const actionTabs = document.querySelectorAll("[data-action-tab]");
   const historyTabs = document.querySelectorAll("[data-history-range]");
   if (positionEditorForm) {
@@ -2574,7 +2594,16 @@ function bindPersistenceEvents() {
     addMenuTrigger.addEventListener("click", function (event) {
       event.stopPropagation();
       setAuthMenuOpen(false);
+      setPageActionOpen(false);
       setAddMenuOpen(!isAddMenuOpen);
+    });
+  }
+  if (pageActionTrigger) {
+    pageActionTrigger.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setAuthMenuOpen(false);
+      setAddMenuOpen(false);
+      setPageActionOpen(!isPageActionOpen);
     });
   }
   for (let i = 0; i < actionTabs.length; i++) {
@@ -2603,6 +2632,7 @@ function bindPersistenceEvents() {
 
     const authMenuRoot = document.querySelector(".auth-menu");
     const addMenuRoot = document.querySelector(".add-menu");
+    const pageActionRoot = document.querySelector(".page-action-widget");
 
     if (authMenuRoot && !authMenuRoot.contains(event.target)) {
       setAuthMenuOpen(false);
@@ -2611,12 +2641,17 @@ function bindPersistenceEvents() {
     if (addMenuRoot && !addMenuRoot.contains(event.target)) {
       setAddMenuOpen(false);
     }
+
+    if (pageActionRoot && !pageActionRoot.contains(event.target)) {
+      setPageActionOpen(false);
+    }
   });
 
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
       setAuthMenuOpen(false);
       setAddMenuOpen(false);
+      setPageActionOpen(false);
     }
   });
 }
@@ -2624,7 +2659,11 @@ function bindPersistenceEvents() {
 window.replacePortfolioRows = replacePortfolioRows;
 setAuthUiState(null);
 syncTopbarOffset();
-setActiveActionTab(getRequestedActionTab() || "edit");
+const requestedActionTab = getRequestedActionTab();
+setActiveActionTab(requestedActionTab || "edit");
+if (requestedActionTab) {
+  setPageActionOpen(true);
+}
 setActivePortfolioHistoryRange(activePortfolioHistoryRange);
 setPortfolioHistoryState("Sign in to load portfolio history.", { showState: true });
 renderPortfolioRows(INITIAL_PORTFOLIO_ROWS);
