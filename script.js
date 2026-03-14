@@ -2321,22 +2321,52 @@ async function refreshTransactions() {
 }
 
 async function fetchCurrentLocalUserFromSession() {
-  const res = await fetch(getApiUrl("/api/me"), buildFetchOptions());
+  let res;
+  try {
+    res = await fetch(getApiUrl("/api/me"), buildFetchOptions());
+  } catch (error) {
+    const message =
+      error && typeof error.message === "string" && error.message.trim()
+        ? error.message.trim()
+        : "Failed to fetch";
+    throw new Error(message + " (API: " + getApiUrl("/api/me") + ")");
+  }
   if (res.status === 401) {
     return null;
   }
 
+  const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+
   if (!res.ok) {
     let message = "Failed to restore session";
-    try {
-      const payload = await res.json();
-      if (payload && typeof payload.error === "string" && payload.error.trim()) {
-        message = payload.error.trim();
+    if (contentType.includes("application/json")) {
+      try {
+        const payload = await res.json();
+        if (payload && typeof payload.error === "string" && payload.error.trim()) {
+          message = payload.error.trim();
+        }
+      } catch (error) {
+        // keep default message
       }
-    } catch (error) {
-      // keep default message
+    } else {
+      try {
+        const rawText = await res.text();
+        if (rawText.trim()) {
+          message =
+            "Session endpoint returned non-JSON response (" +
+            res.status +
+            "). " +
+            rawText.replace(/\s+/g, " ").trim().slice(0, 120);
+        }
+      } catch (error) {
+        // keep default message
+      }
     }
     throw new Error(message);
+  }
+
+  if (!contentType.includes("application/json")) {
+    throw new Error("Session endpoint returned non-JSON response (200).");
   }
 
   const payload = await res.json();
@@ -2376,7 +2406,11 @@ async function restoreAuthSession() {
     currentLocalUserId = null;
     currentLocalUserProfile = null;
     setAuthUiState(null);
-    setAuthStatus("Failed to restore backend session.", true);
+    const message =
+      error && typeof error.message === "string" && error.message.trim()
+        ? error.message.trim()
+        : "Failed to restore backend session.";
+    setAuthStatus(message, true);
   }
 }
 
