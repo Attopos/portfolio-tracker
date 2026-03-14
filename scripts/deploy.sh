@@ -29,6 +29,7 @@ fi
 
 echo "Running database migrations"
 npm run db:create-users
+npm run db:create-sessions
 npm run db:migrate-positions-user-id
 npm run db:create-portfolio-value-snapshots
 npm run db:create-transactions

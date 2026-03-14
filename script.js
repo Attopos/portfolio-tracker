@@ -285,11 +285,26 @@ async function handleCredentialResponse(response) {
       })
     );
 
-    const data = await res.json();
+    const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+    let data = null;
+    let rawText = "";
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      rawText = await res.text();
+    }
     console.log("Backend auth response:", data);
 
     if (!res.ok || !data || data.ok !== true) {
-      const message = data && data.error ? data.error : "Google token verification failed.";
+      let message = data && data.error ? data.error : "Google token verification failed.";
+      if (!data && rawText) {
+        const compactText = rawText.replace(/\s+/g, " ").trim();
+        message =
+          "Auth endpoint returned non-JSON response (" +
+          res.status +
+          "). " +
+          compactText.slice(0, 120);
+      }
       currentLocalUserId = null;
       setAuthStatus(message, true);
       return;
@@ -397,6 +412,12 @@ function deriveApiBaseUrl() {
   // When the frontend is served from a non-API port (for example 5500 in local dev
   // or 3001 in deployment), the API still lives on the same host at port 3000.
   if (hostname && port && port !== "3000") {
+    return protocol + "//" + hostname + ":3000";
+  }
+
+  // Some deployments serve the static site on the default port (80/443) while the
+  // backend remains on :3000. Allow an explicit override to win if this isn't true.
+  if (hostname && !port && hostname !== "localhost" && hostname !== "127.0.0.1") {
     return protocol + "//" + hostname + ":3000";
   }
 
