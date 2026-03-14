@@ -60,6 +60,7 @@ let currentPortfolioRows = [];
 let positionEditSuccessTimerId = null;
 let allocationChartInstance = null;
 let portfolioHistoryChartInstance = null;
+let isAuthMenuOpen = false;
 const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
 
 // Small UI helper for Google auth status text.
@@ -85,6 +86,42 @@ function syncTopbarOffset() {
   }
 }
 
+function isSignInPage() {
+  return /\/signin\.html$/i.test(window.location.pathname);
+}
+
+function getPostAuthRedirectPath() {
+  const params = new URLSearchParams(window.location.search);
+  const rawNext = String(params.get("next") || "").trim();
+  if (!rawNext) {
+    return "index.html";
+  }
+
+  if (/^(?:[a-z]+:)?\/\//i.test(rawNext) || rawNext.startsWith("//")) {
+    return "index.html";
+  }
+
+  return rawNext.replace(/^\.?\//, "") || "index.html";
+}
+
+function setAuthMenuOpen(nextOpen) {
+  const menuPanelEl = document.getElementById("auth-menu-panel");
+  const menuTriggerEl = document.getElementById("auth-avatar-trigger");
+  const shouldOpen = Boolean(nextOpen && menuPanelEl && menuTriggerEl);
+
+  isAuthMenuOpen = shouldOpen;
+
+  if (menuPanelEl) {
+    menuPanelEl.hidden = !shouldOpen;
+  }
+
+  if (menuTriggerEl) {
+    menuTriggerEl.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+  }
+
+  syncTopbarOffset();
+}
+
 function setAuthUiState(user) {
   const loggedOutEl = document.getElementById("auth-logged-out");
   const loggedInEl = document.getElementById("auth-logged-in");
@@ -100,6 +137,10 @@ function setAuthUiState(user) {
 
   if (loggedInEl) {
     loggedInEl.classList.toggle("auth-state-hidden", !hasUser);
+  }
+
+  if (!hasUser) {
+    setAuthMenuOpen(false);
   }
 
   if (avatarEl) {
@@ -219,6 +260,11 @@ async function handleCredentialResponse(response) {
     setAuthUiState(currentLocalUserProfile);
     console.log("Current local user id:", currentLocalUserId);
 
+    if (isSignInPage()) {
+      window.location.href = getPostAuthRedirectPath();
+      return;
+    }
+
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
     await refreshTransactions();
@@ -236,7 +282,7 @@ async function handleCredentialResponse(response) {
 function initGoogleSignIn() {
   const signInContainer = document.getElementById("google-signin-btn");
   const signUpContainer = document.getElementById("google-signup-btn");
-  if (!signInContainer || !signUpContainer) {
+  if (!signInContainer) {
     return;
   }
 
@@ -253,13 +299,15 @@ function initGoogleSignIn() {
     shape: "rectangular",
   });
 
-  google.accounts.id.renderButton(signUpContainer, {
-    type: "standard",
-    theme: "filled_black",
-    size: "medium",
-    text: "signup_with",
-    shape: "rectangular",
-  });
+  if (signUpContainer) {
+    google.accounts.id.renderButton(signUpContainer, {
+      type: "standard",
+      theme: "filled_black",
+      size: "medium",
+      text: "signup_with",
+      shape: "rectangular",
+    });
+  }
 
   setAuthStatus("Google sign-in button ready.", false);
   syncTopbarOffset();
@@ -2228,6 +2276,10 @@ async function restoreAuthSession() {
     currentLocalUserId = Number(user.id);
     currentLocalUserProfile = user;
     setAuthUiState(user);
+    if (isSignInPage()) {
+      window.location.replace(getPostAuthRedirectPath());
+      return;
+    }
     const positions = await fetchPositionsFromServer();
     replacePortfolioRows(positions);
     await refreshTransactions();
@@ -2456,6 +2508,7 @@ function bindPersistenceEvents() {
   const transactionAssetSelect = document.getElementById("transactionAssetSelect");
   const deleteAssetForm = document.getElementById("deleteAssetForm");
   const signOutButton = document.getElementById("signout-btn");
+  const authAvatarTrigger = document.getElementById("auth-avatar-trigger");
   const actionTabs = document.querySelectorAll("[data-action-tab]");
   const historyTabs = document.querySelectorAll("[data-history-range]");
   if (positionEditorForm) {
@@ -2479,6 +2532,12 @@ function bindPersistenceEvents() {
   if (signOutButton) {
     signOutButton.addEventListener("click", signOutFromSession);
   }
+  if (authAvatarTrigger) {
+    authAvatarTrigger.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setAuthMenuOpen(!isAuthMenuOpen);
+    });
+  }
   for (let i = 0; i < actionTabs.length; i++) {
     actionTabs[i].addEventListener("click", function () {
       setActiveActionTab(actionTabs[i].getAttribute("data-action-tab"));
@@ -2495,6 +2554,23 @@ function bindPersistenceEvents() {
     updateAllocationChart();
     if (currentPortfolioHistoryPoints.length) {
       drawPortfolioHistoryChart(currentPortfolioHistoryPoints, activePortfolioHistoryRange);
+    }
+  });
+
+  document.addEventListener("click", function (event) {
+    const menuRoot = document.querySelector(".auth-menu");
+    if (!menuRoot || !(event.target instanceof Node)) {
+      return;
+    }
+
+    if (!menuRoot.contains(event.target)) {
+      setAuthMenuOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      setAuthMenuOpen(false);
     }
   });
 }

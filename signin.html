@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In | Portfolio Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <nav class="topbar" aria-label="Primary">
+        <div class="topbar-inner">
+            <a class="topbar-brand" href="index.html" aria-label="Portfolio Tracker home">PT</a>
+            <div class="topbar-nav">
+                <a class="topbar-link" href="index.html">Dashboard</a>
+                <a class="topbar-link" href="holdings.html">Portfolio</a>
+                <a class="topbar-link" href="transactions.html">Transaction</a>
+            </div>
+            <div class="topbar-auth" aria-label="Authentication">
+                <div id="auth-logged-out" class="auth-state topbar-auth-state">
+                    <a class="topbar-auth-link is-active" href="signin.html" aria-current="page">Sign in</a>
+                </div>
+                <div id="auth-logged-in" class="auth-state auth-state-hidden topbar-auth-state">
+                    <div class="auth-menu">
+                        <button
+                            id="auth-avatar-trigger"
+                            class="auth-avatar-button"
+                            type="button"
+                            aria-label="Open user menu"
+                            aria-expanded="false"
+                            aria-haspopup="menu"
+                        >
+                            <img
+                                id="auth-user-avatar"
+                                class="auth-avatar-image auth-state-hidden"
+                                alt="User avatar"
+                            />
+                            <span
+                                id="auth-user-avatar-fallback"
+                                class="auth-avatar-fallback"
+                                aria-hidden="true"
+                            ></span>
+                        </button>
+                        <div id="auth-menu-panel" class="auth-menu-panel" role="menu" hidden>
+                            <button id="signout-btn" class="auth-menu-item" type="button" role="menuitem">Sign out</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="page sign-in-page">
+        <section class="sign-in-shell">
+            <div class="sign-in-panel">
+                <p class="eyebrow">Account Access</p>
+                <h1>Sign in to your portfolio workspace</h1>
+                <p class="sign-in-copy">Use your Google account to load holdings, history, and transactions across devices.</p>
+                <div class="sign-in-actions">
+                    <div id="google-signin-btn"></div>
+                </div>
+                <p id="auth-status" class="sign-in-status">Google auth: not signed in.</p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
