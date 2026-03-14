@@ -409,18 +409,13 @@ function deriveApiBaseUrl() {
     return "http://localhost:3000";
   }
 
-  // When the frontend is served from a non-API port (for example 5500 in local dev
-  // or 3001 in deployment), the API still lives on the same host at port 3000.
-  if (hostname && port && port !== "3000") {
+  // Local development serves the frontend on a different port from the API.
+  if ((hostname === "localhost" || hostname === "127.0.0.1") && port && port !== "3000") {
     return protocol + "//" + hostname + ":3000";
   }
 
-  // Some deployments serve the static site on the default port (80/443) while the
-  // backend remains on :3000. Allow an explicit override to win if this isn't true.
-  if (hostname && !port && hostname !== "localhost" && hostname !== "127.0.0.1") {
-    return protocol + "//" + hostname + ":3000";
-  }
-
+  // In production, prefer same-origin requests and let the web server / reverse proxy
+  // route /api and /auth to the backend. Use window.__API_BASE_URL to override.
   return "";
 }
 
