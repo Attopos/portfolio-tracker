@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
-import { VALUE_FORMATTER, formatCurrency, formatRate } from "../lib/formatters.js";
+import {
+  POSITION_FORMATTER,
+  VALUE_FORMATTER,
+  formatCurrency,
+  formatRate,
+  formatTransactionDate,
+} from "../lib/formatters.js";
 
 const HISTORY_RANGES = ["7d", "30d", "90d", "1y"];
 const PIE_COLORS = [
@@ -150,6 +156,11 @@ function HistoryChart({ points }) {
   );
 }
 
+function formatDelta(delta) {
+  const sign = delta >= 0 ? "+" : "-";
+  return sign + formatCurrency(Math.abs(delta), "$");
+}
+
 function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const {
@@ -185,6 +196,41 @@ function DashboardPage() {
 
   const totalUsd = allocation.reduce((sum, item) => sum + item.value, 0);
   const totalCny = totalUsd * cnyPerUsdRate;
+  const topHoldings = useMemo(() => {
+    return positions
+      .map((item) => {
+        const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
+        const baseValue = Number(item.position) * effectivePrice;
+        const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
+        return {
+          id: item.id,
+          name: item.name,
+          position: item.position,
+          usdValue,
+        };
+      })
+      .filter((item) => item.usdValue > 0)
+      .sort((left, right) => right.usdValue - left.usdValue)
+      .slice(0, 5);
+  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
+  const recentTransactions = transactions.slice(0, 5);
+  const historySummary = useMemo(() => {
+    if (historyPoints.length === 0) {
+      return {
+        deltaUsd: 0,
+        endUsd: 0,
+        startUsd: 0,
+      };
+    }
+
+    const startUsd = Number(historyPoints[0]?.totalUsd) || 0;
+    const endUsd = Number(historyPoints[historyPoints.length - 1]?.totalUsd) || 0;
+    return {
+      deltaUsd: endUsd - startUsd,
+      endUsd,
+      startUsd,
+    };
+  }, [historyPoints]);
   const marketFooterText = useMemo(() => {
     const summaries = Object.keys(marketPricesBySymbol)
       .map((symbol) => {
@@ -225,6 +271,14 @@ function DashboardPage() {
           <p className="summary-label">Transactions</p>
           <h2>{transactions.length}</h2>
           <p>Most recent transaction records currently loaded.</p>
+        </article>
+        <article className="workspace-card summary-card">
+          <p className="summary-label">Range Change</p>
+          <h2>{formatDelta(historySummary.deltaUsd)}</h2>
+          <p>
+            {activeHistoryRange.toUpperCase()} move from {formatCurrency(historySummary.startUsd, "$")}
+            {" "}to {formatCurrency(historySummary.endUsd, "$")}
+          </p>
         </article>
       </section>
 
@@ -271,6 +325,65 @@ function DashboardPage() {
             <div className="history-state history-state-error">{historyError}</div>
           ) : (
             <HistoryChart points={historyPoints} />
+          )}
+        </section>
+      </section>
+
+      <section className="dashboard-detail-grid" aria-label="Portfolio details">
+        <section className="workspace-card dashboard-list-card" aria-label="Top holdings">
+          <div className="section-head section-head-detail">
+            <div>
+              <h2>Top Holdings</h2>
+              <p>Largest positions by current USD value.</p>
+            </div>
+          </div>
+          {!isAuthenticated ? (
+            <div className="card-empty">Sign in to load holdings.</div>
+          ) : topHoldings.length === 0 ? (
+            <div className="card-empty">No holdings yet.</div>
+          ) : (
+            <div className="holding-list">
+              {topHoldings.map((item, index) => (
+                <div className="holding-list-item" key={item.id}>
+                  <div className="holding-rank">{String(index + 1).padStart(2, "0")}</div>
+                  <div className="holding-copy">
+                    <strong>{item.name}</strong>
+                    <span>{POSITION_FORMATTER.format(item.position)} units</span>
+                  </div>
+                  <div className="holding-value">{formatCurrency(item.usdValue, "$")}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="workspace-card dashboard-list-card" aria-label="Recent activity">
+          <div className="section-head section-head-detail">
+            <div>
+              <h2>Recent Activity</h2>
+              <p>Latest transaction records from the shared workspace state.</p>
+            </div>
+          </div>
+          {!isAuthenticated ? (
+            <div className="card-empty">Sign in to load activity.</div>
+          ) : recentTransactions.length === 0 ? (
+            <div className="card-empty">No recent transactions yet.</div>
+          ) : (
+            <div className="activity-list">
+              {recentTransactions.map((item) => (
+                <div className="activity-item" key={item.id}>
+                  <div className="activity-pill">{String(item.type || "").toUpperCase()}</div>
+                  <div className="activity-copy">
+                    <strong>{item.assetName || item.assetId}</strong>
+                    <span>{formatTransactionDate(item.transactedAt)}</span>
+                  </div>
+                  <div className="activity-metrics">
+                    <span>{POSITION_FORMATTER.format(Number(item.quantity) || 0)}</span>
+                    <strong>{formatCurrency(Number(item.unitPrice) || 0, "$")}</strong>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
       </section>
