@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import HoldingsPage from "./pages/HoldingsPage.jsx";
-import SignInPreviewPage from "./pages/SignInPreviewPage.jsx";
+import SignInPage from "./pages/SignInPage.jsx";
 import TransactionsPage from "./pages/TransactionsPage.jsx";
 
 function App() {
@@ -12,7 +12,7 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="/holdings" element={<HoldingsPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/signin-preview" element={<SignInPreviewPage />} />
+        <Route path="/signin" element={<SignInPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

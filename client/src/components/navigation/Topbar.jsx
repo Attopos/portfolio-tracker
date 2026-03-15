@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "../../features/auth/AuthContext.jsx";
 
 const navItems = [
   { to: "/", label: "Dashboard", end: true },
@@ -10,19 +11,27 @@ const navItems = [
 function Topbar() {
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isAuthMenuOpen, setIsAuthMenuOpen] = useState(false);
-  const user = null;
-  const userInitials = useMemo(() => {
-    if (!user || !user.name) {
-      return "PT";
-    }
+  const location = useLocation();
+  const { isLoading, signOut, user } = useAuth();
+  const nextPath = location.pathname === "/signin" ? "/" : location.pathname;
+  const userInitials = !user || !user.name
+    ? "PT"
+    : user.name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() || "")
+        .join("");
+  const avatarUrl = user ? String(user.avatar_url || user.picture || "").trim() : "";
 
-    return user.name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() || "")
-      .join("");
-  }, [user]);
+  async function handleSignOut() {
+    try {
+      await signOut();
+      setIsAuthMenuOpen(false);
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    }
+  }
 
   return (
     <nav className="topbar" aria-label="Primary">
@@ -61,7 +70,7 @@ function Topbar() {
               <div className="topbar-menu-panel" role="menu">
                 <Link
                   className="topbar-menu-link"
-                  to="/transactions"
+                  to="/transactions?action=transaction"
                   role="menuitem"
                   onClick={() => setIsAddMenuOpen(false)}
                 >
@@ -69,7 +78,7 @@ function Topbar() {
                 </Link>
                 <Link
                   className="topbar-menu-link"
-                  to="/holdings"
+                  to="/holdings?action=create"
                   role="menuitem"
                   onClick={() => setIsAddMenuOpen(false)}
                 >
@@ -83,8 +92,11 @@ function Topbar() {
         <div className="topbar-auth" aria-label="Authentication">
           {!user ? (
             <div className="topbar-auth-state">
-              <Link className="topbar-auth-link" to="/signin-preview">
-                Sign in
+              <Link
+                className="topbar-auth-link"
+                to={`/signin?next=${encodeURIComponent(nextPath || "/")}`}
+              >
+                {isLoading ? "Checking..." : "Sign in"}
               </Link>
             </div>
           ) : (
@@ -94,9 +106,14 @@ function Topbar() {
                 type="button"
                 aria-expanded={isAuthMenuOpen}
                 aria-haspopup="menu"
+                aria-label="Open user menu"
                 onClick={() => setIsAuthMenuOpen((open) => !open)}
               >
-                <span className="auth-avatar-fallback">{userInitials}</span>
+                {avatarUrl ? (
+                  <img className="auth-avatar-image" src={avatarUrl} alt="User avatar" />
+                ) : (
+                  <span className="auth-avatar-fallback">{userInitials}</span>
+                )}
               </button>
               {isAuthMenuOpen ? (
                 <div className="auth-menu-panel" role="menu">
@@ -104,7 +121,7 @@ function Topbar() {
                     className="auth-menu-item"
                     type="button"
                     role="menuitem"
-                    onClick={() => setIsAuthMenuOpen(false)}
+                    onClick={handleSignOut}
                   >
                     Sign out
                   </button>
