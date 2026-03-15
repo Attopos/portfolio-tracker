@@ -1,0 +1,113 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #132238;
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.45), transparent 32%),
+    linear-gradient(180deg, #f4fbff 0%, #eef5ff 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 56px 0 72px;
+}
+
+.hero {
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.75rem;
+  color: #2d6cdf;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 4.8rem);
+  line-height: 0.95;
+}
+
+.hero-copy {
+  max-width: 60ch;
+  margin: 16px 0 0;
+  font-size: 1.05rem;
+  color: #42556d;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  padding: 24px;
+  border: 1px solid rgba(19, 34, 56, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 24px 60px rgba(47, 84, 150, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.card p,
+.card li {
+  color: #42556d;
+}
+
+.card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.card-accent {
+  background: linear-gradient(180deg, rgba(45, 108, 223, 0.1), rgba(255, 255, 255, 0.92));
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    width: min(100% - 24px, 1080px);
+    padding-top: 40px;
+  }
+
+  .card {
+    padding: 20px;
+    border-radius: 20px;
+  }
+}
