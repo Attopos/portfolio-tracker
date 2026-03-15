@@ -45,11 +45,28 @@ fi
 echo "Building frontend"
 npm run build
 
+if [[ ! -f "${CLIENT_DIR}/dist/index.html" ]]; then
+  echo "Frontend build failed: missing ${CLIENT_DIR}/dist/index.html" >&2
+  exit 1
+fi
+
+if ! find "${CLIENT_DIR}/dist/assets" -maxdepth 1 -type f \( -name '*.js' -o -name '*.css' \) | grep -q .; then
+  echo "Frontend build failed: missing compiled assets in ${CLIENT_DIR}/dist/assets" >&2
+  exit 1
+fi
+
+echo "Frontend build output verified"
+
 if [[ -n "${FRONTEND_PUBLISH_DIR}" ]]; then
   echo "Publishing frontend build to ${FRONTEND_PUBLISH_DIR}"
   mkdir -p "${FRONTEND_PUBLISH_DIR}"
   rm -rf "${FRONTEND_PUBLISH_DIR:?}/"*
   cp -R "${CLIENT_DIR}/dist/." "${FRONTEND_PUBLISH_DIR}/"
+
+  if [[ ! -f "${FRONTEND_PUBLISH_DIR}/index.html" ]]; then
+    echo "Frontend publish failed: missing ${FRONTEND_PUBLISH_DIR}/index.html" >&2
+    exit 1
+  fi
 fi
 
 echo "Running database migrations"

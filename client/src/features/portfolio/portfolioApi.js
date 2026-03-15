@@ -60,7 +60,7 @@ export function detectStandardMarketSymbol(assetId, assetName) {
   return normalizeMarketAssetSymbol(assetId) || normalizeMarketAssetSymbol(assetName);
 }
 
-export function normalizePosition(row) {
+function normalizePosition(row) {
   if (!row || typeof row !== "object") {
     return null;
   }
