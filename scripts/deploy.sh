@@ -4,6 +4,8 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/var/www/portfolio}"
 SERVER_DIR="${SERVER_DIR:-${APP_DIR}/server}"
+CLIENT_DIR="${CLIENT_DIR:-${APP_DIR}/client}"
+FRONTEND_PUBLISH_DIR="${FRONTEND_PUBLISH_DIR:-}"
 BRANCH="${BRANCH:-main}"
 SERVER_RESTART_CMD="${SERVER_RESTART_CMD:-}"
 
@@ -19,6 +21,11 @@ if [[ ! -d "${SERVER_DIR}" ]]; then
   exit 1
 fi
 
+if [[ ! -d "${CLIENT_DIR}" ]]; then
+  echo "Client directory not found: ${CLIENT_DIR}" >&2
+  exit 1
+fi
+
 echo "Installing server dependencies in ${SERVER_DIR}"
 cd "${SERVER_DIR}"
 if [[ -f package-lock.json ]]; then
@@ -27,7 +34,26 @@ else
   npm install --omit=dev
 fi
 
+echo "Installing client dependencies in ${CLIENT_DIR}"
+cd "${CLIENT_DIR}"
+if [[ -f package-lock.json ]]; then
+  npm ci
+else
+  npm install
+fi
+
+echo "Building frontend"
+npm run build
+
+if [[ -n "${FRONTEND_PUBLISH_DIR}" ]]; then
+  echo "Publishing frontend build to ${FRONTEND_PUBLISH_DIR}"
+  mkdir -p "${FRONTEND_PUBLISH_DIR}"
+  rm -rf "${FRONTEND_PUBLISH_DIR:?}/"*
+  cp -R "${CLIENT_DIR}/dist/." "${FRONTEND_PUBLISH_DIR}/"
+fi
+
 echo "Running database migrations"
+cd "${SERVER_DIR}"
 npm run db:create-users
 npm run db:create-sessions
 npm run db:migrate-positions-user-id
