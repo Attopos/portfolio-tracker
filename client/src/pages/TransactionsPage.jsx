@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
+import { buildMarketFooterText } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
-  VALUE_FORMATTER,
-  formatRate,
   formatTransactionDate,
   parseNumberInput,
   toDateTimeLocalValue,
@@ -37,16 +36,7 @@ function TransactionsPage() {
   const isDialogOpen = searchParams.get("action") === "transaction";
 
   const marketFooterText = useMemo(() => {
-    const summaries = Object.keys(marketPricesBySymbol)
-      .map((symbol) => {
-        const usd = Number(marketPricesBySymbol[symbol]?.usd);
-        return Number.isFinite(usd) && usd > 0 ? symbol + " $" + VALUE_FORMATTER.format(usd) : "";
-      })
-      .filter(Boolean);
-
-    const syncedAt = lastMarketSyncAt ? " | Updated: " + lastMarketSyncAt : "";
-    const marketText = summaries.length ? " | " + summaries.join(" | ") : "";
-    return "FX USD/CNY: " + formatRate(cnyPerUsdRate) + marketText + syncedAt;
+    return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
   }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
 
   function openDialog() {

@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const { requireAuth } = require("../middleware/require-auth");
 const { detectMarketSymbol, fetchCoinGeckoPrices } = require("../services/market-prices");
 
 const router = express.Router();
@@ -15,24 +16,6 @@ const RANGE_TO_MS = {
 
 let cachedUsdCnyRate = DEFAULT_CNY_PER_USD;
 let cachedUsdCnyRateAt = 0;
-
-function getSessionUserId(req) {
-  const userId = Number(req.session && req.session.userId);
-  if (!Number.isInteger(userId) || userId <= 0) {
-    return null;
-  }
-  return userId;
-}
-
-function requireAuth(req, res, next) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return res.status(401).json({ error: "Unauthenticated" });
-  }
-
-  req.userId = userId;
-  return next();
-}
 
 function getCurrentHourBucketStart() {
   const bucketStart = new Date();

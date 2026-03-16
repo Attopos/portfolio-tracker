@@ -1,4 +1,5 @@
 import { apiFetch } from "../../lib/api.js";
+import { normalizeResponseError, readJsonSafely } from "../../lib/http.js";
 
 const FX_RATE_API_URL = "https://api.frankfurter.app/latest?from=USD&to=CNY";
 const STANDARD_MARKET_ASSETS = {
@@ -30,25 +31,6 @@ function buildStandardMarketAliasLookup() {
   }
 
   return map;
-}
-
-function normalizeResponseError(payload, fallbackMessage) {
-  return payload && typeof payload.error === "string" && payload.error.trim()
-    ? payload.error.trim()
-    : fallbackMessage;
-}
-
-async function readJsonSafely(response) {
-  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  if (!contentType.includes("application/json")) {
-    return null;
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
 }
 
 export function normalizeMarketAssetSymbol(value) {

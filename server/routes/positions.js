@@ -1,41 +1,10 @@
 const express = require("express");
 const pool = require("../db");
+const { buildGeneratedAssetId } = require("../lib/assets");
+const { requireAuth } = require("../middleware/require-auth");
 const { recordPortfolioSnapshotForUser } = require("./portfolio-history");
 
 const router = express.Router();
-
-function slugifyAssetName(name) {
-  return String(name || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-}
-
-function buildGeneratedAssetId(name) {
-  const base = slugifyAssetName(name) || "asset";
-  const suffix = Date.now().toString(36).slice(-6);
-  return (base + "-" + suffix).slice(0, 48);
-}
-
-function getSessionUserId(req) {
-  const userId = Number(req.session && req.session.userId);
-  if (!Number.isInteger(userId) || userId <= 0) {
-    return null;
-  }
-  return userId;
-}
-
-function requireAuth(req, res, next) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return res.status(401).json({ error: "Unauthenticated" });
-  }
-
-  req.userId = userId;
-  return next();
-}
 
 async function safeRecordPortfolioSnapshot(userId) {
   try {

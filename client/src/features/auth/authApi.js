@@ -1,17 +1,5 @@
 import { apiFetch } from "../../lib/api.js";
-
-async function readJsonSafely(response) {
-  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  if (!contentType.includes("application/json")) {
-    return null;
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
+import { normalizeResponseError, readJsonSafely } from "../../lib/http.js";
 
 export async function fetchCurrentUser() {
   const response = await apiFetch("/api/me");
@@ -22,11 +10,7 @@ export async function fetchCurrentUser() {
 
   const payload = await readJsonSafely(response);
   if (!response.ok) {
-    const message =
-      payload && typeof payload.error === "string" && payload.error.trim()
-        ? payload.error.trim()
-        : "Failed to restore session.";
-    throw new Error(message);
+    throw new Error(normalizeResponseError(payload, "Failed to restore session."));
   }
 
   const user = payload && payload.user ? payload.user : null;
@@ -49,11 +33,7 @@ export async function signInWithGoogleCredential(credential) {
 
   const payload = await readJsonSafely(response);
   if (!response.ok || !payload || payload.ok !== true) {
-    const message =
-      payload && typeof payload.error === "string" && payload.error.trim()
-        ? payload.error.trim()
-        : "Google sign-in failed.";
-    throw new Error(message);
+    throw new Error(normalizeResponseError(payload, "Google sign-in failed."));
   }
 
   return payload.user || null;
@@ -66,10 +46,6 @@ export async function signOutFromSession() {
 
   const payload = await readJsonSafely(response);
   if (!response.ok) {
-    const message =
-      payload && typeof payload.error === "string" && payload.error.trim()
-        ? payload.error.trim()
-        : "Failed to sign out.";
-    throw new Error(message);
+    throw new Error(normalizeResponseError(payload, "Failed to sign out."));
   }
 }
