@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { ArrowTrendingUpIcon, WalletIcon } from "@heroicons/react/24/outline";
+import SummaryCard from "../components/cards/SummaryCard.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   getEffectivePrice,
@@ -151,11 +153,16 @@ function DashboardPage() {
         const baseInvested = quantity * entryPrice;
         const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
         const investedUsd = item.currency === "CNY" ? baseInvested / cnyPerUsdRate : baseInvested;
+        const market = item.standardSymbol ? marketPricesBySymbol[item.standardSymbol] : null;
+        const dailyChangePercent = market && typeof market === "object"
+          ? Number(item.currency === "CNY" ? market.cny24hChange : market.usd24hChange)
+          : NaN;
         const symbol = String(item.standardSymbol || item.id || item.name || "")
           .trim()
           .toUpperCase()
           .slice(0, 5);
         return {
+          dailyChangePercent: Number.isFinite(dailyChangePercent) ? dailyChangePercent : 0,
           id: item.id,
           investedUsd,
           name: item.name,
@@ -176,6 +183,10 @@ function DashboardPage() {
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
   const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
+  const totalDailyChangePercent = totalUsd > 0
+    ? allocation.reduce((sum, item) => sum + item.usdValue * (item.dailyChangePercent / 100), 0) / totalUsd * 100
+    : 0;
+  const isDailyPositive = totalDailyChangePercent >= 0;
 
   return (
     <section className="page-panel page-panel-detail">
@@ -187,28 +198,37 @@ function DashboardPage() {
       </header>
 
       <section className="summary-grid summary-grid-compact" aria-label="Portfolio summary">
-        <article className="workspace-card summary-card summary-card-accent">
-          <p className="summary-label">Portfolio Value</p>
-          <div className="summary-emphasis">
-            <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
-            <p className="summary-support summary-support-strong">{formatCurrency(totalUsd, "$")}</p>
-          </div>
-        </article>
-        <article className="workspace-card summary-card summary-card-highlight">
-          <p className="summary-label">Total Profit</p>
-          <div className="profit-summary">
-            <h2 className={`profit-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
+        <SummaryCard
+          label="Value"
+          icon={WalletIcon}
+          tone="accent"
+          footer={formatCurrency(totalUsd, "$")}
+        >
+          <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
+        </SummaryCard>
+        <SummaryCard
+          label="Total Profit"
+          icon={ArrowTrendingUpIcon}
+          tone="highlight"
+          footer={(
+            <>
+              <span className={`summary-daily-change-arrow ${isDailyPositive ? "is-up" : "is-down"}`} aria-hidden="true" />
+              <span className="summary-daily-change-value">
+                {`${Math.abs(totalDailyChangePercent).toFixed(2)}% daily`}
+              </span>
+            </>
+          )}
+          footerClassName={`summary-daily-change ${isDailyPositive ? "is-positive" : "is-negative"}`}
+        >
+          <div className="summary-card-main">
+            <h2 className={`summary-card-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
               {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
             </h2>
-            <span className={`profit-rate ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
+            <span className={`summary-card-rate ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
               {`${totalProfitUsd >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
             </span>
           </div>
-          <p className={`profit-subline ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
-            {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitUsd), "$")}`}
-            {" "}vs {formatCurrency(totalInvestedUsd, "$")} invested
-          </p>
-        </article>
+        </SummaryCard>
       </section>
 
       <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">

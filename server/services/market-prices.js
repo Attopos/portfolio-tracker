@@ -68,7 +68,7 @@ async function fetchCoinGeckoPrices(symbols) {
     COINGECKO_SIMPLE_PRICE_URL +
     "?ids=" +
     encodeURIComponent(ids) +
-    "&vs_currencies=usd,cny&include_last_updated_at=true&precision=full";
+    "&vs_currencies=usd,cny&include_last_updated_at=true&include_24hr_change=true&precision=full";
   const headers = {};
   if (COINGECKO_DEMO_API_KEY) {
     headers["x-cg-demo-api-key"] = COINGECKO_DEMO_API_KEY;
@@ -91,6 +91,8 @@ async function fetchCoinGeckoPrices(symbols) {
     const row = payload && payload[asset.coingeckoId];
     const usd = Number(row && row.usd);
     const cny = Number(row && row.cny);
+    const usd24hChange = Number(row && row.usd_24h_change);
+    const cny24hChange = Number(row && row.cny_24h_change);
     const lastUpdatedAt = Number(row && row.last_updated_at);
 
     if (!Number.isFinite(usd) || usd <= 0 || !Number.isFinite(cny) || cny <= 0) {
@@ -101,6 +103,8 @@ async function fetchCoinGeckoPrices(symbols) {
       symbol,
       usd,
       cny,
+      usd24hChange: Number.isFinite(usd24hChange) ? usd24hChange : null,
+      cny24hChange: Number.isFinite(cny24hChange) ? cny24hChange : null,
       lastUpdatedAt:
         Number.isFinite(lastUpdatedAt) && lastUpdatedAt > 0
           ? new Date(lastUpdatedAt * 1000).toISOString()
