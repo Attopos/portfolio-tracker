@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   createHoldingTransaction,
   createTradeTransaction,
+  fetchPortfolioDailySummary,
   fetchMarketPrices,
   fetchPositions,
   fetchTransactions,
@@ -20,6 +21,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
   const [marketPricesBySymbol, setMarketPricesBySymbol] = useState({});
   const [cnyPerUsdRate, setCnyPerUsdRate] = useState(DEFAULT_CNY_PER_USD);
+  const [dailySummary, setDailySummary] = useState(null);
   const [marketStatus, setMarketStatus] = useState("");
   const [lastMarketSyncAt, setLastMarketSyncAt] = useState("");
 
@@ -110,6 +112,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   useEffect(() => {
     if (!isAuthenticated || positions.length === 0) {
       setMarketPricesBySymbol({});
+      setDailySummary(null);
       setMarketStatus("");
       return;
     }
@@ -121,9 +124,10 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
     async function refreshMarketData() {
       try {
-        const [nextRate, nextPrices] = await Promise.all([
+        const [nextRate, nextPrices, nextDailySummary] = await Promise.all([
           fetchUsdCnyRate(),
           fetchMarketPrices(trackedSymbols),
+          fetchPortfolioDailySummary(),
         ]);
 
         if (cancelled) {
@@ -132,6 +136,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
         setCnyPerUsdRate(nextRate);
         setMarketPricesBySymbol(nextPrices);
+        setDailySummary(nextDailySummary);
         setLastMarketSyncAt(new Date().toLocaleString());
         setMarketStatus("");
       } catch (error) {
@@ -139,6 +144,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
           return;
         }
 
+        setDailySummary(null);
         setMarketStatus(error instanceof Error ? error.message : "Failed to refresh market data.");
         setLastMarketSyncAt(new Date().toLocaleString());
       }
@@ -156,6 +162,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       addHolding,
       addTransaction,
       cnyPerUsdRate,
+      dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
       lastMarketSyncAt,
@@ -168,6 +175,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     }),
     [
       cnyPerUsdRate,
+      dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
       lastMarketSyncAt,

@@ -160,3 +160,14 @@ export async function fetchMarketPrices(symbols) {
 
   return payload?.prices && typeof payload.prices === "object" ? payload.prices : {};
 }
+
+export async function fetchPortfolioDailySummary() {
+  const response = await apiFetch(API_ROUTES.portfolioHistory.summary);
+  const payload = await readJsonSafely(response);
+
+  if (!response.ok) {
+    throw new Error(normalizeResponseError(payload, "Failed to fetch portfolio daily summary."));
+  }
+
+  return payload?.summary && typeof payload.summary === "object" ? payload.summary : null;
+}

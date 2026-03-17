@@ -10,6 +10,10 @@ export const API_ROUTES = {
   marketPrices: {
     list: "/api/market-prices",
   },
+  portfolioHistory: {
+    list: "/api/portfolio-history",
+    summary: "/api/portfolio-history/summary",
+  },
   positions: {
     list: "/api/positions",
   },

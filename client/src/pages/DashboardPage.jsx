@@ -139,6 +139,7 @@ function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const {
     cnyPerUsdRate,
+    dailySummary,
     marketPricesBySymbol,
     positions,
   } = usePortfolioWorkspace();
@@ -153,16 +154,11 @@ function DashboardPage() {
         const baseInvested = quantity * entryPrice;
         const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
         const investedUsd = item.currency === "CNY" ? baseInvested / cnyPerUsdRate : baseInvested;
-        const market = item.standardSymbol ? marketPricesBySymbol[item.standardSymbol] : null;
-        const dailyChangePercent = market && typeof market === "object"
-          ? Number(item.currency === "CNY" ? market.cny24hChange : market.usd24hChange)
-          : NaN;
         const symbol = String(item.standardSymbol || item.id || item.name || "")
           .trim()
           .toUpperCase()
           .slice(0, 5);
         return {
-          dailyChangePercent: Number.isFinite(dailyChangePercent) ? dailyChangePercent : 0,
           id: item.id,
           investedUsd,
           name: item.name,
@@ -182,11 +178,10 @@ function DashboardPage() {
   const totalInvestedUsd = allocation.reduce((sum, item) => sum + item.investedUsd, 0);
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
-  const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
-  const totalDailyChangePercent = totalUsd > 0
-    ? allocation.reduce((sum, item) => sum + item.usdValue * (item.dailyChangePercent / 100), 0) / totalUsd * 100
-    : 0;
-  const isDailyPositive = totalDailyChangePercent >= 0;
+  const totalDailyPnlUsd = Number(dailySummary?.dailyPnlUsd) || 0;
+  const totalDailyPnlCny = totalDailyPnlUsd * cnyPerUsdRate;
+  const totalDailyPnlPercent = Number(dailySummary?.dailyPnlPct) || 0;
+  const isDailyPositive = totalDailyPnlUsd >= 0;
 
   return (
     <section className="page-panel page-panel-detail">
@@ -214,7 +209,7 @@ function DashboardPage() {
             <>
               <span className={`summary-daily-change-arrow ${isDailyPositive ? "is-up" : "is-down"}`} aria-hidden="true" />
               <span className="summary-daily-change-value">
-                {`${Math.abs(totalDailyChangePercent).toFixed(2)}%`}
+                {`${totalDailyPnlUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalDailyPnlUsd), "$")}`}
               </span>
               <span className="summary-daily-change-label">
                 daily
@@ -227,8 +222,8 @@ function DashboardPage() {
             <h2 className={`summary-card-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
               {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
             </h2>
-            <span className={`summary-card-rate ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
-              {`${totalProfitUsd >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
+            <span className={`summary-card-rate ${isDailyPositive ? "is-positive" : "is-negative"}`}>
+              {`${totalDailyPnlPercent >= 0 ? "+" : "-"}${Math.abs(totalDailyPnlPercent).toFixed(2)}%`}
             </span>
           </div>
         </SummaryCard>
