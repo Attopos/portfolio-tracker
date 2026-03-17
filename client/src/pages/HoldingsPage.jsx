@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  buildMarketFooterText,
   getEffectivePrice,
 } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
@@ -30,7 +29,6 @@ function HoldingsPage() {
     addHolding,
     cnyPerUsdRate,
     isPositionsLoading,
-    lastMarketSyncAt,
     marketPricesBySymbol,
     marketStatus,
     positions,
@@ -87,10 +85,6 @@ function HoldingsPage() {
       { usd: 0, cny: 0 }
     );
   }, [filteredRows]);
-
-  const marketFooterText = useMemo(() => {
-    return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
-  }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
 
   function openDialog() {
     const nextParams = new URLSearchParams(searchParams);
@@ -241,26 +235,11 @@ function HoldingsPage() {
         </div>
       ) : null}
 
-      <header className="page-hero">
-        <div className="page-hero-copy">
-          <p className="page-eyebrow">Holdings</p>
-          <h1>Portfolio positions</h1>
-          <p className="page-copy">
-            Review active positions, current market value, and where each holding sits in the portfolio.
-          </p>
-        </div>
-      </header>
-
       <section className="workspace-card table-card portfolio-table-card" aria-label="Holdings">
         <div className="section-head section-head-detail">
           <div>
             <span className="section-kicker">Portfolio</span>
             <h2>Holdings</h2>
-            <p className="section-subcopy">
-              {isAuthenticated
-                ? "Your current portfolio with live pricing where available."
-                : "Sign in to load your portfolio."}
-            </p>
           </div>
           <div className="toolbar-section">
             <span className="value-badge">{filteredRows.length} assets</span>
@@ -376,9 +355,6 @@ function HoldingsPage() {
         </div>
       </section>
 
-      <footer className="market-footer">
-        <p className="market-footer-text">{marketFooterText}</p>
-      </footer>
     </section>
   );
 }

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
-import { buildMarketFooterText } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
@@ -27,20 +26,13 @@ function TransactionsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     addTransaction,
-    cnyPerUsdRate,
     isTransactionsLoading,
-    lastMarketSyncAt,
-    marketPricesBySymbol,
     positions,
     transactions,
     transactionsError,
   } = usePortfolioWorkspace();
 
   const isDialogOpen = searchParams.get("action") === "transaction";
-
-  const marketFooterText = useMemo(() => {
-    return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
-  }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((item) => {
@@ -216,26 +208,11 @@ function TransactionsPage() {
         </div>
       ) : null}
 
-      <header className="page-hero">
-        <div className="page-hero-copy">
-          <p className="page-eyebrow">Transactions</p>
-          <h1>Trade history</h1>
-          <p className="page-copy">
-            Review buys and sells with a cleaner ledger view, quick filtering, and position context.
-          </p>
-        </div>
-      </header>
-
       <section className="workspace-card table-card transactions-card" aria-label="Recent transactions">
         <div className="section-head section-head-detail">
           <div>
             <span className="section-kicker">Ledger</span>
             <h2>Recent Transactions</h2>
-            <p className="section-subcopy">
-              {isAuthenticated
-                ? "Your latest buys and sells, with running position totals."
-                : "Sign in to load transactions."}
-            </p>
           </div>
           <div className="toolbar-section">
             <span className="value-badge">{filteredTransactions.length} rows</span>
@@ -330,9 +307,6 @@ function TransactionsPage() {
         </div>
       </section>
 
-      <footer className="market-footer">
-        <p className="market-footer-text">{marketFooterText}</p>
-      </footer>
     </section>
   );
 }

@@ -1,5 +1,3 @@
-import { VALUE_FORMATTER, formatRate } from "../../lib/formatters.js";
-
 export function getEffectivePrice(item, marketPricesBySymbol) {
   const symbol = item?.standardSymbol || "";
   const entryPrice = Number(item?.price);
@@ -13,17 +11,4 @@ export function getEffectivePrice(item, marketPricesBySymbol) {
   }
 
   return Number.isFinite(entryPrice) ? entryPrice : 0;
-}
-
-export function buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt) {
-  const summaries = Object.keys(marketPricesBySymbol)
-    .map((symbol) => {
-      const usd = Number(marketPricesBySymbol[symbol]?.usd);
-      return Number.isFinite(usd) && usd > 0 ? symbol + " $" + VALUE_FORMATTER.format(usd) : "";
-    })
-    .filter(Boolean);
-
-  const syncedAt = lastMarketSyncAt ? " | Updated: " + lastMarketSyncAt : "";
-  const marketText = summaries.length ? " | " + summaries.join(" | ") : "";
-  return "FX USD/CNY: " + formatRate(cnyPerUsdRate) + marketText + syncedAt;
 }

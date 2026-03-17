@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  buildMarketFooterText,
   getEffectivePrice,
 } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
@@ -17,7 +16,6 @@ function AssetDetailPage() {
   const { isAuthenticated } = useAuth();
   const {
     cnyPerUsdRate,
-    lastMarketSyncAt,
     marketPricesBySymbol,
     positions,
     transactions,
@@ -64,10 +62,6 @@ function AssetDetailPage() {
 
     return transactions.filter((item) => item.assetId === detail.id);
   }, [detail, transactions]);
-
-  const marketFooterText = useMemo(() => {
-    return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
-  }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
 
   if (!isAuthenticated) {
     return (
@@ -204,10 +198,8 @@ function AssetDetailPage() {
             <p className="settings-note">
               Market values are converted into both USD and CNY using the latest workspace FX rate.
             </p>
-            <span className="status-badge is-amber">Updated {lastMarketSyncAt || "Pending"}</span>
-            <p className="settings-note">
-              This page keeps the current information architecture intact while giving each holding a more focused analysis surface.
-            </p>
+            <span className="status-badge is-amber">Dual-currency view</span>
+            <p className="settings-note">This page stays focused on the asset itself without adding extra product chrome.</p>
           </div>
         </aside>
       </section>
@@ -260,9 +252,6 @@ function AssetDetailPage() {
         </div>
       </section>
 
-      <footer className="market-footer">
-        <p className="market-footer-text">{marketFooterText}</p>
-      </footer>
     </section>
   );
 }

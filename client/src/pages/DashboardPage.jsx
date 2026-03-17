@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  buildMarketFooterText,
   getEffectivePrice,
 } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
@@ -138,9 +137,7 @@ function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const {
     cnyPerUsdRate,
-    lastMarketSyncAt,
     marketPricesBySymbol,
-    marketStatus,
     positions,
   } = usePortfolioWorkspace();
 
@@ -179,10 +176,6 @@ function DashboardPage() {
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
   const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
-  const trackedCount = allocation.length;
-  const marketFooterText = useMemo(() => {
-    return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
-  }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
 
   return (
     <section className="page-panel page-panel-detail">
@@ -190,25 +183,18 @@ function DashboardPage() {
         <div className="page-hero-copy">
           <p className="page-eyebrow">Dashboard</p>
           <h1>Portfolio overview</h1>
-          <p className="page-copy">
-            {isAuthenticated
-              ? "A calm, structured view of portfolio value, performance, and allocation across your tracked assets."
-              : "Sign in to see your portfolio totals, allocation mix, and live pricing context."}
-          </p>
-        </div>
-        <div className="page-hero-side">
-          <span className="status-badge">Workspace</span>
-          <span className="status-badge is-amber">USD/CNY {cnyPerUsdRate.toFixed(4)}</span>
         </div>
       </header>
 
-      <section className="summary-grid" aria-label="Portfolio summary">
+      <section className="summary-grid summary-grid-compact" aria-label="Portfolio summary">
         <article className="workspace-card summary-card summary-card-accent">
           <p className="summary-label">Portfolio Value</p>
-          <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
-          <p className="summary-support">{formatCurrency(totalUsd, "$")}</p>
+          <div className="summary-emphasis">
+            <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
+            <p className="summary-support summary-support-strong">{formatCurrency(totalUsd, "$")}</p>
+          </div>
         </article>
-        <article className="workspace-card summary-card">
+        <article className="workspace-card summary-card summary-card-highlight">
           <p className="summary-label">Total Profit</p>
           <div className="profit-summary">
             <h2 className={`profit-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
@@ -223,33 +209,6 @@ function DashboardPage() {
             {" "}vs {formatCurrency(totalInvestedUsd, "$")} invested
           </p>
         </article>
-        <article className="workspace-card summary-card summary-card-highlight">
-          <p className="summary-label">Capital Invested</p>
-          <h2 className="summary-value">{formatCurrency(totalInvestedUsd * cnyPerUsdRate, "¥")}</h2>
-          <p className="summary-support">{formatCurrency(totalInvestedUsd, "$")} cost basis</p>
-        </article>
-        <article className="workspace-card summary-card">
-          <p className="summary-label">Tracked Assets</p>
-          <h2 className="summary-value">{trackedCount}</h2>
-          <p className="summary-support">
-            {trackedCount === 0 ? "No allocation data yet." : `Top ${trackedCount} assets by portfolio value`}
-          </p>
-        </article>
-      </section>
-
-      <section className="metric-strip" aria-label="Dashboard highlights">
-        <div className="metric-pill">
-          <span>Live Prices</span>
-          <strong>{Object.keys(marketPricesBySymbol).length} synced</strong>
-        </div>
-        <div className="metric-pill">
-          <span>Largest Allocation</span>
-          <strong>{allocation[0] ? allocation[0].symbol : "--"}</strong>
-        </div>
-        <div className="metric-pill">
-          <span>Market Sync</span>
-          <strong>{lastMarketSyncAt || "Pending"}</strong>
-        </div>
       </section>
 
       <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">
@@ -268,12 +227,6 @@ function DashboardPage() {
           )}
         </div>
       </section>
-
-      {marketStatus ? <p className="panel-note">{marketStatus}</p> : null}
-
-      <footer className="market-footer">
-        <p className="market-footer-text">{marketFooterText}</p>
-      </footer>
     </section>
   );
 }

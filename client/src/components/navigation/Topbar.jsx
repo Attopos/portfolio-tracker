@@ -6,7 +6,6 @@ const navItems = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/holdings", label: "Portfolio" },
   { to: "/transactions", label: "Transactions" },
-  { to: "/settings", label: "Settings" },
 ];
 
 function Topbar() {
