@@ -3,8 +3,8 @@ import { ArrowTrendingUpIcon, WalletIcon } from "@heroicons/react/24/outline";
 import SummaryCard from "../components/cards/SummaryCard.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  getEffectivePrice,
-} from "../features/portfolio/portfolioSelectors.js";
+  buildPositionMetrics,
+} from "../features/portfolio/portfolioMetrics.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import { formatCurrency } from "../lib/formatters.js";
 
@@ -145,32 +145,20 @@ function DashboardPage() {
   } = usePortfolioWorkspace();
 
   const allocation = useMemo(() => {
-    const items = positions
-      .map((item) => {
-        const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
-        const quantity = Number(item.position) || 0;
-        const entryPrice = Number(item.price) || 0;
-        const baseValue = quantity * effectivePrice;
-        const baseInvested = quantity * entryPrice;
-        const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
-        const investedUsd = item.currency === "CNY" ? baseInvested / cnyPerUsdRate : baseInvested;
-        const symbol = String(item.standardSymbol || item.id || item.name || "")
-          .trim()
-          .toUpperCase()
-          .slice(0, 5);
-        return {
-          id: item.id,
-          investedUsd,
-          name: item.name,
-          positionLabel: `${quantity} ${quantity === 1 ? "share" : "shares"}`,
-          symbol: symbol || String(item.name || "").trim().slice(0, 3).toUpperCase(),
-          usdValue,
-        };
-      })
-      .filter((item) => item.usdValue > 0)
+    const portfolioSlice = positions
+      .map((position) => buildPositionMetrics(position, marketPricesBySymbol, cnyPerUsdRate))
+      .map((positionMetrics) => ({
+        id: positionMetrics.id,
+        investedUsd: positionMetrics.investedUsd,
+        name: positionMetrics.name,
+        positionLabel: `${positionMetrics.quantity} ${positionMetrics.quantity === 1 ? "share" : "shares"}`,
+        symbol: positionMetrics.symbol,
+        usdValue: positionMetrics.usdValue,
+      }))
+      .filter((positionMetrics) => positionMetrics.usdValue > 0)
       .sort((left, right) => right.usdValue - left.usdValue);
 
-    return items.slice(0, 6);
+    return portfolioSlice.slice(0, 6);
   }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
 
   const totalUsd = allocation.reduce((sum, item) => sum + item.usdValue, 0);
@@ -179,7 +167,6 @@ function DashboardPage() {
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
   const totalDailyPnlUsd = Number(dailySummary?.dailyPnlUsd) || 0;
-  const totalDailyPnlCny = totalDailyPnlUsd * cnyPerUsdRate;
   const totalDailyPnlPercent = Number(dailySummary?.dailyPnlPct) || 0;
   const isDailyPositive = totalDailyPnlUsd >= 0;
 

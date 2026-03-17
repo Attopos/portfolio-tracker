@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  getEffectivePrice,
-} from "../features/portfolio/portfolioSelectors.js";
+  buildPositionMetrics,
+} from "../features/portfolio/portfolioMetrics.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
@@ -38,31 +38,9 @@ function HoldingsPage() {
   const isDialogOpen = searchParams.get("action") === "create";
 
   const rows = useMemo(() => {
-    return positions.map((item) => {
-      const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
-      const investedBase = item.position * item.price;
-      const baseValue = item.position * effectivePrice;
-      const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
-      const cnyValue = item.currency === "CNY" ? baseValue : usdValue * cnyPerUsdRate;
-      const investedUsd = item.currency === "CNY" ? investedBase / cnyPerUsdRate : investedBase;
-      const pnlUsd = usdValue - investedUsd;
-      const pnlPercent = investedUsd > 0 ? (pnlUsd / investedUsd) * 100 : 0;
-      const symbol = String(item.standardSymbol || item.id || item.name || "")
-        .trim()
-        .toUpperCase()
-        .slice(0, 5);
-
-      return {
-        ...item,
-        cnyValue,
-        effectivePrice,
-        investedUsd,
-        pnlPercent,
-        pnlUsd,
-        symbol: symbol || String(item.name || "").trim().slice(0, 3).toUpperCase(),
-        usdValue,
-      };
-    });
+    return positions.map((portfolioPosition) =>
+      buildPositionMetrics(portfolioPosition, marketPricesBySymbol, cnyPerUsdRate)
+    );
   }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
 
   const filteredRows = useMemo(() => {
@@ -174,9 +152,9 @@ function HoldingsPage() {
                 ×
               </button>
             </div>
-            <form className="create-asset-form" onSubmit={handleSubmit}>
+            <form className="action-form" onSubmit={handleSubmit}>
               <div className="form-grid">
-                <div className="create-asset-field">
+                <div className="form-field">
                   <label htmlFor="holding-name">Name</label>
                   <input
                     id="holding-name"
@@ -187,7 +165,7 @@ function HoldingsPage() {
                     onChange={handleFieldChange}
                   />
                 </div>
-                <div className="create-asset-field">
+                <div className="form-field">
                   <label htmlFor="holding-currency">Currency</label>
                   <select
                     id="holding-currency"
@@ -201,7 +179,7 @@ function HoldingsPage() {
                 </div>
               </div>
               <div className="form-grid">
-                <div className="create-asset-field">
+                <div className="form-field">
                   <label htmlFor="holding-quantity">Quantity</label>
                   <input
                     id="holding-quantity"
@@ -213,7 +191,7 @@ function HoldingsPage() {
                     onChange={handleFieldChange}
                   />
                 </div>
-                <div className="create-asset-field">
+                <div className="form-field">
                   <label htmlFor="holding-price">Entry Price</label>
                   <input
                     id="holding-price"
@@ -235,7 +213,7 @@ function HoldingsPage() {
         </div>
       ) : null}
 
-      <section className="workspace-card table-card portfolio-table-card" aria-label="Holdings">
+      <section className="workspace-card table-card" aria-label="Holdings">
         <div className="section-head section-head-detail">
           <div>
             <span className="section-kicker">Portfolio</span>

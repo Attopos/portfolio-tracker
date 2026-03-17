@@ -132,9 +132,9 @@ function TransactionsPage() {
                 ×
               </button>
             </div>
-            <form className="transaction-form" onSubmit={handleSubmit}>
+            <form className="action-form" onSubmit={handleSubmit}>
               <div className="form-grid">
-                <div className="transaction-field">
+                <div className="form-field">
                   <label htmlFor="transaction-type">Type</label>
                   <select
                     id="transaction-type"
@@ -146,7 +146,7 @@ function TransactionsPage() {
                     <option value="sell">Sell</option>
                   </select>
                 </div>
-                <div className="transaction-field">
+                <div className="form-field">
                   <label htmlFor="transaction-asset">Asset</label>
                   <select
                     id="transaction-asset"
@@ -164,7 +164,7 @@ function TransactionsPage() {
                 </div>
               </div>
               <div className="form-grid">
-                <div className="transaction-field">
+                <div className="form-field">
                   <label htmlFor="transaction-quantity">Quantity</label>
                   <input
                     id="transaction-quantity"
@@ -176,7 +176,7 @@ function TransactionsPage() {
                     onChange={handleFieldChange}
                   />
                 </div>
-                <div className="transaction-field">
+                <div className="form-field">
                   <label htmlFor="transaction-price">Entry Price</label>
                   <input
                     id="transaction-price"
@@ -189,7 +189,7 @@ function TransactionsPage() {
                   />
                 </div>
               </div>
-              <div className="transaction-field">
+              <div className="form-field">
                 <label htmlFor="transaction-date">Date</label>
                 <input
                   id="transaction-date"
@@ -208,7 +208,7 @@ function TransactionsPage() {
         </div>
       ) : null}
 
-      <section className="workspace-card table-card transactions-card" aria-label="Recent transactions">
+      <section className="workspace-card table-card" aria-label="Recent transactions">
         <div className="section-head section-head-detail">
           <div>
             <span className="section-kicker">Ledger</span>

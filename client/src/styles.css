@@ -205,8 +205,7 @@ textarea {
 
 .topbar-add-button,
 .page-action-trigger,
-.create-asset-form button,
-.transaction-form button {
+.action-form button {
   padding: 0.72rem 1.05rem;
   border: 1px solid rgba(96, 165, 250, 0.28);
   border-radius: 14px;
@@ -221,8 +220,7 @@ textarea {
 .topbar-add-button:focus-visible,
 .page-action-trigger:hover,
 .page-action-trigger:focus-visible,
-.create-asset-form button:hover,
-.transaction-form button:hover {
+.action-form button:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 24px rgba(37, 99, 235, 0.26);
 }
@@ -433,10 +431,8 @@ textarea {
 }
 
 .filter-input,
-.create-asset-form input,
-.create-asset-form select,
-.transaction-form input,
-.transaction-form select {
+.action-form input,
+.action-form select {
   min-height: 46px;
   width: 100%;
   padding: 0.8rem 0.95rem;
@@ -451,10 +447,8 @@ textarea {
 }
 
 .filter-input:focus,
-.create-asset-form input:focus,
-.create-asset-form select:focus,
-.transaction-form input:focus,
-.transaction-form select:focus {
+.action-form input:focus,
+.action-form select:focus {
   border-color: rgba(96, 165, 250, 0.4);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
 }
@@ -488,11 +482,7 @@ textarea {
   gap: 1rem;
 }
 
-.section-head-detail {
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
+.section-head-detail,
 .section-head-split {
   align-items: flex-start;
   margin-bottom: 1rem;
@@ -569,19 +559,20 @@ textarea {
   margin-top: 0;
 }
 
-.summary-card-main {
-  display: flex;
-  align-items: baseline;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-}
-
+.summary-card-main,
 .profit-summary {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.summary-card-main {
+  gap: 0.8rem;
+}
+
+.profit-summary {
   gap: 0.65rem;
   margin: 0.8rem 0 0.35rem;
-  flex-wrap: wrap;
 }
 
 .summary-value,
@@ -914,19 +905,16 @@ textarea {
   line-height: 1;
 }
 
-.create-asset-form,
-.transaction-form {
+.action-form {
   display: grid;
   gap: 0.9rem;
 }
 
-.create-asset-field,
-.transaction-field {
+.form-field {
   min-width: 0;
 }
 
-.create-asset-form label,
-.transaction-form label {
+.action-form label {
   display: block;
   margin-bottom: 0.4rem;
   color: var(--text-soft);
@@ -936,8 +924,7 @@ textarea {
   text-transform: uppercase;
 }
 
-.create-asset-form button:disabled,
-.transaction-form button:disabled {
+.action-form button:disabled {
   opacity: 0.58;
   cursor: not-allowed;
   transform: none;

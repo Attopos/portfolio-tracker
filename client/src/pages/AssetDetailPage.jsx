@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
-  getEffectivePrice,
-} from "../features/portfolio/portfolioSelectors.js";
+  buildPositionMetrics,
+} from "../features/portfolio/portfolioMetrics.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
@@ -30,29 +30,7 @@ function AssetDetailPage() {
       return null;
     }
 
-    const effectivePrice = getEffectivePrice(asset, marketPricesBySymbol);
-    const marketValueBase = asset.position * effectivePrice;
-    const investedBase = asset.position * asset.price;
-    const usdValue = asset.currency === "CNY" ? marketValueBase / cnyPerUsdRate : marketValueBase;
-    const cnyValue = asset.currency === "CNY" ? marketValueBase : usdValue * cnyPerUsdRate;
-    const investedUsd = asset.currency === "CNY" ? investedBase / cnyPerUsdRate : investedBase;
-    const pnlUsd = usdValue - investedUsd;
-    const pnlPercent = investedUsd > 0 ? (pnlUsd / investedUsd) * 100 : 0;
-    const symbol = String(asset.standardSymbol || asset.id || asset.name || "")
-      .trim()
-      .toUpperCase()
-      .slice(0, 5);
-
-    return {
-      ...asset,
-      cnyValue,
-      effectivePrice,
-      investedUsd,
-      pnlPercent,
-      pnlUsd,
-      symbol: symbol || String(asset.name || "").trim().slice(0, 3).toUpperCase(),
-      usdValue,
-    };
+    return buildPositionMetrics(asset, marketPricesBySymbol, cnyPerUsdRate);
   }, [asset, cnyPerUsdRate, marketPricesBySymbol]);
 
   const assetTransactions = useMemo(() => {
