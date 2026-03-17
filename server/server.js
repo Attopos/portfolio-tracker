@@ -5,6 +5,7 @@ const connectPgSimple = require("connect-pg-simple");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const positionsRouter = require("./routes/positions");
+const fxRateRouter = require("./routes/fx-rate");
 const portfolioHistoryRouter = require("./routes/portfolio-history").router;
 const transactionsRouter = require("./routes/transactions");
 const marketPricesRouter = require("./routes/market-prices");
@@ -22,7 +23,7 @@ const sessionCookieMaxAgeMs = Math.max(sessionTtlDays, 1) * 24 * 60 * 60 * 1000;
 const allowedOrigins = new Set(
   String(
     process.env.APP_ORIGINS ||
-      "http://127.0.0.1:5500,http://localhost:5500,http://23.95.67.158:3001"
+      "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5500,http://localhost:5500,http://23.95.67.158:3001"
   )
     .split(",")
     .map((origin) => origin.trim())
@@ -104,7 +105,7 @@ async function findOrCreateLocalUser(googleProfile) {
   return insertResult.rows[0];
 }
 
-app.post("/auth/google", async (req, res) => {
+app.post("/api/auth/google", async (req, res) => {
   const credential = String(req.body && req.body.credential ? req.body.credential : "").trim();
   if (!credential) {
     return res.status(400).json({ ok: false, error: "Missing credential." });
@@ -172,7 +173,7 @@ app.get("/api/me", async (req, res) => {
   }
 });
 
-app.post("/auth/logout", (req, res) => {
+app.post("/api/auth/logout", (req, res) => {
   req.session.destroy((error) => {
     if (error) {
       console.error("Failed to destroy session:", error);
@@ -186,6 +187,7 @@ app.post("/auth/logout", (req, res) => {
 
 app.use("/api/positions", positionsRouter);
 app.use("/api/transactions", transactionsRouter);
+app.use("/api/fx-rate", fxRateRouter);
 app.use("/api/market-prices", marketPricesRouter);
 app.use("/api/portfolio-history", portfolioHistoryRouter);
 

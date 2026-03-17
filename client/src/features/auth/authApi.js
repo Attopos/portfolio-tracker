@@ -1,8 +1,9 @@
 import { apiFetch } from "../../lib/api.js";
+import { API_ROUTES } from "../../lib/endpoints.js";
 import { normalizeResponseError, readJsonSafely } from "../../lib/http.js";
 
 export async function fetchCurrentUser() {
-  const response = await apiFetch("/api/me");
+  const response = await apiFetch(API_ROUTES.auth.me);
 
   if (response.status === 401) {
     return null;
@@ -23,7 +24,7 @@ export async function fetchCurrentUser() {
 }
 
 export async function signInWithGoogleCredential(credential) {
-  const response = await apiFetch("/auth/google", {
+  const response = await apiFetch(API_ROUTES.auth.googleSignIn, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -40,7 +41,7 @@ export async function signInWithGoogleCredential(credential) {
 }
 
 export async function signOutFromSession() {
-  const response = await apiFetch("/auth/logout", {
+  const response = await apiFetch(API_ROUTES.auth.logout, {
     method: "POST",
   });
 

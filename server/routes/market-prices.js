@@ -1,7 +1,10 @@
 const express = require("express");
 const { fetchCoinGeckoPrices, normalizeRequestedAsset } = require("../services/market-prices");
+const { requireAuth } = require("../middleware/require-auth");
 
 const router = express.Router();
+
+router.use(requireAuth);
 
 router.get("/", async (req, res) => {
   const rawAssets = String(req.query.assets || "")

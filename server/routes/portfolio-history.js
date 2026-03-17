@@ -56,6 +56,17 @@ async function fetchUsdCnyRate() {
   }
 }
 
+async function buildFxRateResponse() {
+  const usdCnyRate = await fetchUsdCnyRate();
+  return {
+    base: "USD",
+    quote: "CNY",
+    rate: usdCnyRate,
+    source: "frankfurter",
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
 async function calculatePortfolioSnapshot(userId) {
   const usdCnyRate = await fetchUsdCnyRate();
   const result = await pool.query(
@@ -192,6 +203,8 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 module.exports = {
+  buildFxRateResponse,
+  fetchUsdCnyRate,
   router,
   recordPortfolioSnapshotForUser,
 };

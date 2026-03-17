@@ -1,7 +1,6 @@
 import { apiFetch } from "../../lib/api.js";
+import { API_ROUTES } from "../../lib/endpoints.js";
 import { normalizeResponseError, readJsonSafely } from "../../lib/http.js";
-
-const FX_RATE_API_URL = "https://api.frankfurter.app/latest?from=USD&to=CNY";
 const STANDARD_MARKET_ASSETS = {
   BTC: {
     symbol: "BTC",
@@ -68,18 +67,18 @@ function normalizePosition(row) {
 }
 
 export async function fetchPositions() {
-  const response = await apiFetch("/api/positions");
+  const response = await apiFetch(API_ROUTES.positions.list);
   const payload = await readJsonSafely(response);
 
   if (!response.ok) {
     throw new Error(normalizeResponseError(payload, "Failed to fetch positions."));
   }
 
-  return Array.isArray(payload) ? payload.map(normalizePosition).filter(Boolean) : [];
+  return Array.isArray(payload?.positions) ? payload.positions.map(normalizePosition).filter(Boolean) : [];
 }
 
 export async function fetchTransactions() {
-  const response = await apiFetch("/api/transactions");
+  const response = await apiFetch(API_ROUTES.transactions.list);
   const payload = await readJsonSafely(response);
 
   if (!response.ok) {
@@ -90,7 +89,9 @@ export async function fetchTransactions() {
 }
 
 export async function fetchPortfolioHistory(range = "30d") {
-  const response = await apiFetch("/api/portfolio-history?range=" + encodeURIComponent(range));
+  const response = await apiFetch(
+    API_ROUTES.portfolioHistory.list + "?range=" + encodeURIComponent(range)
+  );
   const payload = await readJsonSafely(response);
 
   if (!response.ok) {
@@ -101,7 +102,7 @@ export async function fetchPortfolioHistory(range = "30d") {
 }
 
 export async function createHoldingTransaction(payload) {
-  const response = await apiFetch("/api/transactions", {
+  const response = await apiFetch(API_ROUTES.transactions.create, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -118,7 +119,7 @@ export async function createHoldingTransaction(payload) {
 }
 
 export async function createTradeTransaction(payload) {
-  const response = await apiFetch("/api/transactions", {
+  const response = await apiFetch(API_ROUTES.transactions.create, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -135,16 +136,14 @@ export async function createTradeTransaction(payload) {
 }
 
 export async function fetchUsdCnyRate() {
-  const response = await fetch(FX_RATE_API_URL, {
-    cache: "no-store",
-  });
+  const response = await apiFetch(API_ROUTES.fxRate.current);
+  const payload = await readJsonSafely(response);
 
   if (!response.ok) {
-    throw new Error("FX API HTTP " + response.status);
+    throw new Error(normalizeResponseError(payload, "Failed to fetch FX rate."));
   }
 
-  const payload = await response.json();
-  const rate = Number(payload?.rates?.CNY);
+  const rate = Number(payload?.rate);
   if (!Number.isFinite(rate) || rate <= 0) {
     throw new Error("FX API invalid rate payload");
   }
@@ -162,7 +161,9 @@ export async function fetchMarketPrices(symbols) {
   }
 
   const response = await apiFetch(
-    "/api/market-prices?assets=" + encodeURIComponent(Array.from(new Set(safeSymbols)).join(","))
+    API_ROUTES.marketPrices.list +
+      "?assets=" +
+      encodeURIComponent(Array.from(new Set(safeSymbols)).join(","))
   );
   const payload = await readJsonSafely(response);
 
