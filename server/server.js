@@ -156,11 +156,6 @@ app.post("/api/auth/google", async (req, res) => {
     const localUser = await findOrCreateLocalUser(googleUser);
     req.session.userId = Number(localUser.id);
 
-    console.log("Google token verified for local user:", {
-      id: localUser.id,
-      google_sub: localUser.google_sub,
-      email: localUser.email,
-    });
     return res.json({ ok: true, user: localUser });
   } catch (error) {
     if (error && (error.message || "").toLowerCase().includes("token")) {

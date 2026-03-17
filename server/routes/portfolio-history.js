@@ -344,8 +344,6 @@ router.get("/summary", requireAuth, async (req, res) => {
 
 module.exports = {
   buildFxRateResponse,
-  calculatePortfolioDailySummary,
-  fetchUsdCnyRate,
   router,
   recordPortfolioSnapshotForUser,
 };

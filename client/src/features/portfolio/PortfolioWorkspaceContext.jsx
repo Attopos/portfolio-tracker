@@ -23,7 +23,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   const [cnyPerUsdRate, setCnyPerUsdRate] = useState(DEFAULT_CNY_PER_USD);
   const [dailySummary, setDailySummary] = useState(null);
   const [marketStatus, setMarketStatus] = useState("");
-  const [lastMarketSyncAt, setLastMarketSyncAt] = useState("");
 
   async function refreshPositions() {
     if (!isAuthenticated) {
@@ -137,7 +136,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
         setCnyPerUsdRate(nextRate);
         setMarketPricesBySymbol(nextPrices);
         setDailySummary(nextDailySummary);
-        setLastMarketSyncAt(new Date().toLocaleString());
         setMarketStatus("");
       } catch (error) {
         if (cancelled) {
@@ -146,7 +144,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
         setDailySummary(null);
         setMarketStatus(error instanceof Error ? error.message : "Failed to refresh market data.");
-        setLastMarketSyncAt(new Date().toLocaleString());
       }
     }
 
@@ -165,7 +162,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
-      lastMarketSyncAt,
       marketPricesBySymbol,
       marketStatus,
       positions,
@@ -178,7 +174,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
-      lastMarketSyncAt,
       marketPricesBySymbol,
       marketStatus,
       positions,

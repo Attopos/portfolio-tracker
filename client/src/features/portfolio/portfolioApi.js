@@ -32,12 +32,12 @@ function buildStandardMarketAliasLookup() {
   return map;
 }
 
-export function normalizeMarketAssetSymbol(value) {
+function normalizeMarketAssetSymbol(value) {
   const key = String(value || "").trim().toUpperCase();
   return STANDARD_MARKET_ALIAS_LOOKUP[key] || "";
 }
 
-export function detectStandardMarketSymbol(assetId, assetName) {
+function detectStandardMarketSymbol(assetId, assetName) {
   return normalizeMarketAssetSymbol(assetId) || normalizeMarketAssetSymbol(assetName);
 }
 

@@ -12,10 +12,6 @@ export function formatCurrency(value, symbol) {
   return symbol + VALUE_FORMATTER.format(Number.isFinite(value) ? value : 0);
 }
 
-export function formatRate(value) {
-  return Number.isFinite(value) ? value.toFixed(4) : "--";
-}
-
 export function formatTransactionDate(dateString) {
   const parsed = new Date(dateString);
   if (Number.isNaN(parsed.getTime())) {

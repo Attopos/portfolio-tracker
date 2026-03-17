@@ -17,7 +17,7 @@ function deriveApiBaseUrl() {
   return "";
 }
 
-export function getApiUrl(path) {
+function getApiUrl(path) {
   const baseUrl = deriveApiBaseUrl();
   const normalizedPath = String(path || "").startsWith("/") ? path : "/" + String(path || "");
   return baseUrl + normalizedPath;

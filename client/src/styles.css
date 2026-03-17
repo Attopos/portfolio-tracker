@@ -163,8 +163,6 @@ textarea {
 .topbar-add-button,
 .auth-avatar-button,
 .page-action-trigger,
-.button-primary,
-.button-secondary,
 .button-ghost {
   transition:
     background 0.18s ease,
@@ -207,7 +205,6 @@ textarea {
 
 .topbar-add-button,
 .page-action-trigger,
-.button-primary,
 .create-asset-form button,
 .transaction-form button {
   padding: 0.72rem 1.05rem;
@@ -224,27 +221,10 @@ textarea {
 .topbar-add-button:focus-visible,
 .page-action-trigger:hover,
 .page-action-trigger:focus-visible,
-.button-primary:hover,
-.button-primary:focus-visible,
 .create-asset-form button:hover,
 .transaction-form button:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 24px rgba(37, 99, 235, 0.26);
-}
-
-.button-secondary {
-  padding: 0.72rem 1rem;
-  border: 1px solid rgba(245, 158, 11, 0.24);
-  border-radius: 14px;
-  background: rgba(245, 158, 11, 0.1);
-  color: #fcd68a;
-  cursor: pointer;
-}
-
-.button-secondary:hover,
-.button-secondary:focus-visible {
-  transform: translateY(-1px);
-  background: rgba(245, 158, 11, 0.16);
 }
 
 .button-ghost,
@@ -403,13 +383,8 @@ textarea {
 }
 
 .page-toolbar,
-.filters-bar,
 .tab-row,
-.metric-strip,
 .detail-kpis,
-.form-actions,
-.settings-grid,
-.content-grid,
 .summary-grid {
   display: grid;
   gap: 1rem;
@@ -458,7 +433,6 @@ textarea {
 }
 
 .filter-input,
-.filter-select,
 .create-asset-form input,
 .create-asset-form select,
 .transaction-form input,
@@ -477,7 +451,6 @@ textarea {
 }
 
 .filter-input:focus,
-.filter-select:focus,
 .create-asset-form input:focus,
 .create-asset-form select:focus,
 .transaction-form input:focus,
@@ -745,39 +718,14 @@ textarea {
   color: var(--negative);
 }
 
-.metric-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.metric-pill,
 .status-badge,
 .value-badge,
-.tag-badge,
 .transaction-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   border-radius: 999px;
   font-weight: 700;
-}
-
-.metric-pill {
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--line);
-  background: rgba(20, 28, 39, 0.86);
-  justify-content: space-between;
-}
-
-.metric-pill strong {
-  color: var(--text-strong);
-  font-size: 0.98rem;
-}
-
-.metric-pill span {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .allocation-layout {
@@ -1104,7 +1052,6 @@ tbody tr:hover td {
 
 .value-badge,
 .status-badge,
-.tag-badge,
 .transaction-badge {
   padding: 0.35rem 0.7rem;
   font-size: 0.74rem;
@@ -1118,8 +1065,7 @@ tbody tr:hover td {
   color: #cfe3ff;
 }
 
-.status-badge.is-amber,
-.tag-badge.is-amber {
+.status-badge.is-amber {
   border: 1px solid rgba(245, 158, 11, 0.22);
   background: rgba(245, 158, 11, 0.12);
   color: #fcd68a;
@@ -1128,12 +1074,6 @@ tbody tr:hover td {
 .value-badge {
   border: 1px solid var(--line);
   background: rgba(22, 31, 43, 0.72);
-  color: var(--text-soft);
-}
-
-.tag-badge {
-  border: 1px solid var(--line);
-  background: rgba(20, 29, 41, 0.76);
   color: var(--text-soft);
 }
 
@@ -1165,13 +1105,9 @@ tbody tr:hover td {
   background: rgba(15, 21, 30, 0.54);
 }
 
-.detail-layout,
-.settings-grid {
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
-}
-
 .detail-layout {
   display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
   gap: 1.25rem;
 }
 
@@ -1179,36 +1115,12 @@ tbody tr:hover td {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.detail-stat {
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(15, 22, 31, 0.76);
-}
-
-.detail-stat span {
-  display: block;
-  margin-bottom: 0.35rem;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.detail-stat strong {
-  color: var(--text-strong);
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
-}
-
-.detail-list,
-.settings-list {
+.detail-list {
   display: grid;
   gap: 0.8rem;
 }
 
-.detail-list-row,
-.settings-row {
+.detail-list-row {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -1219,23 +1131,16 @@ tbody tr:hover td {
   background: rgba(15, 22, 31, 0.7);
 }
 
-.detail-list-copy strong,
-.settings-copy strong {
+.detail-list-copy strong {
   display: block;
   color: var(--text-strong);
 }
 
-.detail-list-copy span,
-.settings-copy span {
+.detail-list-copy span {
   display: block;
   margin-top: 0.22rem;
   color: var(--text-muted);
   font-size: 0.88rem;
-}
-
-.settings-grid {
-  display: grid;
-  gap: 1.25rem;
 }
 
 .settings-meta {
@@ -1287,7 +1192,6 @@ tbody tr:hover td {
 
 @media (max-width: 1040px) {
   .summary-grid,
-  .metric-strip,
   .detail-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1297,8 +1201,7 @@ tbody tr:hover td {
   }
 
   .allocation-layout,
-  .detail-layout,
-  .settings-grid {
+  .detail-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -1380,7 +1283,6 @@ tbody tr:hover td {
   }
 
   .form-grid,
-  .metric-strip,
   .detail-kpis {
     grid-template-columns: 1fr;
   }

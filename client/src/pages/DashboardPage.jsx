@@ -230,8 +230,6 @@ function DashboardPage() {
       </section>
 
       <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">
-        <div className="section-head section-head-detail">
-        </div>
         <div className="breakdown-content">
           {!isAuthenticated ? (
             <div className="chart-empty">Sign in to load allocation data.</div>

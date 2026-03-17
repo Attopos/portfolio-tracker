@@ -17,6 +17,5 @@ function requireAuth(req, res, next) {
 }
 
 module.exports = {
-  getSessionUserId,
   requireAuth,
 };
