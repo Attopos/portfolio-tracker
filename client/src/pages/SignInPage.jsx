@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
-
-const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  "133813157158-6mmjhgrbtdg0okk6dton4c6r786p51m4.apps.googleusercontent.com";
-const GOOGLE_GSI_SRC = "https://accounts.google.com/gsi/client";
+import { APP_ENV, isGoogleAuthConfigured } from "../config/env.js";
 
 function getNextPath(search) {
   const params = new URLSearchParams(search);
@@ -40,12 +36,17 @@ function SignInPage() {
         return;
       }
 
+      if (!isGoogleAuthConfigured()) {
+        setStatus("Google sign-in is not configured. Set VITE_GOOGLE_CLIENT_ID in client/.env.local.");
+        return;
+      }
+
       setStatus("Loading Google sign-in...");
 
-      if (!document.querySelector(`script[src="${GOOGLE_GSI_SRC}"]`)) {
+      if (!document.querySelector(`script[src="${APP_ENV.googleGsiSrc}"]`)) {
         await new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src = GOOGLE_GSI_SRC;
+          script.src = APP_ENV.googleGsiSrc;
           script.async = true;
           script.defer = true;
           script.onload = resolve;
@@ -59,7 +60,7 @@ function SignInPage() {
       }
 
       window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
+        client_id: APP_ENV.googleClientId,
         callback: async (response) => {
           const credential = String(response?.credential || "").trim();
           if (!credential) {

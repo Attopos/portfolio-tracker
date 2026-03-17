@@ -3,6 +3,10 @@ const path = require("path");
 
 const rootDir = path.resolve(__dirname, "..");
 const isWindows = process.platform === "win32";
+const serverPort = Number(process.env.PORT) || 3000;
+const clientPort = Number(process.env.CLIENT_PORT) || 5173;
+const frontendUrl = String(process.env.FRONTEND_URL || `http://localhost:${clientPort}`).trim();
+const backendUrl = String(process.env.BACKEND_URL || `http://localhost:${serverPort}`).trim();
 
 function startProcess(name, command, args, cwd) {
   const child = spawn(command, args, {
@@ -49,9 +53,9 @@ function shutdown(signal) {
 }
 
 process.stdout.write("Starting local dev environment...\n");
-process.stdout.write("Frontend: http://localhost:5173\n");
-process.stdout.write("Backend:  http://localhost:3000\n");
-process.stdout.write("Health:   http://localhost:3000/api/health\n\n");
+process.stdout.write(`Frontend: ${frontendUrl}\n`);
+process.stdout.write(`Backend:  ${backendUrl}\n`);
+process.stdout.write(`Health:   ${backendUrl}/api/health\n\n`);
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));

@@ -1,7 +1,13 @@
+import { APP_ENV } from "../config/env.js";
+
 function deriveApiBaseUrl() {
   const override = String(window.__API_BASE_URL || "").trim();
   if (override) {
     return override.replace(/\/+$/, "");
+  }
+
+  if (APP_ENV.apiBaseUrl) {
+    return APP_ENV.apiBaseUrl.replace(/\/+$/, "");
   }
 
   if (window.location.protocol === "file:") {

@@ -14,6 +14,12 @@ This starts:
 - Backend: `http://localhost:3000`
 - Health check: `http://localhost:3000/api/health`
 
+## Required local config
+
+- Create `server/.env` from [server/.env.example](/Users/hermes/Desktop/portfolio-tracker/server/.env.example)
+- Create `client/.env.local` from [client/.env.example](/Users/hermes/Desktop/portfolio-tracker/client/.env.example)
+- Set `VITE_GOOGLE_CLIENT_ID` explicitly for the frontend
+
 ## How to tell what is broken
 
 - If `http://localhost:5173` does not open, the Vite frontend did not start.

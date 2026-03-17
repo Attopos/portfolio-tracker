@@ -4,6 +4,7 @@ const session = require("express-session");
 const connectPgSimple = require("connect-pg-simple");
 const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
+const config = require("./config");
 const positionsRouter = require("./routes/positions");
 const fxRateRouter = require("./routes/fx-rate");
 const portfolioHistoryRouter = require("./routes/portfolio-history").router;
@@ -13,22 +14,11 @@ const pool = require("./db");
 
 const app = express();
 const isProduction = String(process.env.NODE_ENV || "").trim() === "production";
-const port = Number(process.env.PORT) || 3000;
-const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
-const sessionSecret = String(process.env.SESSION_SECRET || "").trim();
+const { allowedOrigins, backendUrl, defaultLocalSessionSecret, frontendUrl, googleClientId, port, sessionSecret, sessionTtlDays } = config;
 const googleClient = new OAuth2Client(googleClientId);
 const PgSession = connectPgSimple(session);
-const sessionTtlDays = Number(process.env.SESSION_TTL_DAYS) || 30;
 const sessionCookieMaxAgeMs = Math.max(sessionTtlDays, 1) * 24 * 60 * 60 * 1000;
-const allowedOrigins = new Set(
-  String(
-    process.env.APP_ORIGINS ||
-      "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5500,http://localhost:5500,http://23.95.67.158:3001"
-  )
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-);
+const allowedOriginsSet = new Set(allowedOrigins);
 
 if (!sessionSecret && isProduction) {
   throw new Error("SESSION_SECRET is required when NODE_ENV=production.");
@@ -39,7 +29,7 @@ app.set("trust proxy", 1);
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (!origin || allowedOriginsSet.has(origin)) {
         callback(null, true);
         return;
       }
@@ -52,7 +42,7 @@ app.use(express.json());
 app.use(
   session({
     name: "portfolio.sid",
-    secret: sessionSecret || "local-dev-session-secret",
+    secret: sessionSecret || defaultLocalSessionSecret,
     resave: false,
     saveUninitialized: false,
     store: new PgSession({
@@ -87,8 +77,8 @@ app.get("/api/health", async (req, res) => {
   const payload = {
     ok: databaseOk,
     service: "portfolio-tracker-server",
-    frontendUrl: "http://localhost:5173",
-    backendUrl: `http://localhost:${port}`,
+    frontendUrl,
+    backendUrl,
     database: {
       ok: databaseOk,
       error: databaseOk ? "" : databaseError,
@@ -222,5 +212,5 @@ app.use("/api/market-prices", marketPricesRouter);
 app.use("/api/portfolio-history", portfolioHistoryRouter);
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running at ${backendUrl}`);
 });
