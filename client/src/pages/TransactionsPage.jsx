@@ -14,6 +14,8 @@ import {
 function TransactionsPage() {
   const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [searchValue, setSearchValue] = useState("");
   const [formValues, setFormValues] = useState({
     type: "buy",
     assetId: "",
@@ -39,6 +41,15 @@ function TransactionsPage() {
   const marketFooterText = useMemo(() => {
     return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
   }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((item) => {
+      const matchesType = typeFilter === "all" ? true : item.type === typeFilter;
+      const term = searchValue.trim().toLowerCase();
+      const assetName = String(item.assetName || item.assetId || "").toLowerCase();
+      return matchesType && (term ? assetName.includes(term) : true);
+    });
+  }, [searchValue, transactions, typeFilter]);
 
   function openDialog() {
     const nextParams = new URLSearchParams(searchParams);
@@ -130,57 +141,61 @@ function TransactionsPage() {
               </button>
             </div>
             <form className="transaction-form" onSubmit={handleSubmit}>
-              <div className="transaction-field">
-                <label htmlFor="transaction-type">Type</label>
-                <select
-                  id="transaction-type"
-                  name="type"
-                  value={formValues.type}
-                  onChange={handleFieldChange}
-                >
-                  <option value="buy">Buy</option>
-                  <option value="sell">Sell</option>
-                </select>
+              <div className="form-grid">
+                <div className="transaction-field">
+                  <label htmlFor="transaction-type">Type</label>
+                  <select
+                    id="transaction-type"
+                    name="type"
+                    value={formValues.type}
+                    onChange={handleFieldChange}
+                  >
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                  </select>
+                </div>
+                <div className="transaction-field">
+                  <label htmlFor="transaction-asset">Asset</label>
+                  <select
+                    id="transaction-asset"
+                    name="assetId"
+                    value={formValues.assetId}
+                    onChange={handleFieldChange}
+                  >
+                    <option value="">Select a holding...</option>
+                    {positions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="transaction-field">
-                <label htmlFor="transaction-asset">Asset</label>
-                <select
-                  id="transaction-asset"
-                  name="assetId"
-                  value={formValues.assetId}
-                  onChange={handleFieldChange}
-                >
-                  <option value="">Select a holding...</option>
-                  {positions.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="transaction-field">
-                <label htmlFor="transaction-quantity">Quantity</label>
-                <input
-                  id="transaction-quantity"
-                  name="quantity"
-                  type="text"
-                  inputMode="decimal"
-                  required
-                  value={formValues.quantity}
-                  onChange={handleFieldChange}
-                />
-              </div>
-              <div className="transaction-field">
-                <label htmlFor="transaction-price">Entry Price</label>
-                <input
-                  id="transaction-price"
-                  name="unitPrice"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="Optional"
-                  value={formValues.unitPrice}
-                  onChange={handleFieldChange}
-                />
+              <div className="form-grid">
+                <div className="transaction-field">
+                  <label htmlFor="transaction-quantity">Quantity</label>
+                  <input
+                    id="transaction-quantity"
+                    name="quantity"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    value={formValues.quantity}
+                    onChange={handleFieldChange}
+                  />
+                </div>
+                <div className="transaction-field">
+                  <label htmlFor="transaction-price">Entry Price</label>
+                  <input
+                    id="transaction-price"
+                    name="unitPrice"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="Optional"
+                    value={formValues.unitPrice}
+                    onChange={handleFieldChange}
+                  />
+                </div>
               </div>
               <div className="transaction-field">
                 <label htmlFor="transaction-date">Date</label>
@@ -201,15 +216,61 @@ function TransactionsPage() {
         </div>
       ) : null}
 
-      <section className="workspace-card transactions-card" aria-label="Recent transactions">
+      <header className="page-hero">
+        <div className="page-hero-copy">
+          <p className="page-eyebrow">Transactions</p>
+          <h1>Trade history</h1>
+          <p className="page-copy">
+            Review buys and sells with a cleaner ledger view, quick filtering, and position context.
+          </p>
+        </div>
+      </header>
+
+      <section className="workspace-card table-card transactions-card" aria-label="Recent transactions">
         <div className="section-head section-head-detail">
           <div>
+            <span className="section-kicker">Ledger</span>
             <h2>Recent Transactions</h2>
             <p className="section-subcopy">
               {isAuthenticated
                 ? "Your latest buys and sells, with running position totals."
                 : "Sign in to load transactions."}
             </p>
+          </div>
+          <div className="toolbar-section">
+            <span className="value-badge">{filteredTransactions.length} rows</span>
+          </div>
+        </div>
+
+        <div className="page-toolbar">
+          <div className="toolbar-section">
+            <input
+              className="filter-input"
+              type="search"
+              value={searchValue}
+              placeholder="Filter by asset"
+              onChange={(event) => setSearchValue(event.target.value)}
+            />
+          </div>
+          <div className="toolbar-section">
+            <div className="tab-row" role="tablist" aria-label="Transaction type filter">
+              {[
+                { id: "all", label: "All" },
+                { id: "buy", label: "Buy" },
+                { id: "sell", label: "Sell" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  className={typeFilter === tab.id ? "tab-button is-active" : "tab-button"}
+                  type="button"
+                  role="tab"
+                  aria-selected={typeFilter === tab.id}
+                  onClick={() => setTypeFilter(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -236,16 +297,24 @@ function TransactionsPage() {
                 <tr className="empty-row">
                   <td colSpan="6">Loading transactions...</td>
                 </tr>
-              ) : transactions.length === 0 ? (
+              ) : filteredTransactions.length === 0 ? (
                 <tr className="empty-row">
-                  <td colSpan="6">No transactions recorded yet.</td>
+                  <td colSpan="6">
+                    {transactions.length === 0
+                      ? "No transactions recorded yet."
+                      : "No transactions match the current filters."}
+                  </td>
                 </tr>
               ) : (
-                transactions.map((item) => (
+                filteredTransactions.map((item) => (
                   <tr key={item.id}>
                     <td>{formatTransactionDate(item.transactedAt)}</td>
-                    <td className="transaction-type">{item.type}</td>
-                    <td>{item.assetName || item.assetId}</td>
+                    <td className="table-text">
+                      <span className={item.type === "sell" ? "transaction-badge is-sell" : "transaction-badge"}>
+                        {item.type}
+                      </span>
+                    </td>
+                    <td className="table-text">{item.assetName || item.assetId}</td>
                     <td>{POSITION_FORMATTER.format(Number(item.quantity) || 0)}</td>
                     <td>
                       {item.unitPrice === null || item.unitPrice === ""

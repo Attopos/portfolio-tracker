@@ -8,12 +8,12 @@ import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceC
 import { formatCurrency } from "../lib/formatters.js";
 
 const PIE_COLORS = [
-  "#22e3a4",
-  "#4ba0ff",
-  "#ffd166",
-  "#f78c6b",
-  "#d27aff",
-  "#7bdff2",
+  "#3b82f6",
+  "#60a5fa",
+  "#f59e0b",
+  "#fbbf24",
+  "#93c5fd",
+  "#fcd34d",
 ];
 
 function buildArcPath(cx, cy, radius, startAngle, endAngle) {
@@ -92,7 +92,7 @@ function AssetDetailsTable({ items, totalUsd }) {
   );
 }
 
-function AllocationDonut({ items, totalUsd, totalCny }) {
+function AllocationDonut({ items, totalUsd }) {
   if (!items.length) {
     return <div className="chart-empty">No allocation data</div>;
   }
@@ -122,6 +122,10 @@ function AllocationDonut({ items, totalUsd, totalCny }) {
             return segment;
           })}
         </svg>
+        <div className="donut-center" aria-hidden="true">
+          <span>Tracked Value</span>
+          <strong>{formatCurrency(totalUsd, "$")}</strong>
+        </div>
       </div>
       <div className="allocation-details">
         <AssetDetailsTable items={items} totalUsd={totalUsd} />
@@ -175,6 +179,7 @@ function DashboardPage() {
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
   const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
+  const trackedCount = allocation.length;
   const marketFooterText = useMemo(() => {
     return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
   }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
@@ -182,49 +187,84 @@ function DashboardPage() {
   return (
     <section className="page-panel page-panel-detail">
       <header className="page-hero">
-        <p className="page-eyebrow">Dashboard</p>
-        <h1>Portfolio Tracker</h1>
-        <p className="page-copy">
-          {isAuthenticated
-            ? "Shared portfolio state now powers the dashboard, holdings, and transactions together."
-            : "Sign in to see your allocation, totals, and holdings breakdown."}
-        </p>
+        <div className="page-hero-copy">
+          <p className="page-eyebrow">Dashboard</p>
+          <h1>Portfolio overview</h1>
+          <p className="page-copy">
+            {isAuthenticated
+              ? "A calm, structured view of portfolio value, performance, and allocation across your tracked assets."
+              : "Sign in to see your portfolio totals, allocation mix, and live pricing context."}
+          </p>
+        </div>
+        <div className="page-hero-side">
+          <span className="status-badge">Workspace</span>
+          <span className="status-badge is-amber">USD/CNY {cnyPerUsdRate.toFixed(4)}</span>
+        </div>
       </header>
 
       <section className="summary-grid" aria-label="Portfolio summary">
         <article className="workspace-card summary-card summary-card-accent">
           <p className="summary-label">Portfolio Value</p>
-          <h2>{formatCurrency(totalCny, "¥")}</h2>
-          <p>{formatCurrency(totalUsd, "$")}</p>
+          <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
+          <p className="summary-support">{formatCurrency(totalUsd, "$")}</p>
         </article>
-        <article className="workspace-card summary-card summary-card-profit">
+        <article className="workspace-card summary-card">
           <p className="summary-label">Total Profit</p>
           <div className="profit-summary">
-            <h2 className={totalProfitUsd >= 0 ? "profit-value is-positive" : "profit-value is-negative"}>
+            <h2 className={`profit-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
               {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
             </h2>
-            <span className={totalProfitUsd >= 0 ? "profit-rate is-positive" : "profit-rate is-negative"}>
+            <span className={`profit-rate ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
               {`${totalProfitUsd >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
             </span>
           </div>
-          <p className={totalProfitUsd >= 0 ? "profit-subline is-positive" : "profit-subline is-negative"}>
+          <p className={`profit-subline ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
             {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitUsd), "$")}`}
             {" "}vs {formatCurrency(totalInvestedUsd, "$")} invested
           </p>
         </article>
+        <article className="workspace-card summary-card summary-card-highlight">
+          <p className="summary-label">Capital Invested</p>
+          <h2 className="summary-value">{formatCurrency(totalInvestedUsd * cnyPerUsdRate, "¥")}</h2>
+          <p className="summary-support">{formatCurrency(totalInvestedUsd, "$")} cost basis</p>
+        </article>
+        <article className="workspace-card summary-card">
+          <p className="summary-label">Tracked Assets</p>
+          <h2 className="summary-value">{trackedCount}</h2>
+          <p className="summary-support">
+            {trackedCount === 0 ? "No allocation data yet." : `Top ${trackedCount} assets by portfolio value`}
+          </p>
+        </article>
+      </section>
+
+      <section className="metric-strip" aria-label="Dashboard highlights">
+        <div className="metric-pill">
+          <span>Live Prices</span>
+          <strong>{Object.keys(marketPricesBySymbol).length} synced</strong>
+        </div>
+        <div className="metric-pill">
+          <span>Largest Allocation</span>
+          <strong>{allocation[0] ? allocation[0].symbol : "--"}</strong>
+        </div>
+        <div className="metric-pill">
+          <span>Market Sync</span>
+          <strong>{lastMarketSyncAt || "Pending"}</strong>
+        </div>
       </section>
 
       <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">
         <div className="section-head section-head-detail">
           <div>
+            <span className="section-kicker">Allocation</span>
             <h2>Asset Allocation</h2>
+            <p className="section-subcopy">Portfolio weights and unrealized performance for your top positions.</p>
           </div>
         </div>
         <div className="breakdown-content">
           {!isAuthenticated ? (
             <div className="chart-empty">Sign in to load allocation data.</div>
           ) : (
-            <AllocationDonut items={allocation} totalUsd={totalUsd || 1} totalCny={totalCny} />
+            <AllocationDonut items={allocation} totalUsd={totalUsd || 1} />
           )}
         </div>
       </section>

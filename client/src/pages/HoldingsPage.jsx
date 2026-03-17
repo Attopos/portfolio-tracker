@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildMarketFooterText,
@@ -16,6 +16,8 @@ import {
 function HoldingsPage() {
   const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [searchValue, setSearchValue] = useState("");
+  const [currencyFilter, setCurrencyFilter] = useState("all");
   const [formValues, setFormValues] = useState({
     assetName: "",
     currency: "CNY",
@@ -40,28 +42,51 @@ function HoldingsPage() {
   const rows = useMemo(() => {
     return positions.map((item) => {
       const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
+      const investedBase = item.position * item.price;
       const baseValue = item.position * effectivePrice;
       const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
       const cnyValue = item.currency === "CNY" ? baseValue : usdValue * cnyPerUsdRate;
+      const investedUsd = item.currency === "CNY" ? investedBase / cnyPerUsdRate : investedBase;
+      const pnlUsd = usdValue - investedUsd;
+      const pnlPercent = investedUsd > 0 ? (pnlUsd / investedUsd) * 100 : 0;
+      const symbol = String(item.standardSymbol || item.id || item.name || "")
+        .trim()
+        .toUpperCase()
+        .slice(0, 5);
 
       return {
         ...item,
         cnyValue,
         effectivePrice,
+        investedUsd,
+        pnlPercent,
+        pnlUsd,
+        symbol: symbol || String(item.name || "").trim().slice(0, 3).toUpperCase(),
         usdValue,
       };
     });
   }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
 
+  const filteredRows = useMemo(() => {
+    return rows.filter((item) => {
+      const matchesCurrency = currencyFilter === "all" ? true : item.currency === currencyFilter;
+      const term = searchValue.trim().toLowerCase();
+      const matchesSearch = term
+        ? item.name.toLowerCase().includes(term) || item.id.toLowerCase().includes(term)
+        : true;
+      return matchesCurrency && matchesSearch;
+    });
+  }, [currencyFilter, rows, searchValue]);
+
   const totals = useMemo(() => {
-    return rows.reduce(
+    return filteredRows.reduce(
       (accumulator, item) => ({
         usd: accumulator.usd + item.usdValue,
         cny: accumulator.cny + item.cnyValue,
       }),
       { usd: 0, cny: 0 }
     );
-  }, [rows]);
+  }, [filteredRows]);
 
   const marketFooterText = useMemo(() => {
     return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
@@ -156,52 +181,56 @@ function HoldingsPage() {
               </button>
             </div>
             <form className="create-asset-form" onSubmit={handleSubmit}>
-              <div className="create-asset-field">
-                <label htmlFor="holding-name">Name</label>
-                <input
-                  id="holding-name"
-                  name="assetName"
-                  type="text"
-                  required
-                  value={formValues.assetName}
-                  onChange={handleFieldChange}
-                />
+              <div className="form-grid">
+                <div className="create-asset-field">
+                  <label htmlFor="holding-name">Name</label>
+                  <input
+                    id="holding-name"
+                    name="assetName"
+                    type="text"
+                    required
+                    value={formValues.assetName}
+                    onChange={handleFieldChange}
+                  />
+                </div>
+                <div className="create-asset-field">
+                  <label htmlFor="holding-currency">Currency</label>
+                  <select
+                    id="holding-currency"
+                    name="currency"
+                    value={formValues.currency}
+                    onChange={handleFieldChange}
+                  >
+                    <option value="CNY">CNY</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
               </div>
-              <div className="create-asset-field">
-                <label htmlFor="holding-currency">Currency</label>
-                <select
-                  id="holding-currency"
-                  name="currency"
-                  value={formValues.currency}
-                  onChange={handleFieldChange}
-                >
-                  <option value="CNY">CNY</option>
-                  <option value="USD">USD</option>
-                </select>
-              </div>
-              <div className="create-asset-field">
-                <label htmlFor="holding-quantity">Quantity</label>
-                <input
-                  id="holding-quantity"
-                  name="quantity"
-                  type="text"
-                  inputMode="decimal"
-                  required
-                  value={formValues.quantity}
-                  onChange={handleFieldChange}
-                />
-              </div>
-              <div className="create-asset-field">
-                <label htmlFor="holding-price">Entry Price</label>
-                <input
-                  id="holding-price"
-                  name="unitPrice"
-                  type="text"
-                  inputMode="decimal"
-                  required
-                  value={formValues.unitPrice}
-                  onChange={handleFieldChange}
-                />
+              <div className="form-grid">
+                <div className="create-asset-field">
+                  <label htmlFor="holding-quantity">Quantity</label>
+                  <input
+                    id="holding-quantity"
+                    name="quantity"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    value={formValues.quantity}
+                    onChange={handleFieldChange}
+                  />
+                </div>
+                <div className="create-asset-field">
+                  <label htmlFor="holding-price">Entry Price</label>
+                  <input
+                    id="holding-price"
+                    name="unitPrice"
+                    type="text"
+                    inputMode="decimal"
+                    required
+                    value={formValues.unitPrice}
+                    onChange={handleFieldChange}
+                  />
+                </div>
               </div>
               {submitError ? <p className="form-error">{submitError}</p> : null}
               <button type="submit" disabled={isSubmitting}>
@@ -212,15 +241,61 @@ function HoldingsPage() {
         </div>
       ) : null}
 
-      <section className="workspace-card portfolio-table-card" aria-label="Holdings">
+      <header className="page-hero">
+        <div className="page-hero-copy">
+          <p className="page-eyebrow">Holdings</p>
+          <h1>Portfolio positions</h1>
+          <p className="page-copy">
+            Review active positions, current market value, and where each holding sits in the portfolio.
+          </p>
+        </div>
+      </header>
+
+      <section className="workspace-card table-card portfolio-table-card" aria-label="Holdings">
         <div className="section-head section-head-detail">
           <div>
+            <span className="section-kicker">Portfolio</span>
             <h2>Holdings</h2>
             <p className="section-subcopy">
               {isAuthenticated
                 ? "Your current portfolio with live pricing where available."
                 : "Sign in to load your portfolio."}
             </p>
+          </div>
+          <div className="toolbar-section">
+            <span className="value-badge">{filteredRows.length} assets</span>
+          </div>
+        </div>
+
+        <div className="page-toolbar">
+          <div className="toolbar-section">
+            <input
+              className="filter-input"
+              type="search"
+              value={searchValue}
+              placeholder="Filter by asset name or symbol"
+              onChange={(event) => setSearchValue(event.target.value)}
+            />
+          </div>
+          <div className="toolbar-section">
+            <div className="tab-row" role="tablist" aria-label="Currency filter">
+              {[
+                { id: "all", label: "All" },
+                { id: "USD", label: "USD" },
+                { id: "CNY", label: "CNY" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  className={currencyFilter === tab.id ? "tab-button is-active" : "tab-button"}
+                  type="button"
+                  role="tab"
+                  aria-selected={currencyFilter === tab.id}
+                  onClick={() => setCurrencyFilter(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -237,30 +312,53 @@ function HoldingsPage() {
                 <th>Market Price</th>
                 <th>Market Value (USD)</th>
                 <th>Market Value (CNY)</th>
+                <th>P/L</th>
               </tr>
             </thead>
             <tbody>
               {!isAuthenticated ? (
                 <tr className="empty-row">
-                  <td colSpan="6">Sign in to load portfolio holdings.</td>
+                  <td colSpan="7">Sign in to load portfolio holdings.</td>
                 </tr>
               ) : isPositionsLoading ? (
                 <tr className="empty-row">
-                  <td colSpan="6">Loading holdings...</td>
+                  <td colSpan="7">Loading holdings...</td>
                 </tr>
-              ) : rows.length === 0 ? (
+              ) : filteredRows.length === 0 ? (
                 <tr className="empty-row">
-                  <td colSpan="6">No holdings recorded yet.</td>
+                  <td colSpan="7">
+                    {rows.length === 0 ? "No holdings recorded yet." : "No holdings match the current filters."}
+                  </td>
                 </tr>
               ) : (
-                rows.map((item) => (
+                filteredRows.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.currency}</td>
+                    <td className="table-text">
+                      <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
+                        <span className="asset-symbol-badge" aria-hidden="true">
+                          {item.symbol}
+                        </span>
+                        <span>
+                          {item.name}
+                          <span className="table-meta">{item.id}</span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td>
+                      <span className={item.currency === "USD" ? "status-badge" : "status-badge is-amber"}>
+                        {item.currency}
+                      </span>
+                    </td>
                     <td>{POSITION_FORMATTER.format(item.position)}</td>
                     <td className="price">{VALUE_FORMATTER.format(item.effectivePrice)}</td>
                     <td className="usd">{formatCurrency(item.usdValue, "$")}</td>
                     <td className="cny">{formatCurrency(item.cnyValue, "¥")}</td>
+                    <td className={item.pnlUsd >= 0 ? "is-positive" : "is-negative"}>
+                      {`${item.pnlUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(item.pnlUsd), "$")}`}
+                      <span className="table-meta">
+                        {`${item.pnlPercent >= 0 ? "+" : "-"}${Math.abs(item.pnlPercent).toFixed(2)}%`}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
@@ -271,6 +369,7 @@ function HoldingsPage() {
                 <td colSpan="3" />
                 <td>{formatCurrency(totals.usd, "$")}</td>
                 <td>{formatCurrency(totals.cny, "¥")}</td>
+                <td />
               </tr>
             </tfoot>
           </table>
