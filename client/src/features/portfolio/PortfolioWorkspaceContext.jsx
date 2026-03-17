@@ -3,7 +3,6 @@ import {
   createHoldingTransaction,
   createTradeTransaction,
   fetchMarketPrices,
-  fetchPortfolioHistory,
   fetchPositions,
   fetchTransactions,
   fetchUsdCnyRate,
@@ -23,10 +22,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   const [cnyPerUsdRate, setCnyPerUsdRate] = useState(DEFAULT_CNY_PER_USD);
   const [marketStatus, setMarketStatus] = useState("");
   const [lastMarketSyncAt, setLastMarketSyncAt] = useState("");
-  const [activeHistoryRange, setActiveHistoryRange] = useState("30d");
-  const [historyPoints, setHistoryPoints] = useState([]);
-  const [historyError, setHistoryError] = useState("");
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   async function refreshPositions() {
     if (!isAuthenticated) {
@@ -74,44 +69,14 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     }
   }
 
-  async function refreshHistory(range = activeHistoryRange) {
-    if (!isAuthenticated) {
-      setHistoryPoints([]);
-      setHistoryError("");
-      return [];
-    }
-
-    setIsHistoryLoading(true);
-    try {
-      const nextPoints = await fetchPortfolioHistory(range);
-      setHistoryPoints(nextPoints);
-      setHistoryError("");
-      setActiveHistoryRange(range);
-      return nextPoints;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch portfolio history.";
-      setHistoryPoints([]);
-      setHistoryError(message);
-      setActiveHistoryRange(range);
-      throw error;
-    } finally {
-      setIsHistoryLoading(false);
-    }
-  }
-
   async function refreshAll() {
     if (!isAuthenticated) {
       setPositions([]);
       setTransactions([]);
-      setHistoryPoints([]);
       return;
     }
 
-    await Promise.all([
-      refreshPositions(),
-      refreshTransactions(),
-      refreshHistory(activeHistoryRange),
-    ]);
+    await Promise.all([refreshPositions(), refreshTransactions()]);
   }
 
   async function addHolding(payload) {
@@ -134,10 +99,8 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     if (!isAuthenticated) {
       setPositions([]);
       setTransactions([]);
-      setHistoryPoints([]);
       setPositionsError("");
       setTransactionsError("");
-      setHistoryError("");
       return;
     }
 
@@ -190,13 +153,9 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
   const value = useMemo(
     () => ({
-      activeHistoryRange,
       addHolding,
       addTransaction,
       cnyPerUsdRate,
-      historyError,
-      historyPoints,
-      isHistoryLoading,
       isPositionsLoading,
       isTransactionsLoading,
       lastMarketSyncAt,
@@ -204,16 +163,11 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       marketStatus,
       positions,
       positionsError,
-      refreshHistory,
       transactions,
       transactionsError,
     }),
     [
-      activeHistoryRange,
       cnyPerUsdRate,
-      historyError,
-      historyPoints,
-      isHistoryLoading,
       isPositionsLoading,
       isTransactionsLoading,
       lastMarketSyncAt,

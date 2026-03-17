@@ -5,6 +5,7 @@ import { buildMarketFooterText } from "../features/portfolio/portfolioSelectors.
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
+  VALUE_FORMATTER,
   formatTransactionDate,
   parseNumberInput,
   toDateTimeLocalValue,

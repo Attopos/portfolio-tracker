@@ -8,6 +8,7 @@ import {
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
 import {
   POSITION_FORMATTER,
+  VALUE_FORMATTER,
   formatCurrency,
   parseNumberInput,
 } from "../lib/formatters.js";

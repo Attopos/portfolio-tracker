@@ -5,13 +5,8 @@ import {
   getEffectivePrice,
 } from "../features/portfolio/portfolioSelectors.js";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
-import {
-  POSITION_FORMATTER,
-  formatCurrency,
-  formatTransactionDate,
-} from "../lib/formatters.js";
+import { formatCurrency } from "../lib/formatters.js";
 
-const HISTORY_RANGES = ["7d", "30d", "90d", "1y"];
 const PIE_COLORS = [
   "#22e3a4",
   "#4ba0ff",
@@ -43,6 +38,60 @@ function buildArcPath(cx, cy, radius, startAngle, endAngle) {
   ].join(" ");
 }
 
+function AssetDetailsTable({ items, totalUsd }) {
+  if (!items.length) {
+    return <div className="chart-empty">No allocation data</div>;
+  }
+
+  return (
+    <div className="asset-details-table">
+      <div className="asset-details-head">
+        <span>Name</span>
+        <span>Value/Invested</span>
+        <span>Gain</span>
+        <span>Allocation</span>
+      </div>
+      <div className="asset-details-body">
+        {items.map((item, index) => {
+          const allocation = totalUsd > 0 ? (item.usdValue / totalUsd) * 100 : 0;
+          const gainUsd = item.usdValue - item.investedUsd;
+          const gainPercent = item.investedUsd > 0 ? (gainUsd / item.investedUsd) * 100 : 0;
+
+          return (
+            <article className="asset-detail-row" key={item.id}>
+              <div
+                className="asset-detail-accent"
+                style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                aria-hidden="true"
+              />
+              <div className="asset-detail-name">
+                <div className="asset-detail-badge" aria-hidden="true">
+                  {item.symbol}
+                </div>
+                <div className="asset-detail-copy">
+                  <strong>{item.name}</strong>
+                  <span>
+                    {item.symbol} · {item.positionLabel}
+                  </span>
+                </div>
+              </div>
+              <div className="asset-detail-metric">
+                <strong>{formatCurrency(item.usdValue, "$")}</strong>
+                <span>{formatCurrency(item.investedUsd, "$")}</span>
+              </div>
+              <div className={gainUsd >= 0 ? "asset-detail-gain is-positive" : "asset-detail-gain is-negative"}>
+                <strong>{`${gainUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainUsd), "$")}`}</strong>
+                <span>{`${gainPercent >= 0 ? "+" : "-"}${Math.abs(gainPercent).toFixed(2)}%`}</span>
+              </div>
+              <div className="asset-detail-allocation">{allocation.toFixed(2)}%</div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AllocationDonut({ items, totalUsd, totalCny }) {
   if (!items.length) {
     return <div className="chart-empty">No allocation data</div>;
@@ -51,173 +100,81 @@ function AllocationDonut({ items, totalUsd, totalCny }) {
   let currentAngle = -Math.PI / 2;
 
   return (
-    <div className="donut-chart-shell">
-      <svg viewBox="0 0 220 220" className="donut-chart" aria-label="Portfolio allocation">
-        <circle cx="110" cy="110" r="74" className="donut-track" />
-        {items.map((item, index) => {
-          const sliceAngle = (item.value / totalUsd) * Math.PI * 2;
-          const nextAngle = currentAngle + sliceAngle;
-          const path = buildArcPath(110, 110, 74, currentAngle, nextAngle);
-          const segment = (
-            <path
-              key={item.label}
-              d={path}
-              stroke={PIE_COLORS[index % PIE_COLORS.length]}
-              strokeWidth="28"
-              strokeLinecap="butt"
-              fill="none"
-            />
-          );
-          currentAngle = nextAngle;
-          return segment;
-        })}
-      </svg>
-      <div className="donut-center">
-        <p>Portfolio</p>
-        <strong>{formatCurrency(totalCny, "¥")}</strong>
-        <span>{formatCurrency(totalUsd, "$")}</span>
+    <div className="allocation-layout">
+      <div className="allocation-visual">
+        <svg viewBox="0 0 220 220" className="donut-chart" aria-label="Portfolio allocation">
+          <circle cx="110" cy="110" r="74" className="donut-track" />
+          {items.map((item, index) => {
+            const sliceAngle = (item.usdValue / totalUsd) * Math.PI * 2;
+            const nextAngle = currentAngle + sliceAngle;
+            const path = buildArcPath(110, 110, 74, currentAngle, nextAngle);
+            const segment = (
+              <path
+                key={item.id}
+                d={path}
+                stroke={PIE_COLORS[index % PIE_COLORS.length]}
+                strokeWidth="28"
+                strokeLinecap="butt"
+                fill="none"
+              />
+            );
+            currentAngle = nextAngle;
+            return segment;
+          })}
+        </svg>
       </div>
-      <div className="donut-legend">
-        {items.map((item, index) => (
-          <div className="donut-legend-item" key={item.label}>
-            <span
-              className="donut-swatch"
-              style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
-            />
-            <span>{item.label}</span>
-            <strong>{((item.value / totalUsd) * 100).toFixed(1)}%</strong>
-          </div>
-        ))}
+      <div className="allocation-details">
+        <AssetDetailsTable items={items} totalUsd={totalUsd} />
       </div>
     </div>
   );
-}
-
-function HistoryChart({ points }) {
-  if (!points.length) {
-    return <div className="history-state">No history data yet.</div>;
-  }
-
-  const width = 640;
-  const height = 300;
-  const padding = 24;
-  const values = points.map((point) => Number(point.totalUsd) || 0);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const spread = Math.max(max - min, 1);
-
-  const coords = points.map((point, index) => {
-    const x =
-      padding + (index / Math.max(points.length - 1, 1)) * (width - padding * 2);
-    const y =
-      height - padding - (((Number(point.totalUsd) || 0) - min) / spread) * (height - padding * 2);
-    return [x, y];
-  });
-
-  const path = coords
-    .map((coord, index) => `${index === 0 ? "M" : "L"} ${coord[0].toFixed(2)} ${coord[1].toFixed(2)}`)
-    .join(" ");
-
-  return (
-    <div className="history-chart-shell">
-      <svg viewBox={`0 0 ${width} ${height}`} className="history-chart-svg" aria-label="Portfolio history">
-        <defs>
-          <linearGradient id="historyFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(34,227,164,0.32)" />
-            <stop offset="100%" stopColor="rgba(34,227,164,0.02)" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`${path} L ${coords[coords.length - 1][0].toFixed(2)} ${height - padding} L ${coords[0][0].toFixed(
-            2
-          )} ${height - padding} Z`}
-          fill="url(#historyFill)"
-        />
-        <path d={path} fill="none" stroke="#22e3a4" strokeWidth="3" strokeLinejoin="round" />
-      </svg>
-      <div className="history-axis">
-        <span>{formatCurrency(min, "$")}</span>
-        <span>{formatCurrency(max, "$")}</span>
-      </div>
-    </div>
-  );
-}
-
-function formatDelta(delta) {
-  const sign = delta >= 0 ? "+" : "-";
-  return sign + formatCurrency(Math.abs(delta), "$");
 }
 
 function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const {
-    activeHistoryRange,
     cnyPerUsdRate,
-    historyError,
-    historyPoints,
-    isHistoryLoading,
     lastMarketSyncAt,
     marketPricesBySymbol,
     marketStatus,
     positions,
-    refreshHistory,
-    transactions,
   } = usePortfolioWorkspace();
 
   const allocation = useMemo(() => {
     const items = positions
       .map((item) => {
         const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
-        const baseValue = Number(item.position) * effectivePrice;
+        const quantity = Number(item.position) || 0;
+        const entryPrice = Number(item.price) || 0;
+        const baseValue = quantity * effectivePrice;
+        const baseInvested = quantity * entryPrice;
         const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
-        return {
-          label: item.name,
-          value: usdValue,
-        };
-      })
-      .filter((item) => item.value > 0)
-      .sort((left, right) => right.value - left.value);
-
-    return items.slice(0, 6);
-  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
-
-  const totalUsd = allocation.reduce((sum, item) => sum + item.value, 0);
-  const totalCny = totalUsd * cnyPerUsdRate;
-  const topHoldings = useMemo(() => {
-    return positions
-      .map((item) => {
-        const effectivePrice = getEffectivePrice(item, marketPricesBySymbol);
-        const baseValue = Number(item.position) * effectivePrice;
-        const usdValue = item.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
+        const investedUsd = item.currency === "CNY" ? baseInvested / cnyPerUsdRate : baseInvested;
+        const symbol = String(item.standardSymbol || item.id || item.name || "")
+          .trim()
+          .toUpperCase()
+          .slice(0, 5);
         return {
           id: item.id,
+          investedUsd,
           name: item.name,
-          position: item.position,
+          positionLabel: `${quantity} ${quantity === 1 ? "share" : "shares"}`,
+          symbol: symbol || String(item.name || "").trim().slice(0, 3).toUpperCase(),
           usdValue,
         };
       })
       .filter((item) => item.usdValue > 0)
-      .sort((left, right) => right.usdValue - left.usdValue)
-      .slice(0, 5);
-  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
-  const recentTransactions = transactions.slice(0, 5);
-  const historySummary = useMemo(() => {
-    if (historyPoints.length === 0) {
-      return {
-        deltaUsd: 0,
-        endUsd: 0,
-        startUsd: 0,
-      };
-    }
+      .sort((left, right) => right.usdValue - left.usdValue);
 
-    const startUsd = Number(historyPoints[0]?.totalUsd) || 0;
-    const endUsd = Number(historyPoints[historyPoints.length - 1]?.totalUsd) || 0;
-    return {
-      deltaUsd: endUsd - startUsd,
-      endUsd,
-      startUsd,
-    };
-  }, [historyPoints]);
+    return items.slice(0, 6);
+  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
+
+  const totalUsd = allocation.reduce((sum, item) => sum + item.usdValue, 0);
+  const totalCny = totalUsd * cnyPerUsdRate;
+  const totalInvestedUsd = allocation.reduce((sum, item) => sum + item.investedUsd, 0);
+  const totalProfitUsd = totalUsd - totalInvestedUsd;
+  const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
+  const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
   const marketFooterText = useMemo(() => {
     return buildMarketFooterText(cnyPerUsdRate, marketPricesBySymbol, lastMarketSyncAt);
   }, [cnyPerUsdRate, lastMarketSyncAt, marketPricesBySymbol]);
@@ -230,7 +187,7 @@ function DashboardPage() {
         <p className="page-copy">
           {isAuthenticated
             ? "Shared portfolio state now powers the dashboard, holdings, and transactions together."
-            : "Sign in to see your allocation, totals, and portfolio history."}
+            : "Sign in to see your allocation, totals, and holdings breakdown."}
         </p>
       </header>
 
@@ -240,130 +197,36 @@ function DashboardPage() {
           <h2>{formatCurrency(totalCny, "¥")}</h2>
           <p>{formatCurrency(totalUsd, "$")}</p>
         </article>
-        <article className="workspace-card summary-card">
-          <p className="summary-label">Holdings</p>
-          <h2>{positions.length}</h2>
-          <p>Tracked assets in the current portfolio.</p>
-        </article>
-        <article className="workspace-card summary-card">
-          <p className="summary-label">Transactions</p>
-          <h2>{transactions.length}</h2>
-          <p>Most recent transaction records currently loaded.</p>
-        </article>
-        <article className="workspace-card summary-card">
-          <p className="summary-label">Range Change</p>
-          <h2>{formatDelta(historySummary.deltaUsd)}</h2>
-          <p>
-            {activeHistoryRange.toUpperCase()} move from {formatCurrency(historySummary.startUsd, "$")}
-            {" "}to {formatCurrency(historySummary.endUsd, "$")}
+        <article className="workspace-card summary-card summary-card-profit">
+          <p className="summary-label">Total Profit</p>
+          <div className="profit-summary">
+            <h2 className={totalProfitUsd >= 0 ? "profit-value is-positive" : "profit-value is-negative"}>
+              {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
+            </h2>
+            <span className={totalProfitUsd >= 0 ? "profit-rate is-positive" : "profit-rate is-negative"}>
+              {`${totalProfitUsd >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
+            </span>
+          </div>
+          <p className={totalProfitUsd >= 0 ? "profit-subline is-positive" : "profit-subline is-negative"}>
+            {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitUsd), "$")}`}
+            {" "}vs {formatCurrency(totalInvestedUsd, "$")} invested
           </p>
         </article>
       </section>
 
-      <section className="charts-grid" aria-label="Portfolio charts">
-        <section className="workspace-card chart-card" aria-label="Asset allocation">
-          <div className="section-head section-head-detail">
-            <div>
-              <h2>Asset Allocation</h2>
-            </div>
+      <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">
+        <div className="section-head section-head-detail">
+          <div>
+            <h2>Asset Allocation</h2>
           </div>
-          <div className="breakdown-content">
-            {!isAuthenticated ? (
-              <div className="chart-empty">Sign in to load allocation data.</div>
-            ) : (
-              <AllocationDonut items={allocation} totalUsd={totalUsd || 1} totalCny={totalCny} />
-            )}
-          </div>
-        </section>
-
-        <section className="workspace-card history-card chart-card" aria-label="Portfolio value over time">
-          <div className="section-head history-head">
-            <div>
-              <h2>Portfolio Value Over Time</h2>
-            </div>
-            <div className="history-range-tabs" role="tablist" aria-label="Portfolio history ranges">
-              {HISTORY_RANGES.map((range) => (
-                <button
-                  key={range}
-                  className={activeHistoryRange === range ? "history-range-tab is-active" : "history-range-tab"}
-                  type="button"
-                  aria-selected={activeHistoryRange === range}
-                  onClick={() => refreshHistory(range).catch(() => {})}
-                >
-                  {range.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
+        </div>
+        <div className="breakdown-content">
           {!isAuthenticated ? (
-            <div className="history-state">Sign in to load portfolio history.</div>
-          ) : isHistoryLoading ? (
-            <div className="history-state">Loading history...</div>
-          ) : historyError ? (
-            <div className="history-state history-state-error">{historyError}</div>
+            <div className="chart-empty">Sign in to load allocation data.</div>
           ) : (
-            <HistoryChart points={historyPoints} />
+            <AllocationDonut items={allocation} totalUsd={totalUsd || 1} totalCny={totalCny} />
           )}
-        </section>
-      </section>
-
-      <section className="dashboard-detail-grid" aria-label="Portfolio details">
-        <section className="workspace-card dashboard-list-card" aria-label="Top holdings">
-          <div className="section-head section-head-detail">
-            <div>
-              <h2>Top Holdings</h2>
-              <p>Largest positions by current USD value.</p>
-            </div>
-          </div>
-          {!isAuthenticated ? (
-            <div className="card-empty">Sign in to load holdings.</div>
-          ) : topHoldings.length === 0 ? (
-            <div className="card-empty">No holdings yet.</div>
-          ) : (
-            <div className="holding-list">
-              {topHoldings.map((item, index) => (
-                <div className="holding-list-item" key={item.id}>
-                  <div className="holding-rank">{String(index + 1).padStart(2, "0")}</div>
-                  <div className="holding-copy">
-                    <strong>{item.name}</strong>
-                    <span>{POSITION_FORMATTER.format(item.position)} units</span>
-                  </div>
-                  <div className="holding-value">{formatCurrency(item.usdValue, "$")}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="workspace-card dashboard-list-card" aria-label="Recent activity">
-          <div className="section-head section-head-detail">
-            <div>
-              <h2>Recent Activity</h2>
-              <p>Latest transaction records from the shared workspace state.</p>
-            </div>
-          </div>
-          {!isAuthenticated ? (
-            <div className="card-empty">Sign in to load activity.</div>
-          ) : recentTransactions.length === 0 ? (
-            <div className="card-empty">No recent transactions yet.</div>
-          ) : (
-            <div className="activity-list">
-              {recentTransactions.map((item) => (
-                <div className="activity-item" key={item.id}>
-                  <div className="activity-pill">{String(item.type || "").toUpperCase()}</div>
-                  <div className="activity-copy">
-                    <strong>{item.assetName || item.assetId}</strong>
-                    <span>{formatTransactionDate(item.transactedAt)}</span>
-                  </div>
-                  <div className="activity-metrics">
-                    <span>{POSITION_FORMATTER.format(Number(item.quantity) || 0)}</span>
-                    <strong>{formatCurrency(Number(item.unitPrice) || 0, "$")}</strong>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        </div>
       </section>
 
       {marketStatus ? <p className="panel-note">{marketStatus}</p> : null}

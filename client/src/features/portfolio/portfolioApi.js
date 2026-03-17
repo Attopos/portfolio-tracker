@@ -88,19 +88,6 @@ export async function fetchTransactions() {
   return Array.isArray(payload?.transactions) ? payload.transactions : [];
 }
 
-export async function fetchPortfolioHistory(range = "30d") {
-  const response = await apiFetch(
-    API_ROUTES.portfolioHistory.list + "?range=" + encodeURIComponent(range)
-  );
-  const payload = await readJsonSafely(response);
-
-  if (!response.ok) {
-    throw new Error(normalizeResponseError(payload, "Failed to fetch portfolio history."));
-  }
-
-  return Array.isArray(payload?.points) ? payload.points : [];
-}
-
 export async function createHoldingTransaction(payload) {
   const response = await apiFetch(API_ROUTES.transactions.create, {
     method: "POST",
