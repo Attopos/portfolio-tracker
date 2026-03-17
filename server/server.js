@@ -73,6 +73,36 @@ app.get("/", (req, res) => {
   res.send("Server is running");
 });
 
+app.get("/api/health", async (req, res) => {
+  let databaseOk = false;
+  let databaseError = "";
+
+  try {
+    await pool.query("SELECT 1");
+    databaseOk = true;
+  } catch (error) {
+    databaseError = error instanceof Error ? error.message : "Database connection failed.";
+  }
+
+  const payload = {
+    ok: databaseOk,
+    service: "portfolio-tracker-server",
+    frontendUrl: "http://localhost:5173",
+    backendUrl: `http://localhost:${port}`,
+    database: {
+      ok: databaseOk,
+      error: databaseOk ? "" : databaseError,
+    },
+    googleAuthConfigured: Boolean(googleClientId),
+  };
+
+  if (!databaseOk) {
+    return res.status(503).json(payload);
+  }
+
+  return res.json(payload);
+});
+
 async function findLocalUserById(userId) {
   const result = await pool.query(
     "SELECT id, google_sub, email, name, avatar_url, created_at, updated_at FROM users WHERE id = $1",

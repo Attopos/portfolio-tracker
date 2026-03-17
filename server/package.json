@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:create-users": "node scripts/create-users-table.js",
     "db:create-sessions": "node scripts/create-sessions-table.js",

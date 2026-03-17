@@ -1,0 +1,7 @@
+{
+  "name": "portfolio-tracker",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js"
+  }
+}
