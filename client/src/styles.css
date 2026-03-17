@@ -599,7 +599,7 @@ textarea {
 .summary-card-main {
   display: flex;
   align-items: baseline;
-  gap: 0.65rem;
+  gap: 0.8rem;
   flex-wrap: wrap;
 }
 
@@ -615,9 +615,11 @@ textarea {
 .summary-card-value {
   margin: 0;
   color: var(--text-strong);
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-family: var(--font-sans);
+  font-size: clamp(1.4rem, 2.5vw, 1.75rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
 .summary-support,
@@ -647,7 +649,9 @@ textarea {
 }
 
 .summary-card-rate {
-  font-weight: 700;
+  font-size: clamp(0.7rem, 1.4vw, 1.1rem);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 
 .summary-daily-change {
@@ -655,6 +659,14 @@ textarea {
   align-items: center;
   gap: 0.55rem;
   font-variant-numeric: tabular-nums;
+}
+
+.summary-card-footer.summary-daily-change.is-positive {
+  color: var(--positive);
+}
+
+.summary-card-footer.summary-daily-change.is-negative {
+  color: var(--negative);
 }
 
 .summary-daily-change-arrow {
@@ -676,6 +688,10 @@ textarea {
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;
+}
+
+.summary-daily-change-label {
+  color: var(--text-muted);
 }
 
 .profit-value {

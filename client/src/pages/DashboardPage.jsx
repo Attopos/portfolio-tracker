@@ -214,7 +214,10 @@ function DashboardPage() {
             <>
               <span className={`summary-daily-change-arrow ${isDailyPositive ? "is-up" : "is-down"}`} aria-hidden="true" />
               <span className="summary-daily-change-value">
-                {`${Math.abs(totalDailyChangePercent).toFixed(2)}% daily`}
+                {`${Math.abs(totalDailyChangePercent).toFixed(2)}%`}
+              </span>
+              <span className="summary-daily-change-label">
+                daily
               </span>
             </>
           )}
@@ -233,11 +236,6 @@ function DashboardPage() {
 
       <section className="workspace-card chart-card allocation-card" aria-label="Asset allocation">
         <div className="section-head section-head-detail">
-          <div>
-            <span className="section-kicker">Allocation</span>
-            <h2>Asset Allocation</h2>
-            <p className="section-subcopy">Portfolio weights and unrealized performance for your top positions.</p>
-          </div>
         </div>
         <div className="breakdown-content">
           {!isAuthenticated ? (
