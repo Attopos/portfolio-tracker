@@ -32,9 +32,11 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-NODE_MAJOR="$(node -p 'process.versions.node.split(\".\")[0]')"
+NODE_VERSION="$(node -v)"
+NODE_MAJOR="${NODE_VERSION#v}"
+NODE_MAJOR="${NODE_MAJOR%%.*}"
 if [[ "${NODE_MAJOR}" -lt "${REQUIRED_NODE_MAJOR}" ]]; then
-  echo "Node.js ${REQUIRED_NODE_MAJOR}+ is required for this deploy. Current version: $(node -v)" >&2
+  echo "Node.js ${REQUIRED_NODE_MAJOR}+ is required for this deploy. Current version: ${NODE_VERSION}" >&2
   exit 1
 fi
 
