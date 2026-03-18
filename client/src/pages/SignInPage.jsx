@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import { APP_ENV, isGoogleAuthConfigured } from "../config/env.js";
 
+const GOOGLE_SCRIPT_TIMEOUT_MS = 8000;
+
 function getNextPath(search) {
   const params = new URLSearchParams(search);
   const rawNext = String(params.get("next") || "").trim();
@@ -31,6 +33,47 @@ function SignInPage() {
   useEffect(() => {
     let cancelled = false;
 
+    function loadGoogleScript() {
+      const existing = document.querySelector(`script[src="${APP_ENV.googleGsiSrc}"]`);
+      if (existing && window.google && window.google.accounts && window.google.accounts.id) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve, reject) => {
+        const script = existing || document.createElement("script");
+        let timeoutId = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("Google sign-in is taking too long to load."));
+        }, GOOGLE_SCRIPT_TIMEOUT_MS);
+
+        function cleanup() {
+          window.clearTimeout(timeoutId);
+          script.removeEventListener("load", handleLoad);
+          script.removeEventListener("error", handleError);
+        }
+
+        function handleLoad() {
+          cleanup();
+          resolve();
+        }
+
+        function handleError() {
+          cleanup();
+          reject(new Error("Google sign-in failed to load."));
+        }
+
+        script.addEventListener("load", handleLoad, { once: true });
+        script.addEventListener("error", handleError, { once: true });
+
+        if (!existing) {
+          script.src = APP_ENV.googleGsiSrc;
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+      });
+    }
+
     async function setupGoogleButton() {
       if (!buttonRef.current) {
         return;
@@ -43,19 +86,12 @@ function SignInPage() {
 
       setStatus("Loading Google sign-in...");
 
-      if (!document.querySelector(`script[src="${APP_ENV.googleGsiSrc}"]`)) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = APP_ENV.googleGsiSrc;
-          script.async = true;
-          script.defer = true;
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
+      await loadGoogleScript();
 
       if (cancelled || !window.google || !window.google.accounts || !window.google.accounts.id) {
+        if (!cancelled) {
+          setStatus("Google sign-in is unavailable on this network. Try another network or a VPN, then refresh.");
+        }
         return;
       }
 
@@ -91,7 +127,7 @@ function SignInPage() {
 
     setupGoogleButton().catch(() => {
       if (!cancelled) {
-        setStatus("Google GIS failed to load.");
+        setStatus("Google sign-in is unavailable on this network. Try another network or a VPN, then refresh.");
       }
     });
 

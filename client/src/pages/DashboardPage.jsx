@@ -9,12 +9,12 @@ import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceC
 import { formatCurrency } from "../lib/formatters.js";
 
 const PIE_COLORS = [
-  "#3b82f6",
-  "#60a5fa",
-  "#f59e0b",
-  "#fbbf24",
-  "#93c5fd",
-  "#fcd34d",
+  "#c5ff47",
+  "#a5dc36",
+  "#f79acc",
+  "#565b66",
+  "#ece8de",
+  "#7a806f",
 ];
 
 function buildArcPath(cx, cy, radius, startAngle, endAngle) {
