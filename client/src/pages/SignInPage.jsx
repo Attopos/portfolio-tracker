@@ -37,7 +37,7 @@ function SignInPage() {
       }
 
       if (!isGoogleAuthConfigured()) {
-        setStatus("Google sign-in is not configured. Set VITE_GOOGLE_CLIENT_ID in client/.env.local.");
+        setStatus("Google sign-in is not available right now. Please try again later.");
         return;
       }
 

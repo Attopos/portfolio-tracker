@@ -26,6 +26,14 @@ if [[ ! -d "${CLIENT_DIR}" ]]; then
   exit 1
 fi
 
+if [[ -f "${SERVER_DIR}/.env" ]]; then
+  echo "Loading runtime environment from ${SERVER_DIR}/.env"
+  set -a
+  # shellcheck disable=SC1090
+  source "${SERVER_DIR}/.env"
+  set +a
+fi
+
 echo "Installing server dependencies in ${SERVER_DIR}"
 cd "${SERVER_DIR}"
 if [[ -f package-lock.json ]]; then
@@ -43,6 +51,11 @@ else
 fi
 
 echo "Building frontend"
+if [[ -z "${VITE_GOOGLE_CLIENT_ID:-}" && -n "${GOOGLE_CLIENT_ID:-}" ]]; then
+  export VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}"
+  echo "Using GOOGLE_CLIENT_ID from ${SERVER_DIR}/.env for frontend build"
+fi
+
 npm run build
 
 if [[ ! -f "${CLIENT_DIR}/dist/index.html" ]]; then
