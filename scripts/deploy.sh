@@ -59,9 +59,9 @@ fi
 echo "Installing client dependencies in ${CLIENT_DIR}"
 cd "${CLIENT_DIR}"
 if [[ -f package-lock.json ]]; then
-  npm ci
+  NODE_ENV=development npm ci --include=dev
 else
-  npm install
+  NODE_ENV=development npm install --include=dev
 fi
 
 echo "Building frontend"
