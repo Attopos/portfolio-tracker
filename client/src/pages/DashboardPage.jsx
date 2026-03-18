@@ -10,11 +10,11 @@ import { formatCurrency } from "../lib/formatters.js";
 
 const PIE_COLORS = [
   "#c5ff47",
-  "#a5dc36",
-  "#f79acc",
-  "#565b66",
-  "#ece8de",
-  "#7a806f",
+  "#8fdc4f",
+  "#62d88b",
+  "#3fb8a2",
+  "#6e9e58",
+  "#adcaa0",
 ];
 
 function buildArcPath(cx, cy, radius, startAngle, endAngle) {
@@ -114,7 +114,7 @@ function AllocationDonut({ items, totalUsd }) {
                 key={item.id}
                 d={path}
                 stroke={PIE_COLORS[index % PIE_COLORS.length]}
-                strokeWidth="28"
+                strokeWidth="55"
                 strokeLinecap="butt"
                 fill="none"
               />
@@ -123,10 +123,6 @@ function AllocationDonut({ items, totalUsd }) {
             return segment;
           })}
         </svg>
-        <div className="donut-center" aria-hidden="true">
-          <span>Tracked Value</span>
-          <strong>{formatCurrency(totalUsd, "$")}</strong>
-        </div>
       </div>
       <div className="allocation-details">
         <AssetDetailsTable items={items} totalUsd={totalUsd} />
