@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import AssetBadge from "../components/assets/AssetBadge.jsx";
+import AssetBadge from "../features/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,

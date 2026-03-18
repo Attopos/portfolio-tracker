@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ArrowTrendingUpIcon, WalletIcon } from "@heroicons/react/24/outline";
 import SummaryCard from "../components/cards/SummaryCard.jsx";
-import AssetBadge from "../components/assets/AssetBadge.jsx";
+import AssetBadge from "../features/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,

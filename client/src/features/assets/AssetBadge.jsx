@@ -1,4 +1,4 @@
-import { getAssetCatalogEntry } from "../../config/assetCatalog.js";
+import { getAssetCatalogEntry } from "./assetCatalog.js";
 
 function AssetBadge({
   symbol,
@@ -16,11 +16,13 @@ function AssetBadge({
 
   return (
     <span className={classNames} aria-hidden="true">
-      {iconSrc ? (
-        <img className="asset-badge-image" src={iconSrc} alt={label} />
-      ) : (
-        <span className="asset-badge-fallback">{displayText}</span>
-      )}
+      <span className="asset-badge-visual">
+        {iconSrc ? (
+          <img className="asset-badge-image" src={iconSrc} alt={label} />
+        ) : (
+          <span className="asset-badge-fallback">{displayText}</span>
+        )}
+      </span>
     </span>
   );
 }

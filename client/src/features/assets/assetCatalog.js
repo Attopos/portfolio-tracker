@@ -1,23 +1,25 @@
+import { getAssetIconSrc } from "./assetIcons.js";
+
 const ASSET_CATALOG = {
   BTC: {
     symbol: "BTC",
     name: "Bitcoin",
-    iconSrc: "",
+    iconSrc: getAssetIconSrc("BTC"),
   },
   ETH: {
     symbol: "ETH",
     name: "Ethereum",
-    iconSrc: "",
+    iconSrc: getAssetIconSrc("ETH"),
   },
   QQQ: {
     symbol: "QQQ",
     name: "Invesco QQQ Trust",
-    iconSrc: "",
+    iconSrc: getAssetIconSrc("QQQ"),
   },
   CASH: {
     symbol: "CASH",
     name: "Cash",
-    iconSrc: "",
+    iconSrc: getAssetIconSrc("CASH"),
   },
 };
 
