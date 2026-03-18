@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { Link, useSearchParams } from "react-router-dom";
 import AssetBadge from "../features/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
@@ -26,9 +27,12 @@ function HoldingsPage() {
   });
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingAssetId, setDeletingAssetId] = useState("");
   const {
     addHolding,
     cnyPerUsdRate,
+    deleteHolding,
     isPositionsLoading,
     marketPricesBySymbol,
     marketStatus,
@@ -116,6 +120,24 @@ function HoldingsPage() {
       setSubmitError(error instanceof Error ? error.message : "Failed to add holding.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteHolding(item) {
+    const confirmed = window.confirm(`Delete holding "${item.name}"? This will also remove its transaction history.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingAssetId(item.id);
+    setDeleteError("");
+
+    try {
+      await deleteHolding(item.id);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Failed to delete holding.");
+    } finally {
+      setDeletingAssetId("");
     }
   }
 
@@ -258,6 +280,7 @@ function HoldingsPage() {
         </div>
 
         {positionsError ? <p className="panel-error">{positionsError}</p> : null}
+        {deleteError ? <p className="panel-error">{deleteError}</p> : null}
         {marketStatus ? <p className="panel-note">{marketStatus}</p> : null}
 
         <div className="table-wrap">
@@ -271,20 +294,21 @@ function HoldingsPage() {
                 <th>Market Value (USD)</th>
                 <th>Market Value (CNY)</th>
                 <th>P/L</th>
+                <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {!isAuthenticated ? (
                 <tr className="empty-row">
-                  <td colSpan="7">Sign in to load portfolio holdings.</td>
+                  <td colSpan="8">Sign in to load portfolio holdings.</td>
                 </tr>
               ) : isPositionsLoading ? (
                 <tr className="empty-row">
-                  <td colSpan="7">Loading holdings...</td>
+                  <td colSpan="8">Loading holdings...</td>
                 </tr>
               ) : filteredRows.length === 0 ? (
                 <tr className="empty-row">
-                  <td colSpan="7">
+                  <td colSpan="8">
                     {rows.length === 0 ? "No holdings recorded yet." : "No holdings match the current filters."}
                   </td>
                 </tr>
@@ -315,6 +339,17 @@ function HoldingsPage() {
                         {`${item.pnlPercent >= 0 ? "+" : "-"}${Math.abs(item.pnlPercent).toFixed(2)}%`}
                       </span>
                     </td>
+                    <td className="table-action-cell">
+                      <button
+                        className="row-delete-button"
+                        type="button"
+                        aria-label={`Delete ${item.name}`}
+                        disabled={deletingAssetId === item.id}
+                        onClick={() => handleDeleteHolding(item)}
+                      >
+                        <TrashIcon aria-hidden="true" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -325,6 +360,7 @@ function HoldingsPage() {
                 <td colSpan="3" />
                 <td>{formatCurrency(totals.usd, "$")}</td>
                 <td>{formatCurrency(totals.cny, "¥")}</td>
+                <td />
                 <td />
               </tr>
             </tfoot>

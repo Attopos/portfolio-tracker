@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   createHoldingTransaction,
   createTradeTransaction,
+  deleteHolding as deleteHoldingRequest,
+  deleteTransaction as deleteTransactionRequest,
   fetchPortfolioDailySummary,
   fetchMarketPrices,
   fetchPositions,
@@ -96,6 +98,16 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     await refreshAll();
   }
 
+  async function deleteHolding(assetId) {
+    await deleteHoldingRequest(assetId);
+    await refreshAll();
+  }
+
+  async function deleteTransaction(transactionId) {
+    await deleteTransactionRequest(transactionId);
+    await refreshAll();
+  }
+
   useEffect(() => {
     if (!isAuthenticated) {
       setPositions([]);
@@ -158,6 +170,8 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     () => ({
       addHolding,
       addTransaction,
+      deleteHolding,
+      deleteTransaction,
       cnyPerUsdRate,
       dailySummary,
       isPositionsLoading,
@@ -172,6 +186,8 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     [
       cnyPerUsdRate,
       dailySummary,
+      deleteHolding,
+      deleteTransaction,
       isPositionsLoading,
       isTransactionsLoading,
       marketPricesBySymbol,

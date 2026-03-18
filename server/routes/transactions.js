@@ -52,6 +52,22 @@ function createRequestError(statusCode, message) {
   return error;
 }
 
+function computeNextPosition(currentPosition, transactionType, quantity) {
+  if (transactionType === "set") {
+    return quantity;
+  }
+
+  if (transactionType === "buy") {
+    return currentPosition + quantity;
+  }
+
+  if (transactionType === "sell") {
+    return currentPosition - quantity;
+  }
+
+  throw createRequestError(400, "Unsupported transaction type");
+}
+
 router.use(requireAuth);
 
 router.get("/", async (req, res) => {
@@ -225,6 +241,111 @@ router.post("/", async (req, res) => {
     }
     console.error("Failed to create transaction:", error);
     return res.status(500).json({ error: "Failed to create transaction" });
+  } finally {
+    client.release();
+  }
+});
+
+router.delete("/:transactionId", async (req, res) => {
+  const transactionId = Number(req.params.transactionId);
+  if (!Number.isInteger(transactionId) || transactionId <= 0) {
+    return res.status(400).json({ error: "Transaction id is invalid" });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const targetResult = await client.query(
+      `
+        SELECT id, asset_id, asset_name, currency
+        FROM transactions
+        WHERE user_id = $1 AND id = $2
+      `,
+      [req.userId, transactionId]
+    );
+
+    if (targetResult.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    const target = targetResult.rows[0];
+
+    await client.query("DELETE FROM transactions WHERE user_id = $1 AND id = $2", [req.userId, transactionId]);
+
+    const remainingResult = await client.query(
+      `
+        SELECT id, transaction_type, quantity, unit_price, transacted_at
+        FROM transactions
+        WHERE user_id = $1 AND asset_id = $2
+        ORDER BY transacted_at ASC, id ASC
+      `,
+      [req.userId, target.asset_id]
+    );
+
+    let nextPosition = 0;
+    let latestUnitPrice = null;
+
+    for (const row of remainingResult.rows) {
+      const quantity = Number(row.quantity) || 0;
+      nextPosition = computeNextPosition(nextPosition, row.transaction_type, quantity);
+
+      if (nextPosition < 0) {
+        throw createRequestError(400, "Transaction history would make position negative");
+      }
+
+      if (row.unit_price !== null) {
+        latestUnitPrice = Number(row.unit_price);
+      }
+
+      await client.query("UPDATE transactions SET position_after = $1 WHERE id = $2 AND user_id = $3", [
+        nextPosition,
+        row.id,
+        req.userId,
+      ]);
+    }
+
+    if (remainingResult.rowCount === 0 || nextPosition === 0) {
+      await client.query("DELETE FROM positions WHERE user_id = $1 AND id = $2", [req.userId, target.asset_id]);
+    } else {
+      await client.query(
+        `
+          INSERT INTO positions (user_id, id, name, currency, position, price)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (user_id, id) DO UPDATE
+          SET
+            name = EXCLUDED.name,
+            currency = EXCLUDED.currency,
+            position = EXCLUDED.position,
+            price = EXCLUDED.price
+        `,
+        [
+          req.userId,
+          target.asset_id,
+          target.asset_name,
+          target.currency,
+          nextPosition,
+          latestUnitPrice === null || !Number.isFinite(latestUnitPrice) ? 0 : latestUnitPrice,
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+    await safeRecordPortfolioSnapshot(req.userId);
+    return res.json({ ok: true });
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Failed to rollback transaction delete:", rollbackError);
+    }
+    if (Number.isInteger(error && error.statusCode)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    console.error("Failed to delete transaction:", error);
+    return res.status(500).json({ error: "Failed to delete transaction" });
   } finally {
     client.release();
   }

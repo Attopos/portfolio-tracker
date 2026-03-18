@@ -873,6 +873,42 @@ textarea {
   font-size: 0.84rem;
 }
 
+.table-action-cell {
+  width: 1%;
+  text-align: right;
+}
+
+.row-delete-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, 0.1);
+  color: #f87171;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.row-delete-button:hover:not(:disabled),
+.row-delete-button:focus-visible {
+  background: rgba(220, 38, 38, 0.18);
+  border-color: rgba(248, 113, 113, 0.52);
+  color: #fca5a5;
+}
+
+.row-delete-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.row-delete-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 .asset-detail-allocation {
   text-align: right;
   font-variant-numeric: tabular-nums;

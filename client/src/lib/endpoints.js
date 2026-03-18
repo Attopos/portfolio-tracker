@@ -15,9 +15,11 @@ export const API_ROUTES = {
   },
   positions: {
     list: "/api/positions",
+    delete: (assetId) => `/api/positions/${encodeURIComponent(assetId)}`,
   },
   transactions: {
     create: "/api/transactions",
     list: "/api/transactions",
+    delete: (transactionId) => `/api/transactions/${encodeURIComponent(transactionId)}`,
   },
 };

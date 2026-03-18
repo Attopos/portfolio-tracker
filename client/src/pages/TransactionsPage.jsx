@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import { usePortfolioWorkspace } from "../features/portfolio/PortfolioWorkspaceContext.jsx";
@@ -24,8 +25,11 @@ function TransactionsPage() {
   });
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deletingTransactionId, setDeletingTransactionId] = useState(null);
   const {
     addTransaction,
+    deleteTransaction,
     isTransactionsLoading,
     positions,
     transactions,
@@ -95,6 +99,24 @@ function TransactionsPage() {
       setSubmitError(error instanceof Error ? error.message : "Failed to record transaction.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteTransaction(item) {
+    const confirmed = window.confirm(`Delete this ${item.type} transaction for "${item.assetName || item.assetId}"?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingTransactionId(item.id);
+    setDeleteError("");
+
+    try {
+      await deleteTransaction(item.id);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "Failed to delete transaction.");
+    } finally {
+      setDeletingTransactionId(null);
     }
   }
 
@@ -252,6 +274,7 @@ function TransactionsPage() {
         </div>
 
         {transactionsError ? <p className="panel-error">{transactionsError}</p> : null}
+        {deleteError ? <p className="panel-error">{deleteError}</p> : null}
 
         <div className="table-wrap">
           <table>
@@ -263,20 +286,21 @@ function TransactionsPage() {
                 <th>Quantity</th>
                 <th>Entry Price</th>
                 <th>Position After</th>
+                <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {!isAuthenticated ? (
                 <tr className="empty-row">
-                  <td colSpan="6">Sign in to load recent transactions.</td>
+                  <td colSpan="7">Sign in to load recent transactions.</td>
                 </tr>
               ) : isTransactionsLoading ? (
                 <tr className="empty-row">
-                  <td colSpan="6">Loading transactions...</td>
+                  <td colSpan="7">Loading transactions...</td>
                 </tr>
               ) : filteredTransactions.length === 0 ? (
                 <tr className="empty-row">
-                  <td colSpan="6">
+                  <td colSpan="7">
                     {transactions.length === 0
                       ? "No transactions recorded yet."
                       : "No transactions match the current filters."}
@@ -299,6 +323,17 @@ function TransactionsPage() {
                         : VALUE_FORMATTER.format(Number(item.unitPrice) || 0)}
                     </td>
                     <td>{POSITION_FORMATTER.format(Number(item.positionAfter) || 0)}</td>
+                    <td className="table-action-cell">
+                      <button
+                        className="row-delete-button"
+                        type="button"
+                        aria-label={`Delete transaction ${item.id}`}
+                        disabled={deletingTransactionId === item.id}
+                        onClick={() => handleDeleteTransaction(item)}
+                      >
+                        <TrashIcon aria-hidden="true" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

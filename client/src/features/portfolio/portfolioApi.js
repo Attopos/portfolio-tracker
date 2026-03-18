@@ -122,6 +122,28 @@ export async function createTradeTransaction(payload) {
   return body.transaction || null;
 }
 
+export async function deleteHolding(assetId) {
+  const response = await apiFetch(API_ROUTES.positions.delete(assetId), {
+    method: "DELETE",
+  });
+  const body = await readJsonSafely(response);
+
+  if (!response.ok || !body?.ok) {
+    throw new Error(normalizeResponseError(body, "Failed to delete holding."));
+  }
+}
+
+export async function deleteTransaction(transactionId) {
+  const response = await apiFetch(API_ROUTES.transactions.delete(transactionId), {
+    method: "DELETE",
+  });
+  const body = await readJsonSafely(response);
+
+  if (!response.ok || !body?.ok) {
+    throw new Error(normalizeResponseError(body, "Failed to delete transaction."));
+  }
+}
+
 export async function fetchUsdCnyRate() {
   const response = await apiFetch(API_ROUTES.fxRate.current);
   const payload = await readJsonSafely(response);
