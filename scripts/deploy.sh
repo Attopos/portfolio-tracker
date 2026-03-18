@@ -8,6 +8,7 @@ CLIENT_DIR="${CLIENT_DIR:-${APP_DIR}/client}"
 FRONTEND_PUBLISH_DIR="${FRONTEND_PUBLISH_DIR:-}"
 BRANCH="${BRANCH:-main}"
 SERVER_RESTART_CMD="${SERVER_RESTART_CMD:-}"
+REQUIRED_NODE_MAJOR="${REQUIRED_NODE_MAJOR:-22}"
 
 echo "Starting deploy in ${APP_DIR} on branch ${BRANCH}"
 
@@ -23,6 +24,17 @@ fi
 
 if [[ ! -d "${CLIENT_DIR}" ]]; then
   echo "Client directory not found: ${CLIENT_DIR}" >&2
+  exit 1
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js is not installed on the server." >&2
+  exit 1
+fi
+
+NODE_MAJOR="$(node -p 'process.versions.node.split(\".\")[0]')"
+if [[ "${NODE_MAJOR}" -lt "${REQUIRED_NODE_MAJOR}" ]]; then
+  echo "Node.js ${REQUIRED_NODE_MAJOR}+ is required for this deploy. Current version: $(node -v)" >&2
   exit 1
 fi
 
