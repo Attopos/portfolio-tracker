@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import AssetBadge from "../components/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,
@@ -292,9 +293,7 @@ function HoldingsPage() {
                   <tr key={item.id}>
                     <td className="table-text">
                       <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
-                        <span className="asset-symbol-badge" aria-hidden="true">
-                          {item.symbol}
-                        </span>
+                        <AssetBadge className="asset-symbol-badge" symbol={item.symbol} />
                         <span>
                           {item.name}
                           <span className="table-meta">{item.id}</span>

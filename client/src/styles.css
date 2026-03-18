@@ -806,6 +806,7 @@ textarea {
   align-items: center;
 }
 
+.asset-badge,
 .asset-detail-badge,
 .asset-symbol-badge {
   min-width: 52px;
@@ -821,6 +822,20 @@ textarea {
   font-size: 0.92rem;
   font-weight: 800;
   letter-spacing: 0.06em;
+  overflow: hidden;
+}
+
+.asset-badge-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.asset-badge-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .asset-detail-copy,

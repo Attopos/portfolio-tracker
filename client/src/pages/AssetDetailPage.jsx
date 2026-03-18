@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
+import AssetBadge from "../components/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,
@@ -89,7 +90,7 @@ function AssetDetailPage() {
           </p>
         </div>
         <div className="page-hero-side">
-          <span className="asset-symbol-badge">{detail.symbol}</span>
+          <AssetBadge className="asset-symbol-badge" symbol={detail.symbol} />
           <span className={detail.currency === "USD" ? "status-badge" : "status-badge is-amber"}>
             {detail.currency}
           </span>

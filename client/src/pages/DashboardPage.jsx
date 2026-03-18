@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ArrowTrendingUpIcon, WalletIcon } from "@heroicons/react/24/outline";
 import SummaryCard from "../components/cards/SummaryCard.jsx";
+import AssetBadge from "../components/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,
@@ -66,9 +67,7 @@ function AssetDetailsTable({ items, totalUsd }) {
                 aria-hidden="true"
               />
               <div className="asset-detail-name">
-                <div className="asset-detail-badge" aria-hidden="true">
-                  {item.symbol}
-                </div>
+                <AssetBadge className="asset-detail-badge" symbol={item.symbol} />
                 <div className="asset-detail-copy">
                   <strong>{item.name}</strong>
                   <span>
