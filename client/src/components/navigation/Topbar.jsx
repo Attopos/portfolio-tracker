@@ -43,7 +43,7 @@ function Topbar() {
       <nav className="topbar" aria-label="Primary">
         <div className="topbar-inner">
           <Link className="topbar-brand" to="/" aria-label="Portfolio Tracker home">
-            PT
+            <img className="topbar-brand-image" src="/portfolio-icon.svg" alt="Portfolio Tracker" />
           </Link>
 
           <div className="topbar-nav">

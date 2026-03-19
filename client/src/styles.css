@@ -118,13 +118,13 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(209, 255, 88, 0.96), rgba(197, 255, 71, 0.92));
-  color: #111111;
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  box-shadow: 0 12px 24px rgba(197, 255, 71, 0.2);
+}
+
+.topbar-brand-image {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 
 .topbar-nav {
