@@ -186,9 +186,11 @@ function DashboardPage() {
   const totalInvestedUsd = rankedAllocation.reduce((sum, item) => sum + item.investedUsd, 0);
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
+  const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
   const totalDailyPnlCny = Number(dailySummary?.dailyPnlCny) || 0;
   const totalDailyPnlPercent = Number(dailySummary?.dailyPnlPct) || 0;
   const isDailyPositive = totalDailyPnlCny >= 0;
+  const isTotalProfitPositive = totalProfitUsd >= 0;
 
   return (
     <section className="page-panel page-panel-detail">
@@ -226,11 +228,11 @@ function DashboardPage() {
           footerClassName={`summary-daily-change ${isDailyPositive ? "is-positive" : "is-negative"}`}
         >
           <div className="summary-card-main">
-            <h2 className={`summary-card-value ${totalProfitUsd >= 0 ? "is-positive" : "is-negative"}`}>
-              {`${totalProfitUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
+            <h2 className={`summary-card-value ${isTotalProfitPositive ? "is-positive" : "is-negative"}`}>
+              {`${isTotalProfitPositive ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
             </h2>
-            <span className={`summary-card-rate ${isDailyPositive ? "is-positive" : "is-negative"}`}>
-              {`${totalDailyPnlPercent >= 0 ? "+" : "-"}${Math.abs(totalDailyPnlPercent).toFixed(2)}%`}
+            <span className={`summary-card-rate ${isTotalProfitPositive ? "is-positive" : "is-negative"}`}>
+              {`${totalProfitPercent >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
             </span>
           </div>
         </SummaryCard>
