@@ -17,7 +17,7 @@ function AssetDetailPage() {
   const { isAuthenticated } = useAuth();
   const {
     cnyPerUsdRate,
-    marketPricesBySymbol,
+    marketPricesByAssetSymbol,
     positions,
     transactions,
   } = usePortfolioWorkspace();
@@ -31,8 +31,8 @@ function AssetDetailPage() {
       return null;
     }
 
-    return buildPositionMetrics(asset, marketPricesBySymbol, cnyPerUsdRate);
-  }, [asset, cnyPerUsdRate, marketPricesBySymbol]);
+    return buildPositionMetrics(asset, marketPricesByAssetSymbol, cnyPerUsdRate);
+  }, [asset, cnyPerUsdRate, marketPricesByAssetSymbol]);
 
   const assetTransactions = useMemo(() => {
     if (!detail) {

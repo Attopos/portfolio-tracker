@@ -17,6 +17,7 @@ const PIE_COLORS = [
   "#6e9e58",
   "#adcaa0",
 ];
+const MAX_ALLOCATION_SEGMENTS = PIE_COLORS.length;
 
 function buildArcPath(cx, cy, radius, startAngle, endAngle) {
   const startX = cx + radius * Math.cos(startAngle);
@@ -67,11 +68,15 @@ function AssetDetailsTable({ items, totalUsd }) {
                 aria-hidden="true"
               />
               <div className="asset-detail-name">
-                <AssetBadge className="asset-detail-badge" symbol={item.symbol} />
+                <AssetBadge
+                  className="asset-detail-badge"
+                  symbol={item.symbol}
+                  fallbackText={item.fallbackText}
+                />
                 <div className="asset-detail-copy">
                   <strong>{item.name}</strong>
                   <span>
-                    {item.symbol} · {item.positionLabel}
+                    {(item.symbol || item.fallbackText)} · {item.positionLabel}
                   </span>
                 </div>
               </div>
@@ -100,34 +105,65 @@ function AllocationDonut({ items, totalUsd }) {
   let currentAngle = -Math.PI / 2;
 
   return (
-    <div className="allocation-layout">
-      <div className="allocation-visual">
-        <svg viewBox="0 0 220 220" className="donut-chart" aria-label="Portfolio allocation">
-          <circle cx="110" cy="110" r="74" className="donut-track" />
-          {items.map((item, index) => {
-            const sliceAngle = (item.usdValue / totalUsd) * Math.PI * 2;
-            const nextAngle = currentAngle + sliceAngle;
-            const path = buildArcPath(110, 110, 74, currentAngle, nextAngle);
-            const segment = (
-              <path
-                key={item.id}
-                d={path}
-                stroke={PIE_COLORS[index % PIE_COLORS.length]}
-                strokeWidth="55"
-                strokeLinecap="butt"
-                fill="none"
-              />
-            );
-            currentAngle = nextAngle;
-            return segment;
-          })}
-        </svg>
-      </div>
-      <div className="allocation-details">
-        <AssetDetailsTable items={items} totalUsd={totalUsd} />
-      </div>
-    </div>
+    <svg viewBox="0 0 220 220" className="donut-chart" aria-label="Portfolio allocation">
+      <circle cx="110" cy="110" r="74" className="donut-track" />
+      {items.map((item, index) => {
+        const sliceAngle = (item.usdValue / totalUsd) * Math.PI * 2;
+        const nextAngle = currentAngle + sliceAngle;
+        const path = buildArcPath(110, 110, 74, currentAngle, nextAngle);
+        const segment = (
+          <path
+            key={item.id}
+            d={path}
+            stroke={PIE_COLORS[index % PIE_COLORS.length]}
+            strokeWidth="55"
+            strokeLinecap="butt"
+            fill="none"
+          />
+        );
+        currentAngle = nextAngle;
+        return segment;
+      })}
+    </svg>
   );
+}
+
+function buildRankedAllocationItems(positions, marketPricesByAssetSymbol, cnyPerUsdRate) {
+  return positions
+    .map((position) => buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPerUsdRate))
+    .map((positionMetrics) => ({
+      id: positionMetrics.id,
+      investedUsd: positionMetrics.investedUsd,
+      name: positionMetrics.name,
+      positionLabel: `${positionMetrics.quantity} ${positionMetrics.quantity === 1 ? "share" : "shares"}`,
+      symbol: positionMetrics.symbol,
+      usdValue: positionMetrics.usdValue,
+    }))
+    .filter((positionMetrics) => positionMetrics.usdValue > 0)
+    .sort((left, right) => right.usdValue - left.usdValue);
+}
+
+function buildDonutAllocationItems(rankedItems) {
+  if (rankedItems.length <= MAX_ALLOCATION_SEGMENTS) {
+    return rankedItems;
+  }
+
+  const visibleItems = rankedItems.slice(0, MAX_ALLOCATION_SEGMENTS - 1);
+  const remainingItems = rankedItems.slice(MAX_ALLOCATION_SEGMENTS - 1);
+  const othersUsdValue = remainingItems.reduce((sum, item) => sum + item.usdValue, 0);
+  const othersInvestedUsd = remainingItems.reduce((sum, item) => sum + item.investedUsd, 0);
+
+  visibleItems.push({
+    id: "others",
+    fallbackText: "OTR",
+    investedUsd: othersInvestedUsd,
+    name: "Others",
+    positionLabel: `${remainingItems.length} assets`,
+    symbol: "OTHERS",
+    usdValue: othersUsdValue,
+  });
+
+  return visibleItems;
 }
 
 function DashboardPage() {
@@ -139,26 +175,15 @@ function DashboardPage() {
     positions,
   } = usePortfolioWorkspace();
 
-  const allocation = useMemo(() => {
-    const portfolioSlice = positions
-      .map((position) => buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPerUsdRate))
-      .map((positionMetrics) => ({
-        id: positionMetrics.id,
-        investedUsd: positionMetrics.investedUsd,
-        name: positionMetrics.name,
-        positionLabel: `${positionMetrics.quantity} ${positionMetrics.quantity === 1 ? "share" : "shares"}`,
-        symbol: positionMetrics.symbol,
-        usdValue: positionMetrics.usdValue,
-      }))
-      .filter((positionMetrics) => positionMetrics.usdValue > 0)
-      .sort((left, right) => right.usdValue - left.usdValue);
-
-    return portfolioSlice.slice(0, 6);
+  const rankedAllocation = useMemo(() => {
+    return buildRankedAllocationItems(positions, marketPricesByAssetSymbol, cnyPerUsdRate);
   }, [cnyPerUsdRate, marketPricesByAssetSymbol, positions]);
 
-  const totalUsd = allocation.reduce((sum, item) => sum + item.usdValue, 0);
+  const donutAllocation = useMemo(() => buildDonutAllocationItems(rankedAllocation), [rankedAllocation]);
+
+  const totalUsd = rankedAllocation.reduce((sum, item) => sum + item.usdValue, 0);
   const totalCny = totalUsd * cnyPerUsdRate;
-  const totalInvestedUsd = allocation.reduce((sum, item) => sum + item.investedUsd, 0);
+  const totalInvestedUsd = rankedAllocation.reduce((sum, item) => sum + item.investedUsd, 0);
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
   const totalDailyPnlUsd = Number(dailySummary?.dailyPnlUsd) || 0;
@@ -216,7 +241,14 @@ function DashboardPage() {
           {!isAuthenticated ? (
             <div className="chart-empty">Sign in to load allocation data.</div>
           ) : (
-            <AllocationDonut items={allocation} totalUsd={totalUsd || 1} />
+            <div className="allocation-layout">
+              <div className="allocation-visual">
+                <AllocationDonut items={donutAllocation} totalUsd={totalUsd || 1} />
+              </div>
+              <div className="allocation-details">
+                <AssetDetailsTable items={rankedAllocation} totalUsd={totalUsd} />
+              </div>
+            </div>
           )}
         </div>
       </section>

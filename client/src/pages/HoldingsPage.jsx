@@ -1,10 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { Link, useSearchParams } from "react-router-dom";
 import AssetBadge from "../features/assets/AssetBadge.jsx";
 import {
-  findPresetAsset,
-  getPresetAssetLabel,
   getPresetAssets,
 } from "../features/assets/assetDatabase.js";
 import { useAuth } from "../features/auth/AuthContext.jsx";
@@ -19,18 +17,36 @@ import {
   parseNumberInput,
 } from "../lib/formatters.js";
 
+function getAutoFilledUnitPrice(asset, currency, marketPricesByAssetSymbol) {
+  if (!asset || !asset.symbol) {
+    return "";
+  }
+
+  const marketPrice = marketPricesByAssetSymbol[asset.symbol];
+  if (!marketPrice || typeof marketPrice !== "object") {
+    return "";
+  }
+
+  const nextPrice = currency === "CNY" ? Number(marketPrice.cny) : Number(marketPrice.usd);
+  return Number.isFinite(nextPrice) && nextPrice > 0 ? nextPrice.toFixed(2) : "";
+}
+
 function HoldingsPage() {
   const { isAuthenticated } = useAuth();
   const presetAssets = useMemo(() => getPresetAssets(), []);
+  const assetPickerRef = useRef(null);
+  const previousSelectedAssetIdRef = useRef("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [formValues, setFormValues] = useState({
-    assetName: "",
+    assetQuery: "",
+    assetId: "",
     currency: "CNY",
     quantity: "",
     unitPrice: "",
   });
+  const [isAssetPickerOpen, setIsAssetPickerOpen] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -75,6 +91,73 @@ function HoldingsPage() {
     );
   }, [filteredRows]);
 
+  const filteredPresetAssets = useMemo(() => {
+    const term = formValues.assetQuery.trim().toLowerCase();
+    if (!term) {
+      return presetAssets;
+    }
+
+    return presetAssets.filter((asset) => {
+      return (
+        asset.name.toLowerCase().includes(term) ||
+        asset.symbol.toLowerCase().includes(term) ||
+        asset.category.toLowerCase().includes(term)
+      );
+    });
+  }, [formValues.assetQuery, presetAssets]);
+
+  const selectedPresetAsset = useMemo(() => {
+    return presetAssets.find((asset) => asset.id === formValues.assetId) || null;
+  }, [formValues.assetId, presetAssets]);
+
+  const autoFilledUnitPrice = useMemo(() => {
+    return getAutoFilledUnitPrice(selectedPresetAsset, formValues.currency, marketPricesByAssetSymbol);
+  }, [formValues.currency, marketPricesByAssetSymbol, selectedPresetAsset]);
+
+  const isUnitPriceLocked = Boolean(autoFilledUnitPrice);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (assetPickerRef.current && !assetPickerRef.current.contains(event.target)) {
+        setIsAssetPickerOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    const previousSelectedAssetId = previousSelectedAssetIdRef.current;
+    const selectedAssetId = selectedPresetAsset?.id || "";
+    const didAssetChange = previousSelectedAssetId !== selectedAssetId;
+
+    if (!selectedAssetId) {
+      previousSelectedAssetIdRef.current = "";
+      return;
+    }
+
+    if (autoFilledUnitPrice) {
+      setFormValues((current) => (
+        current.unitPrice === autoFilledUnitPrice
+          ? current
+          : {
+              ...current,
+              unitPrice: autoFilledUnitPrice,
+            }
+      ));
+    } else if (didAssetChange) {
+      setFormValues((current) => ({
+        ...current,
+        unitPrice: "",
+      }));
+    }
+
+    previousSelectedAssetIdRef.current = selectedAssetId;
+  }, [autoFilledUnitPrice, selectedPresetAsset]);
+
   function openDialog() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set("action", "create");
@@ -86,35 +169,33 @@ function HoldingsPage() {
     nextParams.delete("action");
     setSearchParams(nextParams);
     setSubmitError("");
+    setIsAssetPickerOpen(false);
   }
 
   function handleFieldChange(event) {
     const { name, value } = event.target;
-
-    if (name === "assetName") {
-      const matchedPreset = findPresetAsset(value);
-      setFormValues((current) => ({
-        ...current,
-        assetName: matchedPreset ? getPresetAssetLabel(matchedPreset) : value,
-      }));
-      return;
-    }
-
     setFormValues((current) => ({
       ...current,
+      assetId: name === "assetQuery" ? "" : current.assetId,
       [name]: value,
     }));
+  }
+
+  function handleAssetSelect(asset) {
+    setFormValues((current) => ({
+      ...current,
+      assetId: asset.id,
+      assetQuery: asset.name,
+    }));
+    setIsAssetPickerOpen(false);
+    setSubmitError("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const assetName = formValues.assetName.trim();
-    const matchedPreset = findPresetAsset(assetName);
-    const resolvedAssetName = matchedPreset ? matchedPreset.name : assetName;
-
-    if (!resolvedAssetName) {
-      setSubmitError("Name is required.");
+    if (!selectedPresetAsset) {
+      setSubmitError("Please select one asset from the list.");
       return;
     }
 
@@ -123,14 +204,15 @@ function HoldingsPage() {
 
     try {
       await addHolding({
-        assetId: matchedPreset?.id || "",
-        assetName: resolvedAssetName,
+        assetId: selectedPresetAsset.id,
+        assetName: selectedPresetAsset.name,
         currency: formValues.currency === "USD" ? "USD" : "CNY",
         quantity: parseNumberInput(formValues.quantity),
         unitPrice: parseNumberInput(formValues.unitPrice),
       });
       setFormValues({
-        assetName: "",
+        assetQuery: "",
+        assetId: "",
         currency: "CNY",
         quantity: "",
         unitPrice: "",
@@ -196,28 +278,58 @@ function HoldingsPage() {
               </button>
             </div>
             <form className="action-form" onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-field">
-                  <label htmlFor="holding-name">Name</label>
+              <div className="form-field form-field-picker" ref={assetPickerRef}>
+                <label htmlFor="holding-name">Name <span className="form-required">*</span></label>
+                <div className="asset-picker-shell">
                   <input
                     id="holding-name"
-                    list="preset-assets"
-                    name="assetName"
+                    name="assetQuery"
                     type="text"
+                    autoComplete="off"
                     required
-                    placeholder="Pick Bitcoin, Gold, Nasdaq 100..."
-                    value={formValues.assetName}
+                    placeholder="Search Bitcoin, Gold, Nasdaq 100..."
+                    value={formValues.assetQuery}
                     onChange={handleFieldChange}
+                    onFocus={() => setIsAssetPickerOpen(true)}
                   />
-                  <datalist id="preset-assets">
-                    {presetAssets.map((asset) => (
-                      <option key={asset.id} value={getPresetAssetLabel(asset)} />
-                    ))}
-                  </datalist>
-                  <p className="settings-note">Pick from the preset catalog or type a custom asset name.</p>
+                  {isAssetPickerOpen ? (
+                    <div className="asset-picker-dropdown" role="listbox" aria-label="Asset results">
+                      {filteredPresetAssets.length === 0 ? (
+                        <div className="asset-picker-empty">No matching assets.</div>
+                      ) : (
+                        filteredPresetAssets.map((asset) => {
+                          const isSelected = asset.id === formValues.assetId;
+                          return (
+                            <button
+                              key={asset.id}
+                              className={isSelected ? "asset-picker-option is-selected" : "asset-picker-option"}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                handleAssetSelect(asset);
+                              }}
+                            >
+                              <div className="asset-picker-option-main">
+                                <AssetBadge className="asset-picker-badge" symbol={asset.symbol} />
+                                <div className="asset-picker-copy">
+                                  <strong>{asset.name}</strong>
+                                  <span>{asset.symbol} · {asset.category}</span>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : null}
                 </div>
+              </div>
+
+              <div className="form-grid">
                 <div className="form-field">
-                  <label htmlFor="holding-currency">Currency</label>
+                  <label htmlFor="holding-currency">Currency <span className="form-required">*</span></label>
                   <select
                     id="holding-currency"
                     name="currency"
@@ -231,7 +343,7 @@ function HoldingsPage() {
               </div>
               <div className="form-grid">
                 <div className="form-field">
-                  <label htmlFor="holding-quantity">Quantity</label>
+                  <label htmlFor="holding-quantity">Quantity <span className="form-required">*</span></label>
                   <input
                     id="holding-quantity"
                     name="quantity"
@@ -243,13 +355,14 @@ function HoldingsPage() {
                   />
                 </div>
                 <div className="form-field">
-                  <label htmlFor="holding-price">Entry Price</label>
+                  <label htmlFor="holding-price">Entry Price <span className="form-required">*</span></label>
                   <input
                     id="holding-price"
                     name="unitPrice"
                     type="text"
                     inputMode="decimal"
                     required
+                    disabled={isUnitPriceLocked}
                     value={formValues.unitPrice}
                     onChange={handleFieldChange}
                   />
@@ -309,7 +422,6 @@ function HoldingsPage() {
 
         {positionsError ? <p className="panel-error">{positionsError}</p> : null}
         {deleteError ? <p className="panel-error">{deleteError}</p> : null}
-        {marketStatus ? <p className="panel-note">{marketStatus}</p> : null}
 
         <div className="table-wrap">
           <table>

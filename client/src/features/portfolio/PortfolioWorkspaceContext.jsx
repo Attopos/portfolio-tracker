@@ -135,32 +135,54 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       .filter(Boolean);
 
     async function refreshMarketData() {
-      try {
-        const [nextRate, nextPrices, nextDailySummary] = await Promise.all([
-          fetchUsdCnyRate(),
-          fetchMarketPrices(trackedAssetSymbols),
-          fetchPortfolioDailySummary(),
-        ]);
+      const [rateResult, pricesResult, dailySummaryResult] = await Promise.allSettled([
+        fetchUsdCnyRate(),
+        fetchMarketPrices(trackedAssetSymbols),
+        fetchPortfolioDailySummary(),
+      ]);
 
-        if (cancelled) {
-          return;
-        }
+      if (cancelled) {
+        return;
+      }
 
-        setCnyPerUsdRate(nextRate);
-        setMarketPricesByAssetSymbol(nextPrices);
-        setDailySummary(nextDailySummary);
-        setMarketStatus("");
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
+      if (rateResult.status === "fulfilled") {
+        setCnyPerUsdRate(rateResult.value);
+      }
 
+      if (pricesResult.status === "fulfilled") {
+        setMarketPricesByAssetSymbol(pricesResult.value);
+      } else {
+        setMarketPricesByAssetSymbol({});
+      }
+
+      if (dailySummaryResult.status === "fulfilled") {
+        setDailySummary(dailySummaryResult.value);
+      } else {
         setDailySummary(null);
-        setMarketStatus(error instanceof Error ? error.message : "Failed to refresh market data.");
+      }
+
+      const failures = [rateResult, pricesResult, dailySummaryResult]
+        .filter((result) => result.status === "rejected")
+        .map((result) => {
+          return result.reason instanceof Error ? result.reason.message : "Failed to refresh market data.";
+        });
+
+      if (failures.length > 0) {
+        setMarketStatus(failures[0]);
+      } else {
+        setMarketStatus("");
       }
     }
 
-    refreshMarketData();
+    refreshMarketData().catch((error) => {
+      if (cancelled) {
+        return;
+      }
+
+      setDailySummary(null);
+      setMarketPricesByAssetSymbol({});
+      setMarketStatus(error instanceof Error ? error.message : "Failed to refresh market data.");
+    });
 
     return () => {
       cancelled = true;
