@@ -31,14 +31,18 @@ export function buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPer
   const usdValue = position?.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;
   const cnyValue = position?.currency === "CNY" ? baseValue : usdValue * cnyPerUsdRate;
   const investedUsd = position?.currency === "CNY" ? investedBase / cnyPerUsdRate : investedBase;
+  const investedCny = position?.currency === "CNY" ? investedBase : investedUsd * cnyPerUsdRate;
   const pnlUsd = usdValue - investedUsd;
+  const pnlCny = cnyValue - investedCny;
   const pnlPercent = investedUsd > 0 ? (pnlUsd / investedUsd) * 100 : 0;
 
   return {
     ...position,
     cnyValue,
     effectivePrice,
+    investedCny,
     investedUsd,
+    pnlCny,
     pnlPercent,
     pnlUsd,
     quantity,

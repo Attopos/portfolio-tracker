@@ -60,6 +60,7 @@ function HoldingsPage() {
     marketStatus,
     positions,
     positionsError,
+    transactions,
   } = usePortfolioWorkspace();
 
   const isDialogOpen = searchParams.get("action") === "create";
@@ -80,6 +81,21 @@ function HoldingsPage() {
       return matchesCurrency && matchesSearch;
     });
   }, [currencyFilter, rows, searchValue]);
+
+  const transactionStatsByAssetId = useMemo(() => {
+    return transactions.reduce((accumulator, transaction) => {
+      const assetId = String(transaction?.assetId || "").trim();
+      if (!assetId) {
+        return accumulator;
+      }
+
+      const current = accumulator[assetId] || { count: 0, hasNonSetTransaction: false };
+      current.count += 1;
+      current.hasNonSetTransaction = current.hasNonSetTransaction || transaction.type !== "set";
+      accumulator[assetId] = current;
+      return accumulator;
+    }, {});
+  }, [transactions]);
 
   const totals = useMemo(() => {
     return filteredRows.reduce(
@@ -424,15 +440,25 @@ function HoldingsPage() {
         {deleteError ? <p className="panel-error">{deleteError}</p> : null}
 
         <div className="table-wrap">
-          <table>
+          <table className="holdings-table">
+            <colgroup>
+              <col className="holdings-col-name" />
+              <col className="holdings-col-currency" />
+              <col className="holdings-col-position" />
+              <col className="holdings-col-price" />
+              <col className="holdings-col-usd" />
+              <col className="holdings-col-cny" />
+              <col className="holdings-col-pnl" />
+              <col className="holdings-col-actions" />
+            </colgroup>
             <thead>
               <tr className="head-row">
                 <th>Name</th>
                 <th>Currency</th>
                 <th>Position Size</th>
                 <th>Market Price</th>
-                <th>Market Value (USD)</th>
-                <th>Market Value (CNY)</th>
+                <th>Value USD</th>
+                <th>Value CNY</th>
                 <th>P/L</th>
                 <th aria-label="Actions" />
               </tr>
@@ -454,6 +480,16 @@ function HoldingsPage() {
                 </tr>
               ) : (
                 filteredRows.map((item) => (
+                  (() => {
+                    const transactionStats = transactionStatsByAssetId[item.id] || null;
+                    const isNewHoldingOnly =
+                      Boolean(transactionStats) &&
+                      transactionStats.count === 1 &&
+                      transactionStats.hasNonSetTransaction === false;
+                    const pnlValueCny = isNewHoldingOnly ? 0 : item.pnlCny;
+                    const pnlPercent = isNewHoldingOnly ? 0 : item.pnlPercent;
+
+                    return (
                   <tr key={item.id}>
                     <td className="table-text">
                       <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
@@ -473,10 +509,10 @@ function HoldingsPage() {
                     <td className="price">{VALUE_FORMATTER.format(item.effectivePrice)}</td>
                     <td className="usd">{formatCurrency(item.usdValue, "$")}</td>
                     <td className="cny">{formatCurrency(item.cnyValue, "¥")}</td>
-                    <td className={item.pnlUsd >= 0 ? "is-positive" : "is-negative"}>
-                      {`${item.pnlUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(item.pnlUsd), "$")}`}
+                    <td className={pnlValueCny >= 0 ? "is-positive" : "is-negative"}>
+                      {`${pnlValueCny >= 0 ? "+" : "-"}${formatCurrency(Math.abs(pnlValueCny), "¥")}`}
                       <span className="table-meta">
-                        {`${item.pnlPercent >= 0 ? "+" : "-"}${Math.abs(item.pnlPercent).toFixed(2)}%`}
+                        {`${pnlPercent >= 0 ? "+" : "-"}${Math.abs(pnlPercent).toFixed(2)}%`}
                       </span>
                     </td>
                     <td className="table-action-cell">
@@ -491,6 +527,8 @@ function HoldingsPage() {
                       </button>
                     </td>
                   </tr>
+                    );
+                  })()
                 ))
               )}
             </tbody>

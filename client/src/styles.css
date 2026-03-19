@@ -889,7 +889,9 @@ textarea {
 
 .table-action-cell {
   width: 1%;
-  text-align: right;
+  text-align: left;
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
 }
 
 .row-delete-button {
@@ -1162,6 +1164,56 @@ td:nth-child(1),
 td:nth-child(2),
 td.table-text {
   text-align: left;
+}
+
+.holdings-table {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.holdings-table th,
+.holdings-table td,
+.holdings-table td:nth-child(1),
+.holdings-table td:nth-child(2),
+.holdings-table td.table-text {
+  text-align: left;
+}
+
+.holdings-table th,
+.holdings-table td {
+  padding: 0.85rem 0.7rem;
+}
+
+.holdings-col-name {
+  width: 16%;
+}
+
+.holdings-col-currency {
+  width: 9%;
+}
+
+.holdings-col-position {
+  width: 10%;
+}
+
+.holdings-col-price {
+  width: 12%;
+}
+
+.holdings-col-usd {
+  width: 10%;
+}
+
+.holdings-col-cny {
+  width: 10%;
+}
+
+.holdings-col-pnl {
+  width: 8%;
+}
+
+.holdings-col-actions {
+  width: 5%;
 }
 
 tbody tr:hover td {

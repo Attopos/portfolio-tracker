@@ -16,6 +16,32 @@ const RANGE_TO_MS = {
 
 let cachedUsdCnyRate = DEFAULT_CNY_PER_USD;
 let cachedUsdCnyRateAt = 0;
+let ensurePortfolioSnapshotsTablePromise = null;
+
+async function ensurePortfolioSnapshotsTable() {
+  if (!ensurePortfolioSnapshotsTablePromise) {
+    ensurePortfolioSnapshotsTablePromise = (async () => {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS portfolio_value_snapshots (
+          id BIGSERIAL PRIMARY KEY,
+          user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          total_usd NUMERIC NOT NULL,
+          captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+      `);
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS portfolio_value_snapshots_user_captured_idx
+        ON portfolio_value_snapshots (user_id, captured_at);
+      `);
+    })().catch((error) => {
+      ensurePortfolioSnapshotsTablePromise = null;
+      throw error;
+    });
+  }
+
+  await ensurePortfolioSnapshotsTablePromise;
+}
 
 function getCurrentHourBucketStart() {
   const bucketStart = new Date();
@@ -136,6 +162,7 @@ async function calculatePortfolioSnapshot(userId) {
 }
 
 async function calculatePortfolioDailySummary(userId) {
+  await ensurePortfolioSnapshotsTable();
   const usdCnyRate = await fetchUsdCnyRate();
   const currentSnapshot = await calculatePortfolioSnapshot(userId);
 
@@ -189,6 +216,7 @@ async function calculatePortfolioDailySummary(userId) {
 }
 
 async function recordPortfolioSnapshotForUser(userId) {
+  await ensurePortfolioSnapshotsTable();
   const snapshot = await calculatePortfolioSnapshot(userId);
   if (!snapshot) {
     return false;
@@ -227,10 +255,12 @@ async function recordPortfolioSnapshotForUser(userId) {
 }
 
 async function invalidatePortfolioSnapshotsForUser(userId) {
+  await ensurePortfolioSnapshotsTable();
   await pool.query("DELETE FROM portfolio_value_snapshots WHERE user_id = $1", [userId]);
 }
 
 router.get("/", requireAuth, async (req, res) => {
+  await ensurePortfolioSnapshotsTable();
   const requestedRange = String(req.query.range || "30d").trim().toLowerCase();
   const rangeMs = RANGE_TO_MS[requestedRange];
 
