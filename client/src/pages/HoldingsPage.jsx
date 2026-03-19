@@ -544,6 +544,82 @@ function HoldingsPage() {
             </tfoot>
           </table>
         </div>
+
+        <div className="mobile-records-list mobile-holdings-list">
+          {!isAuthenticated ? (
+            <div className="mobile-record-card mobile-record-card-empty">Sign in to load portfolio holdings.</div>
+          ) : isPositionsLoading ? (
+            <div className="mobile-record-card mobile-record-card-empty">Loading holdings...</div>
+          ) : filteredRows.length === 0 ? (
+            <div className="mobile-record-card mobile-record-card-empty">
+              {rows.length === 0 ? "No holdings recorded yet." : "No holdings match the current filters."}
+            </div>
+          ) : (
+            filteredRows.map((item) => {
+              const transactionStats = transactionStatsByAssetId[item.id] || null;
+              const isNewHoldingOnly =
+                Boolean(transactionStats) &&
+                transactionStats.count === 1 &&
+                transactionStats.hasNonSetTransaction === false;
+              const pnlValueCny = isNewHoldingOnly ? 0 : item.pnlCny;
+              const pnlPercent = isNewHoldingOnly ? 0 : item.pnlPercent;
+
+              return (
+                <article className="mobile-record-card" key={item.id}>
+                  <div className="mobile-record-head">
+                    <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
+                      <AssetBadge className="asset-symbol-badge" symbol={item.symbol} />
+                      <span>
+                        {item.name}
+                        <span className="table-meta">{item.assetSymbol || item.id}</span>
+                      </span>
+                    </Link>
+                    <button
+                      className="row-delete-button"
+                      type="button"
+                      aria-label={`Delete ${item.name}`}
+                      disabled={deletingAssetId === item.id}
+                      onClick={() => handleDeleteHolding(item)}
+                    >
+                      <TrashIcon aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="mobile-record-grid">
+                    <div className="mobile-record-metric">
+                      <span>Currency</span>
+                      <strong>
+                        <span className={item.currency === "USD" ? "status-badge" : "status-badge is-amber"}>
+                          {item.currency}
+                        </span>
+                      </strong>
+                    </div>
+                    <div className="mobile-record-metric">
+                      <span>Position</span>
+                      <strong>{POSITION_FORMATTER.format(item.position)}</strong>
+                    </div>
+                    <div className="mobile-record-metric">
+                      <span>Market Price</span>
+                      <strong>{VALUE_FORMATTER.format(item.effectivePrice)}</strong>
+                    </div>
+                    <div className="mobile-record-metric">
+                      <span>Value USD</span>
+                      <strong>{formatCurrency(item.usdValue, "$")}</strong>
+                    </div>
+                    <div className="mobile-record-metric">
+                      <span>Value CNY</span>
+                      <strong>{formatCurrency(item.cnyValue, "¥")}</strong>
+                    </div>
+                    <div className={`mobile-record-metric ${pnlValueCny >= 0 ? "is-positive" : "is-negative"}`}>
+                      <span>P/L</span>
+                      <strong>{`${pnlValueCny >= 0 ? "+" : "-"}${formatCurrency(Math.abs(pnlValueCny), "¥")}`}</strong>
+                      <em>{`${pnlPercent >= 0 ? "+" : "-"}${Math.abs(pnlPercent).toFixed(2)}%`}</em>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
       </section>
 
     </section>

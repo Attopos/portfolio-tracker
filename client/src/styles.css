@@ -1311,6 +1311,69 @@ td.table-text {
   width: 4%;
 }
 
+.mobile-records-list {
+  display: none;
+}
+
+.mobile-record-card {
+  border: 1px solid rgba(132, 151, 176, 0.14);
+  border-radius: 18px;
+  background: rgba(12, 18, 26, 0.82);
+  padding: 0.95rem;
+}
+
+.mobile-record-card-empty {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.mobile-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mobile-record-title {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.mobile-record-title strong {
+  color: var(--text-strong);
+}
+
+.mobile-record-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.mobile-record-metric {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.mobile-record-metric span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mobile-record-metric strong {
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-record-metric em {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
 tbody tr:hover td {
   background: rgba(24, 35, 48, 0.92);
 }
@@ -1623,6 +1686,26 @@ tbody tr:hover td {
   .form-grid,
   .detail-kpis {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .table-wrap {
+    display: none;
+  }
+
+  .mobile-records-list {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .mobile-holdings-list .table-link {
+    gap: 0.6rem;
+  }
+
+  .mobile-holdings-list .status-badge,
+  .mobile-transactions-list .transaction-badge {
+    width: fit-content;
   }
 }
 

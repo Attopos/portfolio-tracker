@@ -39,13 +39,7 @@
     "name": "Nasdaq 100",
     "category": "Index",
     "aliases": ["QQQ", "NASDAQ", "NASDAQ100", "NASDAQ 100", "INDEX-NASDAQ-100", "NDX"],
-    "iconKey": "QQQ",
-    "marketData": {
-      "provider": "twelvedata",
-      "providerSymbol": "QQQ",
-      "exchange": "NASDAQ",
-      "quoteCurrency": "USD"
-    }
+    "iconKey": "QQQ"
   },
   {
     "id": "index-nikkei-225",
@@ -53,13 +47,7 @@
     "name": "Nikkei 225",
     "category": "Index",
     "aliases": ["N225", "NIKKEI", "NIKKEI225", "NIKKEI 225", "INDEX-NIKKEI-225"],
-    "iconKey": "N225",
-    "marketData": {
-      "provider": "twelvedata",
-      "providerSymbol": "EWJ",
-      "exchange": "NYSE",
-      "quoteCurrency": "USD"
-    }
+    "iconKey": "N225"
   },
   {
     "id": "index-sp-500",
@@ -67,13 +55,7 @@
     "name": "S&P 500",
     "category": "Index",
     "aliases": ["SPX", "SP500", "S&P500", "S&P 500", "INDEX-SP-500"],
-    "iconKey": "SPX",
-    "marketData": {
-      "provider": "twelvedata",
-      "providerSymbol": "SPY",
-      "exchange": "NYSE",
-      "quoteCurrency": "USD"
-    }
+    "iconKey": "SPX"
   },
   {
     "id": "index-dax-40",
@@ -81,13 +63,7 @@
     "name": "DAX 40",
     "category": "Index",
     "aliases": ["DAX", "DAX40", "DAX 40", "INDEX-DAX-40"],
-    "iconKey": "DAX",
-    "marketData": {
-      "provider": "twelvedata",
-      "providerSymbol": "EWG",
-      "exchange": "NYSE",
-      "quoteCurrency": "USD"
-    }
+    "iconKey": "DAX"
   },
   {
     "id": "cash-usd",

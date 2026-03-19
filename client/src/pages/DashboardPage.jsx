@@ -41,7 +41,7 @@ function buildArcPath(cx, cy, radius, startAngle, endAngle) {
   ].join(" ");
 }
 
-function AssetDetailsTable({ items, totalUsd }) {
+function AssetDetailsTable({ items, totalCny }) {
   if (!items.length) {
     return <div className="chart-empty">No allocation data</div>;
   }
@@ -57,9 +57,9 @@ function AssetDetailsTable({ items, totalUsd }) {
       </div>
       <div className="asset-details-body">
         {items.map((item, index) => {
-          const allocation = totalUsd > 0 ? (item.usdValue / totalUsd) * 100 : 0;
-          const gainUsd = item.usdValue - item.investedUsd;
-          const gainPercent = item.investedUsd > 0 ? (gainUsd / item.investedUsd) * 100 : 0;
+          const allocation = totalCny > 0 ? (item.cnyValue / totalCny) * 100 : 0;
+          const gainCny = item.cnyValue - item.investedCny;
+          const gainPercent = item.investedCny > 0 ? (gainCny / item.investedCny) * 100 : 0;
 
           return (
             <article className="asset-detail-row" key={item.id}>
@@ -82,11 +82,11 @@ function AssetDetailsTable({ items, totalUsd }) {
                 </div>
               </div>
               <div className="asset-detail-metric">
-                <strong>{formatCurrency(item.usdValue, "$")}</strong>
-                <span>{formatCurrency(item.investedUsd, "$")}</span>
+                <strong>{formatCurrency(item.cnyValue, "¥")}</strong>
+                <span>{formatCurrency(item.investedCny, "¥")}</span>
               </div>
-              <div className={gainUsd >= 0 ? "asset-detail-gain is-positive" : "asset-detail-gain is-negative"}>
-                <strong>{`${gainUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainUsd), "$")}`}</strong>
+              <div className={gainCny >= 0 ? "asset-detail-gain is-positive" : "asset-detail-gain is-negative"}>
+                <strong>{`${gainCny >= 0 ? "+" : "-"}${formatCurrency(Math.abs(gainCny), "¥")}`}</strong>
                 <span>{`${gainPercent >= 0 ? "+" : "-"}${Math.abs(gainPercent).toFixed(2)}%`}</span>
               </div>
               <div className="asset-detail-allocation">{allocation.toFixed(2)}%</div>
@@ -133,7 +133,9 @@ function buildRankedAllocationItems(positions, marketPricesByAssetSymbol, cnyPer
   return positions
     .map((position) => buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPerUsdRate))
     .map((positionMetrics) => ({
+      cnyValue: positionMetrics.cnyValue,
       id: positionMetrics.id,
+      investedCny: positionMetrics.investedCny,
       investedUsd: positionMetrics.investedUsd,
       name: positionMetrics.name,
       positionLabel: `${positionMetrics.quantity} ${positionMetrics.quantity === 1 ? "share" : "shares"}`,
@@ -152,15 +154,19 @@ function buildDonutAllocationItems(rankedItems) {
   const visibleItems = rankedItems.slice(0, MAX_ALLOCATION_SEGMENTS - 1);
   const remainingItems = rankedItems.slice(MAX_ALLOCATION_SEGMENTS - 1);
   const othersUsdValue = remainingItems.reduce((sum, item) => sum + item.usdValue, 0);
+  const othersCnyValue = remainingItems.reduce((sum, item) => sum + item.cnyValue, 0);
+  const othersInvestedCny = remainingItems.reduce((sum, item) => sum + item.investedCny, 0);
   const othersInvestedUsd = remainingItems.reduce((sum, item) => sum + item.investedUsd, 0);
 
   visibleItems.push({
     id: "others",
     fallbackText: "OTR",
+    investedCny: othersInvestedCny,
     investedUsd: othersInvestedUsd,
     name: "Others",
     positionLabel: `${remainingItems.length} assets`,
     symbol: "OTHERS",
+    cnyValue: othersCnyValue,
     usdValue: othersUsdValue,
   });
 
@@ -207,7 +213,7 @@ function DashboardPage() {
           label="Value"
           icon={WalletIcon}
           tone="accent"
-          footer={formatCurrency(totalUsd, "$")}
+          footer={formatCurrency(totalCny, "¥")}
         >
           <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
         </SummaryCard>
@@ -249,7 +255,7 @@ function DashboardPage() {
                 <AllocationDonut items={donutAllocation} totalUsd={totalUsd || 1} />
               </div>
               <div className="allocation-details">
-                <AssetDetailsTable items={rankedAllocation} totalUsd={totalUsd} />
+                <AssetDetailsTable items={rankedAllocation} totalCny={totalCny} />
               </div>
             </div>
           )}

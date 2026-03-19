@@ -349,6 +349,66 @@ function TransactionsPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="mobile-records-list mobile-transactions-list">
+          {!isAuthenticated ? (
+            <div className="mobile-record-card mobile-record-card-empty">Sign in to load recent transactions.</div>
+          ) : isTransactionsLoading ? (
+            <div className="mobile-record-card mobile-record-card-empty">Loading transactions...</div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="mobile-record-card mobile-record-card-empty">
+              {transactions.length === 0
+                ? "No transactions recorded yet."
+                : "No transactions match the current filters."}
+            </div>
+          ) : (
+            filteredTransactions.map((item) => (
+              <article className="mobile-record-card" key={item.id}>
+                <div className="mobile-record-head">
+                  <div className="mobile-record-title">
+                    <strong>{item.assetName || item.assetId}</strong>
+                    <span className="table-meta">{formatTransactionDate(item.transactedAt)}</span>
+                  </div>
+                  <button
+                    className="row-delete-button"
+                    type="button"
+                    aria-label={`Delete transaction ${item.id}`}
+                    disabled={deletingTransactionId === item.id}
+                    onClick={() => handleDeleteTransaction(item)}
+                  >
+                    <TrashIcon aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="mobile-record-grid">
+                  <div className="mobile-record-metric">
+                    <span>Type</span>
+                    <strong>
+                      <span className={item.type === "sell" ? "transaction-badge is-sell" : "transaction-badge"}>
+                        {item.type}
+                      </span>
+                    </strong>
+                  </div>
+                  <div className="mobile-record-metric">
+                    <span>Quantity</span>
+                    <strong>{POSITION_FORMATTER.format(Number(item.quantity) || 0)}</strong>
+                  </div>
+                  <div className="mobile-record-metric">
+                    <span>Entry Price</span>
+                    <strong>
+                      {item.unitPrice === null || item.unitPrice === ""
+                        ? "--"
+                        : VALUE_FORMATTER.format(Number(item.unitPrice) || 0)}
+                    </strong>
+                  </div>
+                  <div className="mobile-record-metric">
+                    <span>Position After</span>
+                    <strong>{POSITION_FORMATTER.format(Number(item.positionAfter) || 0)}</strong>
+                  </div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
       </section>
 
     </section>
