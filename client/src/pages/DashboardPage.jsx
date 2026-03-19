@@ -49,10 +49,11 @@ function AssetDetailsTable({ items, totalUsd }) {
   return (
     <div className="asset-details-table">
       <div className="asset-details-head">
-        <span>Name</span>
-        <span>Value/Invested</span>
-        <span>Gain</span>
-        <span>Allocation</span>
+        <span className="asset-details-head-spacer" aria-hidden="true" />
+        <span className="asset-details-head-name">Name</span>
+        <span className="asset-details-head-value">Value/Invested</span>
+        <span className="asset-details-head-gain">Gain</span>
+        <span className="asset-details-head-allocation">Allocation</span>
       </div>
       <div className="asset-details-body">
         {items.map((item, index) => {

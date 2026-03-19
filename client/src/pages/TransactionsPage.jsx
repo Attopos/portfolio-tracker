@@ -277,7 +277,16 @@ function TransactionsPage() {
         {deleteError ? <p className="panel-error">{deleteError}</p> : null}
 
         <div className="table-wrap">
-          <table>
+          <table className="transactions-table">
+            <colgroup>
+              <col className="transactions-col-date" />
+              <col className="transactions-col-type" />
+              <col className="transactions-col-asset" />
+              <col className="transactions-col-quantity" />
+              <col className="transactions-col-price" />
+              <col className="transactions-col-position" />
+              <col className="transactions-col-actions" />
+            </colgroup>
             <thead>
               <tr className="head-row">
                 <th>Date</th>

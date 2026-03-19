@@ -783,16 +783,41 @@ textarea {
 }
 
 .asset-details-head {
-  padding: 0 0 0.85rem;
+  padding: 0 0.45rem 0.85rem 0;
   color: var(--text-soft);
   font-size: 0.79rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  text-align: left;
 }
 
-.asset-details-head span:first-child {
+.asset-details-head span {
+  width: 100%;
+  display: block;
+  justify-self: start;
+  text-align: left;
+}
+
+.asset-details-head-spacer {
+  grid-column: 1;
+}
+
+.asset-details-head-name {
   grid-column: 2;
+  padding-left: calc(44px + 0.85rem);
+}
+
+.asset-details-head-value {
+  grid-column: 3;
+}
+
+.asset-details-head-gain {
+  grid-column: 4;
+}
+
+.asset-details-head-allocation {
+  grid-column: 5;
 }
 
 .asset-details-body {
@@ -880,6 +905,31 @@ textarea {
   color: var(--text-strong);
 }
 
+.asset-detail-metric,
+.asset-detail-gain,
+.asset-detail-allocation {
+  justify-self: start;
+  text-align: left;
+}
+
+.asset-detail-metric {
+  grid-column: 3;
+  width: 100%;
+  display: grid;
+}
+
+.asset-detail-gain {
+  grid-column: 4;
+  width: 100%;
+  display: grid;
+}
+
+.asset-detail-allocation {
+  grid-column: 5;
+  width: 100%;
+  display: block;
+}
+
 .asset-detail-copy span,
 .asset-detail-metric span,
 .asset-detail-gain span {
@@ -926,7 +976,6 @@ textarea {
 }
 
 .asset-detail-allocation {
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1216,6 +1265,52 @@ td.table-text {
   width: 5%;
 }
 
+.transactions-table {
+  table-layout: fixed;
+  min-width: 0;
+}
+
+.transactions-table th,
+.transactions-table td,
+.transactions-table td:nth-child(1),
+.transactions-table td:nth-child(2),
+.transactions-table td.table-text {
+  text-align: left;
+}
+
+.transactions-table th,
+.transactions-table td {
+  padding: 0.85rem 0.7rem;
+}
+
+.transactions-col-date {
+  width: 22%;
+}
+
+.transactions-col-type {
+  width: 8%;
+}
+
+.transactions-col-asset {
+  width: 14%;
+}
+
+.transactions-col-quantity {
+  width: 11%;
+}
+
+.transactions-col-price {
+  width: 13%;
+}
+
+.transactions-col-position {
+  width: 13%;
+}
+
+.transactions-col-actions {
+  width: 4%;
+}
+
 tbody tr:hover td {
   background: rgba(24, 35, 48, 0.92);
 }
@@ -1468,18 +1563,57 @@ tbody tr:hover td {
   }
 
   .asset-detail-row {
-    grid-template-columns: 4px minmax(0, 1fr);
+    grid-template-columns:
+      4px
+      minmax(0, 1.2fr)
+      minmax(0, 1fr)
+      minmax(0, 0.8fr);
+    grid-template-rows: auto auto;
+    gap: 0.75rem 0.85rem;
+    padding: 0.85rem 0;
   }
 
-  .asset-detail-name,
+  .asset-detail-name {
+    grid-column: 2 / 5;
+    grid-row: 1;
+    gap: 0.75rem;
+  }
+
+  .asset-detail-metric {
+    grid-column: 2;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .asset-detail-gain {
+    grid-column: 3;
+    grid-row: 2;
+    text-align: center;
+  }
+
+  .asset-detail-allocation {
+    grid-column: 4;
+    grid-row: 2;
+    text-align: left;
+    align-self: start;
+  }
+
   .asset-detail-metric,
   .asset-detail-gain,
   .asset-detail-allocation {
-    grid-column: 2;
+    min-width: 0;
   }
 
+  .asset-detail-copy span,
+  .asset-detail-metric span,
+  .asset-detail-gain span {
+    font-size: 0.8rem;
+  }
+
+  .asset-detail-metric strong,
+  .asset-detail-gain strong,
   .asset-detail-allocation {
-    text-align: left;
+    font-size: 0.92rem;
   }
 
   .page-action-panel {
