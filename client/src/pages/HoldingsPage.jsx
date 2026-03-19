@@ -2,6 +2,11 @@ import { useMemo, useState } from "react";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { Link, useSearchParams } from "react-router-dom";
 import AssetBadge from "../features/assets/AssetBadge.jsx";
+import {
+  findPresetAsset,
+  getPresetAssetLabel,
+  getPresetAssets,
+} from "../features/assets/assetDatabase.js";
 import { useAuth } from "../features/auth/AuthContext.jsx";
 import {
   buildPositionMetrics,
@@ -16,6 +21,7 @@ import {
 
 function HoldingsPage() {
   const { isAuthenticated } = useAuth();
+  const presetAssets = useMemo(() => getPresetAssets(), []);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState("all");
@@ -34,7 +40,7 @@ function HoldingsPage() {
     cnyPerUsdRate,
     deleteHolding,
     isPositionsLoading,
-    marketPricesBySymbol,
+    marketPricesByAssetSymbol,
     marketStatus,
     positions,
     positionsError,
@@ -44,9 +50,9 @@ function HoldingsPage() {
 
   const rows = useMemo(() => {
     return positions.map((portfolioPosition) =>
-      buildPositionMetrics(portfolioPosition, marketPricesBySymbol, cnyPerUsdRate)
+      buildPositionMetrics(portfolioPosition, marketPricesByAssetSymbol, cnyPerUsdRate)
     );
-  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
+  }, [cnyPerUsdRate, marketPricesByAssetSymbol, positions]);
 
   const filteredRows = useMemo(() => {
     return rows.filter((item) => {
@@ -84,6 +90,16 @@ function HoldingsPage() {
 
   function handleFieldChange(event) {
     const { name, value } = event.target;
+
+    if (name === "assetName") {
+      const matchedPreset = findPresetAsset(value);
+      setFormValues((current) => ({
+        ...current,
+        assetName: matchedPreset ? getPresetAssetLabel(matchedPreset) : value,
+      }));
+      return;
+    }
+
     setFormValues((current) => ({
       ...current,
       [name]: value,
@@ -94,7 +110,10 @@ function HoldingsPage() {
     event.preventDefault();
 
     const assetName = formValues.assetName.trim();
-    if (!assetName) {
+    const matchedPreset = findPresetAsset(assetName);
+    const resolvedAssetName = matchedPreset ? matchedPreset.name : assetName;
+
+    if (!resolvedAssetName) {
       setSubmitError("Name is required.");
       return;
     }
@@ -104,7 +123,8 @@ function HoldingsPage() {
 
     try {
       await addHolding({
-        assetName,
+        assetId: matchedPreset?.id || "",
+        assetName: resolvedAssetName,
         currency: formValues.currency === "USD" ? "USD" : "CNY",
         quantity: parseNumberInput(formValues.quantity),
         unitPrice: parseNumberInput(formValues.unitPrice),
@@ -181,12 +201,20 @@ function HoldingsPage() {
                   <label htmlFor="holding-name">Name</label>
                   <input
                     id="holding-name"
+                    list="preset-assets"
                     name="assetName"
                     type="text"
                     required
+                    placeholder="Pick Bitcoin, Gold, Nasdaq 100..."
                     value={formValues.assetName}
                     onChange={handleFieldChange}
                   />
+                  <datalist id="preset-assets">
+                    {presetAssets.map((asset) => (
+                      <option key={asset.id} value={getPresetAssetLabel(asset)} />
+                    ))}
+                  </datalist>
+                  <p className="settings-note">Pick from the preset catalog or type a custom asset name.</p>
                 </div>
                 <div className="form-field">
                   <label htmlFor="holding-currency">Currency</label>
@@ -320,7 +348,7 @@ function HoldingsPage() {
                         <AssetBadge className="asset-symbol-badge" symbol={item.symbol} />
                         <span>
                           {item.name}
-                          <span className="table-meta">{item.id}</span>
+                          <span className="table-meta">{item.assetSymbol || item.id}</span>
                         </span>
                       </Link>
                     </td>

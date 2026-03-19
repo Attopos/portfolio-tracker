@@ -1,7 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const { requireAuth } = require("../middleware/require-auth");
-const { detectMarketSymbol, fetchCoinGeckoPrices } = require("../services/market-prices");
+const { detectAssetSymbol, fetchMarketPrices } = require("../services/market-price-service");
 
 const router = express.Router();
 
@@ -86,25 +86,25 @@ async function calculatePortfolioSnapshot(userId) {
   const marketSymbols = Array.from(
     new Set(
       positions
-        .map((row) => detectMarketSymbol(row.id, row.name))
+        .map((row) => detectAssetSymbol(row.id, row.name))
         .filter(Boolean)
     )
   );
-  let marketPricesBySymbol = {};
+  let marketPricesByAssetSymbol = {};
 
   if (marketSymbols.length > 0) {
     try {
-      marketPricesBySymbol = await fetchCoinGeckoPrices(marketSymbols);
+      marketPricesByAssetSymbol = await fetchMarketPrices(marketSymbols);
     } catch (error) {
-      console.error("Failed to load CoinGecko prices for snapshot, using stored prices:", error);
+      console.error("Failed to load market prices for snapshot, using stored prices:", error);
     }
   }
 
   let totalUsd = 0;
   for (let i = 0; i < positions.length; i++) {
     const row = positions[i];
-    const symbol = detectMarketSymbol(row.id, row.name);
-    const marketPrice = symbol ? marketPricesBySymbol[symbol] : null;
+    const assetSymbol = detectAssetSymbol(row.id, row.name);
+    const marketPrice = assetSymbol ? marketPricesByAssetSymbol[assetSymbol] : null;
     const currency = String(row.currency || "").trim().toUpperCase() === "CNY" ? "CNY" : "USD";
     const position = Number(row.position);
     const fallbackPrice = Number(row.price);

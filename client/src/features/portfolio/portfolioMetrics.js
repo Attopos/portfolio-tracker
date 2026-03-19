@@ -1,7 +1,7 @@
-export function getPositionEffectivePrice(position, marketPricesBySymbol) {
-  const symbol = position?.standardSymbol || "";
+export function getPositionEffectivePrice(position, marketPricesByAssetSymbol) {
+  const symbol = position?.assetSymbol || "";
   const entryPrice = Number(position?.price);
-  const market = symbol ? marketPricesBySymbol[symbol] : null;
+  const market = symbol ? marketPricesByAssetSymbol[symbol] : null;
 
   if (market && typeof market === "object") {
     const marketPrice = position.currency === "CNY" ? Number(market.cny) : Number(market.usd);
@@ -14,7 +14,7 @@ export function getPositionEffectivePrice(position, marketPricesBySymbol) {
 }
 
 export function getPositionDisplaySymbol(position) {
-  const symbol = String(position?.standardSymbol || position?.id || position?.name || "")
+  const symbol = String(position?.assetSymbol || position?.id || position?.name || "")
     .trim()
     .toUpperCase()
     .slice(0, 5);
@@ -22,10 +22,10 @@ export function getPositionDisplaySymbol(position) {
   return symbol || String(position?.name || "").trim().slice(0, 3).toUpperCase();
 }
 
-export function buildPositionMetrics(position, marketPricesBySymbol, cnyPerUsdRate) {
+export function buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPerUsdRate) {
   const quantity = Number(position?.position) || 0;
   const entryPrice = Number(position?.price) || 0;
-  const effectivePrice = getPositionEffectivePrice(position, marketPricesBySymbol);
+  const effectivePrice = getPositionEffectivePrice(position, marketPricesByAssetSymbol);
   const investedBase = quantity * entryPrice;
   const baseValue = quantity * effectivePrice;
   const usdValue = position?.currency === "CNY" ? baseValue / cnyPerUsdRate : baseValue;

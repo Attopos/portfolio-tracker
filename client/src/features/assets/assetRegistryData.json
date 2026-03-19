@@ -1,0 +1,99 @@
+[
+  {
+    "id": "crypto-btc",
+    "symbol": "BTC",
+    "name": "Bitcoin",
+    "category": "Crypto",
+    "aliases": ["BTC", "BITCOIN", "CRYPTO-BTC"],
+    "iconKey": "BTC",
+    "marketData": {
+      "provider": "coingecko",
+      "coingeckoId": "bitcoin",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "crypto-eth",
+    "symbol": "ETH",
+    "name": "Ethereum",
+    "category": "Crypto",
+    "aliases": ["ETH", "ETHEREUM", "CRYPTO-ETH"],
+    "iconKey": "ETH",
+    "marketData": {
+      "provider": "coingecko",
+      "coingeckoId": "ethereum",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "commodity-gold",
+    "symbol": "XAU",
+    "name": "Gold",
+    "category": "Commodity",
+    "aliases": ["XAU", "GOLD", "COMMODITY-GOLD"],
+    "iconKey": "XAU"
+  },
+  {
+    "id": "index-nasdaq-100",
+    "symbol": "QQQ",
+    "name": "Nasdaq 100",
+    "category": "Index",
+    "aliases": ["QQQ", "NASDAQ", "NASDAQ100", "NASDAQ 100", "INDEX-NASDAQ-100", "NDX"],
+    "iconKey": "QQQ",
+    "marketData": {
+      "provider": "twelvedata",
+      "providerSymbol": "QQQ",
+      "exchange": "NASDAQ",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "index-nikkei-225",
+    "symbol": "N225",
+    "name": "Nikkei 225",
+    "category": "Index",
+    "aliases": ["N225", "NIKKEI", "NIKKEI225", "NIKKEI 225", "INDEX-NIKKEI-225"],
+    "iconKey": "N225",
+    "marketData": {
+      "provider": "twelvedata",
+      "providerSymbol": "EWJ",
+      "exchange": "NYSE",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "index-sp-500",
+    "symbol": "SPX",
+    "name": "S&P 500",
+    "category": "Index",
+    "aliases": ["SPX", "SP500", "S&P500", "S&P 500", "INDEX-SP-500"],
+    "iconKey": "SPX",
+    "marketData": {
+      "provider": "twelvedata",
+      "providerSymbol": "SPY",
+      "exchange": "NYSE",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "index-dax-40",
+    "symbol": "DAX",
+    "name": "DAX 40",
+    "category": "Index",
+    "aliases": ["DAX", "DAX40", "DAX 40", "INDEX-DAX-40"],
+    "iconKey": "DAX",
+    "marketData": {
+      "provider": "twelvedata",
+      "providerSymbol": "EWG",
+      "exchange": "NYSE",
+      "quoteCurrency": "USD"
+    }
+  },
+  {
+    "id": "cash-usd",
+    "symbol": "CASH",
+    "name": "Cash",
+    "category": "Cash",
+    "aliases": ["CASH", "USD CASH", "CASH-USD"]
+  }
+]

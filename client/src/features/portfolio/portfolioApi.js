@@ -1,44 +1,14 @@
 import { apiFetch } from "../../lib/api.js";
 import { API_ROUTES } from "../../lib/endpoints.js";
 import { normalizeResponseError, readJsonSafely } from "../../lib/http.js";
-const STANDARD_MARKET_ASSETS = {
-  BTC: {
-    symbol: "BTC",
-    aliases: ["BTC", "BITCOIN"],
-  },
-  ETH: {
-    symbol: "ETH",
-    aliases: ["ETH", "ETHEREUM"],
-  },
-};
+import { findPresetAsset } from "../assets/assetDatabase.js";
 
-const STANDARD_MARKET_ALIAS_LOOKUP = buildStandardMarketAliasLookup();
-
-function buildStandardMarketAliasLookup() {
-  const map = Object.create(null);
-  const symbols = Object.keys(STANDARD_MARKET_ASSETS);
-
-  for (let index = 0; index < symbols.length; index += 1) {
-    const symbol = symbols[index];
-    const asset = STANDARD_MARKET_ASSETS[symbol];
-
-    for (let aliasIndex = 0; aliasIndex < asset.aliases.length; aliasIndex += 1) {
-      map[asset.aliases[aliasIndex]] = symbol;
-    }
-
-    map[symbol] = symbol;
-  }
-
-  return map;
+function normalizeAssetSymbol(value) {
+  return findPresetAsset(value)?.symbol || "";
 }
 
-function normalizeMarketAssetSymbol(value) {
-  const key = String(value || "").trim().toUpperCase();
-  return STANDARD_MARKET_ALIAS_LOOKUP[key] || "";
-}
-
-function detectStandardMarketSymbol(assetId, assetName) {
-  return normalizeMarketAssetSymbol(assetId) || normalizeMarketAssetSymbol(assetName);
+function detectAssetSymbol(assetId, assetName) {
+  return normalizeAssetSymbol(assetId) || normalizeAssetSymbol(assetName);
 }
 
 function normalizePosition(row) {
@@ -62,7 +32,7 @@ function normalizePosition(row) {
     currency,
     position: Number.isFinite(position) ? position : 0,
     price: Number.isFinite(price) ? price : 0,
-    standardSymbol: detectStandardMarketSymbol(id, name),
+    assetSymbol: detectAssetSymbol(id, name),
   };
 }
 
@@ -162,7 +132,7 @@ export async function fetchUsdCnyRate() {
 
 export async function fetchMarketPrices(symbols) {
   const safeSymbols = Array.isArray(symbols)
-    ? symbols.map((symbol) => normalizeMarketAssetSymbol(symbol)).filter(Boolean)
+    ? symbols.map((symbol) => normalizeAssetSymbol(symbol)).filter(Boolean)
     : [];
 
   if (safeSymbols.length === 0) {

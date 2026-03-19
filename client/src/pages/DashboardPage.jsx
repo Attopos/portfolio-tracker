@@ -135,13 +135,13 @@ function DashboardPage() {
   const {
     cnyPerUsdRate,
     dailySummary,
-    marketPricesBySymbol,
+    marketPricesByAssetSymbol,
     positions,
   } = usePortfolioWorkspace();
 
   const allocation = useMemo(() => {
     const portfolioSlice = positions
-      .map((position) => buildPositionMetrics(position, marketPricesBySymbol, cnyPerUsdRate))
+      .map((position) => buildPositionMetrics(position, marketPricesByAssetSymbol, cnyPerUsdRate))
       .map((positionMetrics) => ({
         id: positionMetrics.id,
         investedUsd: positionMetrics.investedUsd,
@@ -154,7 +154,7 @@ function DashboardPage() {
       .sort((left, right) => right.usdValue - left.usdValue);
 
     return portfolioSlice.slice(0, 6);
-  }, [cnyPerUsdRate, marketPricesBySymbol, positions]);
+  }, [cnyPerUsdRate, marketPricesByAssetSymbol, positions]);
 
   const totalUsd = allocation.reduce((sum, item) => sum + item.usdValue, 0);
   const totalCny = totalUsd * cnyPerUsdRate;

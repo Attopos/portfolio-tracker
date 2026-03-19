@@ -21,7 +21,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   const [transactionsError, setTransactionsError] = useState("");
   const [isPositionsLoading, setIsPositionsLoading] = useState(false);
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
-  const [marketPricesBySymbol, setMarketPricesBySymbol] = useState({});
+  const [marketPricesByAssetSymbol, setMarketPricesByAssetSymbol] = useState({});
   const [cnyPerUsdRate, setCnyPerUsdRate] = useState(DEFAULT_CNY_PER_USD);
   const [dailySummary, setDailySummary] = useState(null);
   const [marketStatus, setMarketStatus] = useState("");
@@ -84,6 +84,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
   async function addHolding(payload) {
     await createHoldingTransaction({
+      assetId: payload.assetId,
       assetName: payload.assetName,
       currency: payload.currency,
       type: "set",
@@ -122,22 +123,22 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
 
   useEffect(() => {
     if (!isAuthenticated || positions.length === 0) {
-      setMarketPricesBySymbol({});
+      setMarketPricesByAssetSymbol({});
       setDailySummary(null);
       setMarketStatus("");
       return;
     }
 
     let cancelled = false;
-    const trackedSymbols = positions
-      .map((item) => item.standardSymbol || "")
+    const trackedAssetSymbols = positions
+      .map((item) => item.assetSymbol || "")
       .filter(Boolean);
 
     async function refreshMarketData() {
       try {
         const [nextRate, nextPrices, nextDailySummary] = await Promise.all([
           fetchUsdCnyRate(),
-          fetchMarketPrices(trackedSymbols),
+          fetchMarketPrices(trackedAssetSymbols),
           fetchPortfolioDailySummary(),
         ]);
 
@@ -146,7 +147,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
         }
 
         setCnyPerUsdRate(nextRate);
-        setMarketPricesBySymbol(nextPrices);
+        setMarketPricesByAssetSymbol(nextPrices);
         setDailySummary(nextDailySummary);
         setMarketStatus("");
       } catch (error) {
@@ -176,7 +177,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
-      marketPricesBySymbol,
+      marketPricesByAssetSymbol,
       marketStatus,
       positions,
       positionsError,
@@ -190,7 +191,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       deleteTransaction,
       isPositionsLoading,
       isTransactionsLoading,
-      marketPricesBySymbol,
+      marketPricesByAssetSymbol,
       marketStatus,
       positions,
       positionsError,

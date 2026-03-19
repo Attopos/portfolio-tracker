@@ -1,4 +1,4 @@
-import { getAssetCatalogEntry } from "./assetCatalog.js";
+import { getPresetAssetPresentation } from "./assetDatabase.js";
 
 function AssetBadge({
   symbol,
@@ -6,7 +6,7 @@ function AssetBadge({
   fallbackText,
   alt,
 }) {
-  const entry = getAssetCatalogEntry(symbol);
+  const entry = getPresetAssetPresentation(symbol);
   const displayText = String(fallbackText || entry?.symbol || symbol || "")
     .trim()
     .toUpperCase();

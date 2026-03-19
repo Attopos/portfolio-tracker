@@ -9,7 +9,7 @@ const positionsRouter = require("./routes/positions");
 const fxRateRouter = require("./routes/fx-rate");
 const portfolioHistoryRouter = require("./routes/portfolio-history").router;
 const transactionsRouter = require("./routes/transactions");
-const marketPricesRouter = require("./routes/market-prices");
+const marketPricesRoute = require("./routes/market-prices-route");
 const pool = require("./db");
 
 const app = express();
@@ -203,7 +203,7 @@ app.post("/api/auth/logout", (req, res) => {
 app.use("/api/positions", positionsRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/fx-rate", fxRateRouter);
-app.use("/api/market-prices", marketPricesRouter);
+app.use("/api/market-prices", marketPricesRoute);
 app.use("/api/portfolio-history", portfolioHistoryRouter);
 
 app.listen(port, () => {
