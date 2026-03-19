@@ -1,4 +1,5 @@
 import btcIcon from "./icons/btc.svg";
+import cac40Icon from "./icons/cac40.svg";
 import dax40Icon from "./icons/dax40.svg";
 import ethIcon from "./icons/eth.svg";
 import goldIcon from "./icons/gold.svg";
@@ -8,6 +9,8 @@ import sp500Icon from "./icons/S&P500.svg";
 
 const ASSET_ICON_MAP = {
   BTC: btcIcon,
+  CAC: cac40Icon,
+  CAC40: cac40Icon,
   ETH: ethIcon,
   QQQ: nasdaq100Icon,
   NASDAQ: nasdaq100Icon,

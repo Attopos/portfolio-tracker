@@ -66,6 +66,14 @@
     "iconKey": "DAX"
   },
   {
+    "id": "index-cac-40",
+    "symbol": "CAC",
+    "name": "CAC 40",
+    "category": "Index",
+    "aliases": ["CAC", "CAC40", "CAC 40", "INDEX-CAC-40"],
+    "iconKey": "CAC"
+  },
+  {
     "id": "cash-usd",
     "symbol": "CASH",
     "name": "Cash",
