@@ -1,9 +1,18 @@
 const express = require("express");
 const pool = require("../db");
 const { requireAuth } = require("../middleware/require-auth");
-const { recordPortfolioSnapshotForUser } = require("./portfolio-history");
+const { invalidatePortfolioSnapshotsForUser, recordPortfolioSnapshotForUser } = require("./portfolio-history");
 
 const router = express.Router();
+
+async function safeRefreshPortfolioSnapshots(userId) {
+  try {
+    await invalidatePortfolioSnapshotsForUser(userId);
+    await recordPortfolioSnapshotForUser(userId);
+  } catch (error) {
+    console.error("Failed to refresh portfolio snapshots:", error);
+  }
+}
 
 async function safeRecordPortfolioSnapshot(userId) {
   try {
@@ -51,7 +60,7 @@ router.delete("/:assetId", async (req, res) => {
     }
 
     await client.query("COMMIT");
-    await safeRecordPortfolioSnapshot(req.userId);
+    await safeRefreshPortfolioSnapshots(req.userId);
     return res.json({ ok: true });
   } catch (error) {
     try {

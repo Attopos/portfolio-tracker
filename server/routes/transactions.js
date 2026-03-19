@@ -2,18 +2,19 @@ const express = require("express");
 const pool = require("../db");
 const { buildGeneratedAssetId } = require("../lib/assets");
 const { requireAuth } = require("../middleware/require-auth");
-const { recordPortfolioSnapshotForUser } = require("./portfolio-history");
+const { invalidatePortfolioSnapshotsForUser, recordPortfolioSnapshotForUser } = require("./portfolio-history");
 
 const router = express.Router();
 
 const ALLOWED_TRANSACTION_TYPES = new Set(["buy", "sell", "set"]);
 const ALLOWED_CURRENCIES = new Set(["USD", "CNY"]);
 
-async function safeRecordPortfolioSnapshot(userId) {
+async function safeRefreshPortfolioSnapshots(userId) {
   try {
+    await invalidatePortfolioSnapshotsForUser(userId);
     await recordPortfolioSnapshotForUser(userId);
   } catch (error) {
-    console.error("Failed to record portfolio snapshot:", error);
+    console.error("Failed to refresh portfolio snapshots:", error);
   }
 }
 
@@ -224,7 +225,7 @@ router.post("/", async (req, res) => {
     );
 
     await client.query("COMMIT");
-    await safeRecordPortfolioSnapshot(req.userId);
+    await safeRefreshPortfolioSnapshots(req.userId);
 
     return res.status(201).json({
       ok: true,
@@ -333,7 +334,7 @@ router.delete("/:transactionId", async (req, res) => {
     }
 
     await client.query("COMMIT");
-    await safeRecordPortfolioSnapshot(req.userId);
+    await safeRefreshPortfolioSnapshots(req.userId);
     return res.json({ ok: true });
   } catch (error) {
     try {

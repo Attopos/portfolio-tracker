@@ -186,9 +186,9 @@ function DashboardPage() {
   const totalInvestedUsd = rankedAllocation.reduce((sum, item) => sum + item.investedUsd, 0);
   const totalProfitUsd = totalUsd - totalInvestedUsd;
   const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
-  const totalDailyPnlUsd = Number(dailySummary?.dailyPnlUsd) || 0;
+  const totalDailyPnlCny = Number(dailySummary?.dailyPnlCny) || 0;
   const totalDailyPnlPercent = Number(dailySummary?.dailyPnlPct) || 0;
-  const isDailyPositive = totalDailyPnlUsd >= 0;
+  const isDailyPositive = totalDailyPnlCny >= 0;
 
   return (
     <section className="page-panel page-panel-detail">
@@ -216,7 +216,7 @@ function DashboardPage() {
             <>
               <span className={`summary-daily-change-arrow ${isDailyPositive ? "is-up" : "is-down"}`} aria-hidden="true" />
               <span className="summary-daily-change-value">
-                {`${totalDailyPnlUsd >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalDailyPnlUsd), "$")}`}
+                {`${totalDailyPnlCny >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalDailyPnlCny), "¥")}`}
               </span>
               <span className="summary-daily-change-label">
                 daily

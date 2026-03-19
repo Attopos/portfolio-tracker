@@ -101,6 +101,7 @@ async function calculatePortfolioSnapshot(userId) {
   }
 
   let totalUsd = 0;
+  let totalCny = 0;
   for (let i = 0; i < positions.length; i++) {
     const row = positions[i];
     const assetSymbol = detectAssetSymbol(row.id, row.name);
@@ -120,80 +121,18 @@ async function calculatePortfolioSnapshot(userId) {
     }
 
     if (currency === "CNY") {
+      totalCny += position * effectivePrice;
       totalUsd += (position * effectivePrice) / usdCnyRate;
     } else {
+      totalCny += position * effectivePrice * usdCnyRate;
       totalUsd += position * effectivePrice;
     }
   }
 
   return {
+    totalCny,
     totalUsd,
   };
-}
-
-async function calculateNetContributionUsdSince(userId, since, usdCnyRate) {
-  const [previousPositionsResult, transactionsResult] = await Promise.all([
-    pool.query(
-      `
-        SELECT DISTINCT ON (asset_id) asset_id, position_after
-        FROM transactions
-        WHERE user_id = $1
-          AND transacted_at < $2
-        ORDER BY asset_id, transacted_at DESC, id DESC
-      `,
-      [userId, since.toISOString()]
-    ),
-    pool.query(
-      `
-        SELECT asset_id, currency, transaction_type, quantity, unit_price, position_after, transacted_at, id
-        FROM transactions
-        WHERE user_id = $1
-          AND transacted_at >= $2
-        ORDER BY transacted_at ASC, id ASC
-      `,
-      [userId, since.toISOString()]
-    ),
-  ]);
-
-  const previousPositionByAssetId = new Map();
-  for (let i = 0; i < previousPositionsResult.rows.length; i += 1) {
-    const row = previousPositionsResult.rows[i];
-    previousPositionByAssetId.set(row.asset_id, Number(row.position_after) || 0);
-  }
-
-  let netContributionUsd = 0;
-  for (let i = 0; i < transactionsResult.rows.length; i += 1) {
-    const row = transactionsResult.rows[i];
-    const assetId = String(row.asset_id || "").trim();
-    const previousPosition = previousPositionByAssetId.get(assetId) || 0;
-    const quantity = Number(row.quantity);
-    const unitPrice = Number(row.unit_price);
-    const nextPosition = Number(row.position_after);
-    const currency = String(row.currency || "").trim().toUpperCase() === "CNY" ? "CNY" : "USD";
-    const type = String(row.transaction_type || "").trim().toLowerCase();
-
-    let deltaQuantity = 0;
-    if (type === "buy") {
-      deltaQuantity = Number.isFinite(quantity) ? quantity : 0;
-    } else if (type === "sell") {
-      deltaQuantity = Number.isFinite(quantity) ? -quantity : 0;
-    } else if (type === "set" && Number.isFinite(nextPosition)) {
-      deltaQuantity = nextPosition - previousPosition;
-    }
-
-    if (assetId) {
-      previousPositionByAssetId.set(assetId, Number.isFinite(nextPosition) ? nextPosition : previousPosition);
-    }
-
-    if (!Number.isFinite(unitPrice) || !Number.isFinite(deltaQuantity) || deltaQuantity === 0) {
-      continue;
-    }
-
-    const contributionBase = deltaQuantity * unitPrice;
-    netContributionUsd += currency === "CNY" ? contributionBase / usdCnyRate : contributionBase;
-  }
-
-  return netContributionUsd;
 }
 
 async function calculatePortfolioDailySummary(userId) {
@@ -203,11 +142,10 @@ async function calculatePortfolioDailySummary(userId) {
   if (!currentSnapshot) {
     return {
       baselineCapturedAt: null,
-      baselineTotalUsd: 0,
-      currentTotalUsd: 0,
+      baselineTotalCny: 0,
+      currentTotalCny: 0,
       dailyPnlPct: 0,
-      dailyPnlUsd: 0,
-      netContributionUsd: 0,
+      dailyPnlCny: 0,
     };
   }
 
@@ -227,28 +165,26 @@ async function calculatePortfolioDailySummary(userId) {
   if (baselineResult.rowCount === 0) {
     return {
       baselineCapturedAt: null,
-      baselineTotalUsd: currentSnapshot.totalUsd,
-      currentTotalUsd: currentSnapshot.totalUsd,
+      baselineTotalCny: currentSnapshot.totalCny,
+      currentTotalCny: currentSnapshot.totalCny,
       dailyPnlPct: 0,
-      dailyPnlUsd: 0,
-      netContributionUsd: 0,
+      dailyPnlCny: 0,
     };
   }
 
   const baselineRow = baselineResult.rows[0];
   const baselineCapturedAt = new Date(baselineRow.captured_at);
   const baselineTotalUsd = Number(baselineRow.total_usd) || 0;
-  const netContributionUsd = await calculateNetContributionUsdSince(userId, baselineCapturedAt, usdCnyRate);
-  const dailyPnlUsd = currentSnapshot.totalUsd - baselineTotalUsd - netContributionUsd;
-  const dailyPnlPct = baselineTotalUsd > 0 ? (dailyPnlUsd / baselineTotalUsd) * 100 : 0;
+  const baselineTotalCny = baselineTotalUsd * usdCnyRate;
+  const dailyPnlCny = currentSnapshot.totalCny - baselineTotalCny;
+  const dailyPnlPct = baselineTotalCny > 0 ? (dailyPnlCny / baselineTotalCny) * 100 : 0;
 
   return {
     baselineCapturedAt: baselineCapturedAt.toISOString(),
-    baselineTotalUsd,
-    currentTotalUsd: currentSnapshot.totalUsd,
+    baselineTotalCny,
+    currentTotalCny: currentSnapshot.totalCny,
     dailyPnlPct,
-    dailyPnlUsd,
-    netContributionUsd,
+    dailyPnlCny,
   };
 }
 
@@ -288,6 +224,10 @@ async function recordPortfolioSnapshotForUser(userId) {
     [userId, snapshot.totalUsd, bucketStart.toISOString()]
   );
   return true;
+}
+
+async function invalidatePortfolioSnapshotsForUser(userId) {
+  await pool.query("DELETE FROM portfolio_value_snapshots WHERE user_id = $1", [userId]);
 }
 
 router.get("/", requireAuth, async (req, res) => {
@@ -344,6 +284,7 @@ router.get("/summary", requireAuth, async (req, res) => {
 
 module.exports = {
   buildFxRateResponse,
+  invalidatePortfolioSnapshotsForUser,
   router,
   recordPortfolioSnapshotForUser,
 };
