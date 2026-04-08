@@ -14,7 +14,7 @@
   "dependencies": {
     "@fontsource/space-grotesk": "^5.2.10",
     "@heroicons/react": "^2.2.0",
-    "react": "^19.1.0",
+    "react": "^19.2.5",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.3"
   },
