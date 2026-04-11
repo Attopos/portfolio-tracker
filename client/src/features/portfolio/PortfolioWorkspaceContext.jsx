@@ -9,6 +9,7 @@ import {
   fetchPositions,
   fetchTransactions,
   fetchUsdCnyRate,
+  updateHolding as updateHoldingRequest,
 } from "./portfolioApi.js";
 
 const DEFAULT_CNY_PER_USD = 6.91;
@@ -104,6 +105,11 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     await refreshAll();
   }
 
+  async function updateHolding(assetId, payload) {
+    await updateHoldingRequest(assetId, payload);
+    await refreshAll();
+  }
+
   async function deleteTransaction(transactionId) {
     await deleteTransactionRequest(transactionId);
     await refreshAll();
@@ -195,6 +201,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       addTransaction,
       deleteHolding,
       deleteTransaction,
+      updateHolding,
       cnyPerUsdRate,
       dailySummary,
       isPositionsLoading,
@@ -211,6 +218,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       dailySummary,
       deleteHolding,
       deleteTransaction,
+      updateHolding,
       isPositionsLoading,
       isTransactionsLoading,
       marketPricesByAssetSymbol,

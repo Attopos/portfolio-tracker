@@ -940,22 +940,38 @@ textarea {
 .table-action-cell {
   width: 1%;
   text-align: left;
-  padding-left: 0.2rem;
-  padding-right: 0.2rem;
+  padding-left: 0.1rem;
+  padding-right: 0.1rem;
+  white-space: nowrap;
 }
 
-.row-delete-button {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(255, 107, 87, 0.28);
+.row-action-button {
+  width: 30px;
+  height: 30px;
+  margin-right: 0.28rem;
+  border: 1px solid rgba(193, 255, 77, 0.24);
   border-radius: 10px;
-  background: rgba(92, 34, 29, 0.18);
-  color: var(--amber-500);
+  background: rgba(193, 255, 77, 0.08);
+  color: var(--accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.row-action-button:hover:not(:disabled),
+.row-action-button:focus-visible {
+  background: rgba(193, 255, 77, 0.14);
+  border-color: rgba(193, 255, 77, 0.4);
+  color: var(--accent-bright);
+}
+
+.row-delete-button {
+  border: 1px solid rgba(255, 107, 87, 0.28);
+  background: rgba(92, 34, 29, 0.18);
+  color: var(--amber-500);
+  margin-right: 0;
 }
 
 .row-delete-button:hover:not(:disabled),
@@ -965,14 +981,32 @@ textarea {
   color: var(--amber-300);
 }
 
-.row-delete-button:disabled {
+.row-action-button:disabled {
   opacity: 0.55;
   cursor: wait;
 }
 
-.row-delete-button svg {
+.row-action-button svg {
   width: 16px;
   height: 16px;
+}
+
+.table-inline-input {
+  width: 100%;
+  min-width: 72px;
+  padding: 0.36rem 0.48rem;
+  border: 1px solid rgba(146, 161, 188, 0.22);
+  border-radius: 10px;
+  background: rgba(15, 20, 29, 0.92);
+  color: var(--text-strong);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-inline-input:focus {
+  outline: none;
+  border-color: rgba(193, 255, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(193, 255, 77, 0.12);
 }
 
 .asset-detail-allocation {
@@ -1230,39 +1264,40 @@ td.table-text {
 
 .holdings-table th,
 .holdings-table td {
-  padding: 0.85rem 0.7rem;
+  padding: 0.78rem 0.45rem;
+  font-size: 0.9rem;
 }
 
 .holdings-col-name {
-  width: 16%;
+  width: 13%;
 }
 
 .holdings-col-currency {
-  width: 9%;
+  width: 7%;
 }
 
 .holdings-col-position {
-  width: 10%;
+  width: 10.5%;
 }
 
 .holdings-col-price {
-  width: 12%;
+  width: 10.5%;
 }
 
 .holdings-col-usd {
-  width: 10%;
+  width: 12%;
 }
 
 .holdings-col-cny {
-  width: 10%;
+  width: 12%;
 }
 
 .holdings-col-pnl {
-  width: 8%;
+  width: 10%;
 }
 
 .holdings-col-actions {
-  width: 5%;
+  width: 5.5%;
 }
 
 .transactions-table {
@@ -1395,8 +1430,16 @@ tbody tr:hover td {
   display: inline-flex;
   align-items: center;
   gap: 0.7rem;
+  min-width: 0;
   color: var(--text-strong);
   font-weight: 700;
+}
+
+.table-link-copy {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-link:hover,
@@ -1407,6 +1450,8 @@ tbody tr:hover td {
 .table-meta {
   display: block;
   margin-top: 0.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 500;

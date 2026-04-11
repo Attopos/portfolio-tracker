@@ -1,5 +1,6 @@
 const express = require("express");
 const pool = require("../db");
+const { ensureManualMarketPriceColumn } = require("../lib/positions-schema");
 const { requireAuth } = require("../middleware/require-auth");
 const { detectAssetSymbol, fetchMarketPrices } = require("../services/market-price-service");
 
@@ -98,9 +99,15 @@ async function buildFxRateResponse() {
 }
 
 async function calculatePortfolioSnapshot(userId) {
+  await ensureManualMarketPriceColumn();
   const usdCnyRate = await fetchUsdCnyRate();
   const result = await pool.query(
-    "SELECT id, name, currency, position, price FROM positions WHERE user_id = $1 ORDER BY id",
+    `
+      SELECT id, name, currency, position, price, manual_market_price
+      FROM positions
+      WHERE user_id = $1
+      ORDER BY id
+    `,
     [userId]
   );
 
@@ -135,8 +142,11 @@ async function calculatePortfolioSnapshot(userId) {
     const currency = String(row.currency || "").trim().toUpperCase() === "CNY" ? "CNY" : "USD";
     const position = Number(row.position);
     const fallbackPrice = Number(row.price);
+    const manualMarketPrice = row.manual_market_price === null ? null : Number(row.manual_market_price);
     const effectivePrice =
-      marketPrice && typeof marketPrice === "object"
+      Number.isFinite(manualMarketPrice) && manualMarketPrice >= 0
+        ? manualMarketPrice
+        : marketPrice && typeof marketPrice === "object"
         ? currency === "CNY"
           ? Number(marketPrice.cny)
           : Number(marketPrice.usd)

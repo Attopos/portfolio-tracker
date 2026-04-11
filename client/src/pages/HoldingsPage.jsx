@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { Link, useSearchParams } from "react-router-dom";
 import AssetBadge from "../features/assets/AssetBadge.jsx";
 import {
@@ -51,6 +51,11 @@ function HoldingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deletingAssetId, setDeletingAssetId] = useState("");
+  const [editingAssetId, setEditingAssetId] = useState("");
+  const [editingPosition, setEditingPosition] = useState("");
+  const [editingMarketPrice, setEditingMarketPrice] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [savingAssetId, setSavingAssetId] = useState("");
   const {
     addHolding,
     cnyPerUsdRate,
@@ -61,6 +66,7 @@ function HoldingsPage() {
     positions,
     positionsError,
     transactions,
+    updateHolding,
   } = usePortfolioWorkspace();
 
   const isDialogOpen = searchParams.get("action") === "create";
@@ -259,6 +265,57 @@ function HoldingsPage() {
     }
   }
 
+  function startEditingHolding(item) {
+    setEditingAssetId(item.id);
+    setEditingPosition(String(item.position));
+    setEditingMarketPrice(String(item.effectivePrice));
+    setSaveError("");
+    setDeleteError("");
+  }
+
+  function stopEditingHolding() {
+    setEditingAssetId("");
+    setEditingPosition("");
+    setEditingMarketPrice("");
+    setSaveError("");
+  }
+
+  async function saveHolding(item) {
+    if (savingAssetId === item.id) {
+      return;
+    }
+
+    const nextPositionValue = editingPosition.trim();
+    const nextMarketPriceValue = editingMarketPrice.trim();
+    const parsedPosition = nextPositionValue === "" ? null : parseNumberInput(nextPositionValue);
+    const parsedMarketPrice = nextMarketPriceValue === "" ? null : parseNumberInput(nextMarketPriceValue);
+
+    if (parsedPosition !== null && (!Number.isFinite(parsedPosition) || parsedPosition < 0)) {
+      setSaveError("Position size must be empty or a non-negative number.");
+      return;
+    }
+
+    if (parsedMarketPrice !== null && (!Number.isFinite(parsedMarketPrice) || parsedMarketPrice < 0)) {
+      setSaveError("Market price must be empty or a non-negative number.");
+      return;
+    }
+
+    setSavingAssetId(item.id);
+    setSaveError("");
+
+    try {
+      await updateHolding(item.id, {
+        position: parsedPosition,
+        manualMarketPrice: parsedMarketPrice,
+      });
+      stopEditingHolding();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to update holding.");
+    } finally {
+      setSavingAssetId("");
+    }
+  }
+
   return (
     <section className="page-panel page-panel-detail">
       <section className="page-action-bar" aria-label="Portfolio actions">
@@ -438,6 +495,7 @@ function HoldingsPage() {
 
         {positionsError ? <p className="panel-error">{positionsError}</p> : null}
         {deleteError ? <p className="panel-error">{deleteError}</p> : null}
+        {saveError ? <p className="panel-error">{saveError}</p> : null}
 
         <div className="table-wrap">
           <table className="holdings-table">
@@ -488,13 +546,15 @@ function HoldingsPage() {
                       transactionStats.hasNonSetTransaction === false;
                     const pnlValueCny = isNewHoldingOnly ? 0 : item.pnlCny;
                     const pnlPercent = isNewHoldingOnly ? 0 : item.pnlPercent;
+                    const isEditing = editingAssetId === item.id;
+                    const isSaving = savingAssetId === item.id;
 
                     return (
                   <tr key={item.id}>
                     <td className="table-text">
                       <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
                         <AssetBadge className="asset-symbol-badge" symbol={item.symbol} />
-                        <span>
+                        <span className="table-link-copy">
                           {item.name}
                           <span className="table-meta">{item.assetSymbol || item.id}</span>
                         </span>
@@ -505,8 +565,59 @@ function HoldingsPage() {
                         {item.currency}
                       </span>
                     </td>
-                    <td>{POSITION_FORMATTER.format(item.position)}</td>
-                    <td className="price">{VALUE_FORMATTER.format(item.effectivePrice)}</td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          className="table-inline-input"
+                          type="text"
+                          inputMode="decimal"
+                          aria-label={`Edit position size for ${item.name}`}
+                          autoFocus
+                          disabled={isSaving}
+                          value={editingPosition}
+                          onChange={(event) => setEditingPosition(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              saveHolding(item);
+                            }
+
+                            if (event.key === "Escape") {
+                              event.preventDefault();
+                              stopEditingHolding();
+                            }
+                          }}
+                        />
+                      ) : (
+                        POSITION_FORMATTER.format(item.position)
+                      )}
+                    </td>
+                    <td className="price">
+                      {isEditing ? (
+                        <input
+                          className="table-inline-input"
+                          type="text"
+                          inputMode="decimal"
+                          aria-label={`Edit market price for ${item.name}`}
+                          disabled={isSaving}
+                          value={editingMarketPrice}
+                          onChange={(event) => setEditingMarketPrice(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              saveHolding(item);
+                            }
+
+                            if (event.key === "Escape") {
+                              event.preventDefault();
+                              stopEditingHolding();
+                            }
+                          }}
+                        />
+                      ) : (
+                        VALUE_FORMATTER.format(item.effectivePrice)
+                      )}
+                    </td>
                     <td className="usd">{formatCurrency(item.usdValue, "$")}</td>
                     <td className="cny">{formatCurrency(item.cnyValue, "¥")}</td>
                     <td className={pnlValueCny >= 0 ? "is-positive" : "is-negative"}>
@@ -517,10 +628,26 @@ function HoldingsPage() {
                     </td>
                     <td className="table-action-cell">
                       <button
-                        className="row-delete-button"
+                        className="row-action-button"
+                        type="button"
+                        aria-label={isEditing ? `Save ${item.name}` : `Edit ${item.name}`}
+                        disabled={Boolean(editingAssetId && editingAssetId !== item.id) || isSaving}
+                        onClick={() => {
+                          if (isEditing) {
+                            saveHolding(item);
+                            return;
+                          }
+
+                          startEditingHolding(item);
+                        }}
+                      >
+                        {isEditing ? <CheckIcon aria-hidden="true" /> : <PencilSquareIcon aria-hidden="true" />}
+                      </button>
+                      <button
+                        className="row-action-button row-delete-button"
                         type="button"
                         aria-label={`Delete ${item.name}`}
-                        disabled={deletingAssetId === item.id}
+                        disabled={deletingAssetId === item.id || isSaving}
                         onClick={() => handleDeleteHolding(item)}
                       >
                         <TrashIcon aria-hidden="true" />
@@ -563,22 +690,40 @@ function HoldingsPage() {
                 transactionStats.hasNonSetTransaction === false;
               const pnlValueCny = isNewHoldingOnly ? 0 : item.pnlCny;
               const pnlPercent = isNewHoldingOnly ? 0 : item.pnlPercent;
+              const isEditing = editingAssetId === item.id;
+              const isSaving = savingAssetId === item.id;
 
               return (
                 <article className="mobile-record-card" key={item.id}>
                   <div className="mobile-record-head">
                     <Link className="table-link" to={`/holdings/${encodeURIComponent(item.id)}`}>
                       <AssetBadge className="asset-symbol-badge" symbol={item.symbol} />
-                      <span>
+                      <span className="table-link-copy">
                         {item.name}
                         <span className="table-meta">{item.assetSymbol || item.id}</span>
                       </span>
                     </Link>
                     <button
-                      className="row-delete-button"
+                      className="row-action-button"
+                      type="button"
+                      aria-label={isEditing ? `Save ${item.name}` : `Edit ${item.name}`}
+                      disabled={Boolean(editingAssetId && editingAssetId !== item.id) || isSaving}
+                      onClick={() => {
+                        if (isEditing) {
+                          saveHolding(item);
+                          return;
+                        }
+
+                        startEditingHolding(item);
+                      }}
+                    >
+                      {isEditing ? <CheckIcon aria-hidden="true" /> : <PencilSquareIcon aria-hidden="true" />}
+                    </button>
+                    <button
+                      className="row-action-button row-delete-button"
                       type="button"
                       aria-label={`Delete ${item.name}`}
-                      disabled={deletingAssetId === item.id}
+                      disabled={deletingAssetId === item.id || isSaving}
                       onClick={() => handleDeleteHolding(item)}
                     >
                       <TrashIcon aria-hidden="true" />
@@ -595,11 +740,62 @@ function HoldingsPage() {
                     </div>
                     <div className="mobile-record-metric">
                       <span>Position</span>
-                      <strong>{POSITION_FORMATTER.format(item.position)}</strong>
+                      <strong>
+                        {isEditing ? (
+                          <input
+                            className="table-inline-input"
+                            type="text"
+                            inputMode="decimal"
+                            aria-label={`Edit position size for ${item.name}`}
+                            autoFocus
+                            disabled={isSaving}
+                            value={editingPosition}
+                            onChange={(event) => setEditingPosition(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                saveHolding(item);
+                              }
+
+                              if (event.key === "Escape") {
+                                event.preventDefault();
+                                stopEditingHolding();
+                              }
+                            }}
+                          />
+                        ) : (
+                          POSITION_FORMATTER.format(item.position)
+                        )}
+                      </strong>
                     </div>
                     <div className="mobile-record-metric">
                       <span>Market Price</span>
-                      <strong>{VALUE_FORMATTER.format(item.effectivePrice)}</strong>
+                      <strong>
+                        {isEditing ? (
+                          <input
+                            className="table-inline-input"
+                            type="text"
+                            inputMode="decimal"
+                            aria-label={`Edit market price for ${item.name}`}
+                            disabled={isSaving}
+                            value={editingMarketPrice}
+                            onChange={(event) => setEditingMarketPrice(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                saveHolding(item);
+                              }
+
+                              if (event.key === "Escape") {
+                                event.preventDefault();
+                                stopEditingHolding();
+                              }
+                            }}
+                          />
+                        ) : (
+                          VALUE_FORMATTER.format(item.effectivePrice)
+                        )}
+                      </strong>
                     </div>
                     <div className="mobile-record-metric">
                       <span>Value USD</span>

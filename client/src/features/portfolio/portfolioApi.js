@@ -25,6 +25,7 @@ function normalizePosition(row) {
   const currency = row.currency === "CNY" ? "CNY" : "USD";
   const position = Number(row.position);
   const price = Number(row.price);
+  const manualMarketPrice = row.manual_market_price === null ? null : Number(row.manual_market_price);
 
   return {
     id,
@@ -32,6 +33,12 @@ function normalizePosition(row) {
     currency,
     position: Number.isFinite(position) ? position : 0,
     price: Number.isFinite(price) ? price : 0,
+    manualMarketPrice:
+      manualMarketPrice === null
+        ? null
+        : Number.isFinite(manualMarketPrice)
+        ? manualMarketPrice
+        : null,
     assetSymbol: detectAssetSymbol(id, name),
   };
 }
@@ -101,6 +108,23 @@ export async function deleteHolding(assetId) {
   if (!response.ok || !body?.ok) {
     throw new Error(normalizeResponseError(body, "Failed to delete holding."));
   }
+}
+
+export async function updateHolding(assetId, payload) {
+  const response = await apiFetch(API_ROUTES.positions.update(assetId), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = await readJsonSafely(response);
+
+  if (!response.ok || !body?.ok) {
+    throw new Error(normalizeResponseError(body, "Failed to update holding."));
+  }
+
+  return normalizePosition(body.position);
 }
 
 export async function deleteTransaction(transactionId) {

@@ -15,6 +15,7 @@ export const API_ROUTES = {
   },
   positions: {
     list: "/api/positions",
+    update: (assetId) => `/api/positions/${encodeURIComponent(assetId)}`,
     delete: (assetId) => `/api/positions/${encodeURIComponent(assetId)}`,
   },
   transactions: {

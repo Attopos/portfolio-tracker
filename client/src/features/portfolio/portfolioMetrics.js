@@ -1,7 +1,12 @@
 export function getPositionEffectivePrice(position, marketPricesByAssetSymbol) {
   const symbol = position?.assetSymbol || "";
   const entryPrice = Number(position?.price);
+  const manualMarketPrice = position?.manualMarketPrice === null ? null : Number(position?.manualMarketPrice);
   const market = symbol ? marketPricesByAssetSymbol[symbol] : null;
+
+  if (Number.isFinite(manualMarketPrice) && manualMarketPrice >= 0) {
+    return manualMarketPrice;
+  }
 
   if (market && typeof market === "object") {
     const marketPrice = position.currency === "CNY" ? Number(market.cny) : Number(market.usd);
