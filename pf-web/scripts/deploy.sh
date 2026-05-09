@@ -3,8 +3,8 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/var/www/portfolio}"
-SERVER_DIR="${SERVER_DIR:-${APP_DIR}/server}"
-CLIENT_DIR="${CLIENT_DIR:-${APP_DIR}/client}"
+SERVER_DIR="${SERVER_DIR:-${APP_DIR}/pf-web/server}"
+CLIENT_DIR="${CLIENT_DIR:-${APP_DIR}/pf-web/client}"
 FRONTEND_PUBLISH_DIR="${FRONTEND_PUBLISH_DIR:-}"
 BRANCH="${BRANCH:-main}"
 SERVER_RESTART_CMD="${SERVER_RESTART_CMD:-}"

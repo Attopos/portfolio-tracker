@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'pf-web/**'
 
 jobs:
   deploy:
@@ -33,4 +35,4 @@ jobs:
         run: |
           ssh "${VPS_USER}@${VPS_HOST}" \
             "APP_DIR='${VPS_APP_DIR}' SERVER_DIR='${VPS_SERVER_DIR}' SERVER_RESTART_CMD='${VPS_SERVER_RESTART_CMD}' BRANCH='main' bash -s" \
-            < scripts/deploy.sh
+            < pf-web/scripts/deploy.sh
