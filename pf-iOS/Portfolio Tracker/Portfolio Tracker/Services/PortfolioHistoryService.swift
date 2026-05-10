@@ -3,7 +3,7 @@ import Foundation
 struct PortfolioHistoryService {
     private let client: APIClient
 
-    init(client: APIClient = .shared) {
+    nonisolated init(client: APIClient = .shared) {
         self.client = client
     }
 

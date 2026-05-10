@@ -48,14 +48,13 @@ enum APIError: LocalizedError {
 /// properties are either immutable or thread-safe (URLSession, JSONDecoder/Encoder).
 final class APIClient: @unchecked Sendable {
 
-    static let shared = APIClient()
+    nonisolated(unsafe) static let shared = APIClient()
 
     private let session: URLSession
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
     private init() {
-        // .default configuration handles cookies via HTTPCookieStorage.shared automatically.
         session = URLSession(configuration: .default)
 
         decoder = JSONDecoder()

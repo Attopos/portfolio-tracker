@@ -1,5 +1,5 @@
 import SwiftUI
-// import GoogleSignIn  // Uncomment after: File → Add Package → https://github.com/google/GoogleSignIn-iOS
+import GoogleSignIn
 
 struct SignInView: View {
     @Environment(AuthViewModel.self) private var auth
@@ -60,20 +60,11 @@ struct SignInView: View {
             let root = windowScene.windows.first?.rootViewController
         else { return }
 
-        // ── After installing the GoogleSignIn package ──────────────────────────
-        // 1. Uncomment `import GoogleSignIn` at the top of this file.
-        // 2. Add GIDClientID (your OAuth client ID) to Info.plist.
-        // 3. Add the reversed client ID as a URL Scheme in Info.plist.
-        // 4. Replace this comment block with:
-        //
-        // GIDSignIn.sharedInstance.signIn(withPresenting: root) { result, error in
-        //     guard error == nil,
-        //           let user = result?.user,
-        //           let idToken = user.idToken?.tokenString else { return }
-        //     Task { await auth.signIn(googleCredential: idToken) }
-        // }
-        // ──────────────────────────────────────────────────────────────────────
-
-        _ = root  // suppress unused-variable warning until SDK is wired up
+        GIDSignIn.sharedInstance.signIn(withPresenting: root) { result, error in
+            guard error == nil,
+                  let user = result?.user,
+                  let idToken = user.idToken?.tokenString else { return }
+            Task { await auth.signIn(googleCredential: idToken) }
+        }
     }
 }

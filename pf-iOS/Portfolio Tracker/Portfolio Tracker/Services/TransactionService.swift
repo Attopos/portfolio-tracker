@@ -20,7 +20,7 @@ struct CreateTransactionPayload: Encodable {
 struct TransactionService {
     private let client: APIClient
 
-    init(client: APIClient = .shared) {
+    nonisolated init(client: APIClient = .shared) {
         self.client = client
     }
 
