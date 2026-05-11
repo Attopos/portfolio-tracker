@@ -14,7 +14,7 @@ const pool = require("./db");
 
 const app = express();
 const isProduction = String(process.env.NODE_ENV || "").trim() === "production";
-const { allowedOrigins, backendUrl, defaultLocalSessionSecret, frontendUrl, googleClientId, port, sessionSecret, sessionTtlDays } = config;
+const { allowedOrigins, backendUrl, defaultLocalSessionSecret, frontendUrl, googleClientId, googleAudiences, port, sessionSecret, sessionTtlDays } = config;
 const googleClient = new OAuth2Client(googleClientId);
 const PgSession = connectPgSimple(session);
 const sessionCookieMaxAgeMs = Math.max(sessionTtlDays, 1) * 24 * 60 * 60 * 1000;
@@ -139,7 +139,7 @@ app.post("/api/auth/google", async (req, res) => {
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: googleClientId,
+      audience: googleAudiences,
     });
     const payload = ticket.getPayload();
 

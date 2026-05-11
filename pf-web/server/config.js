@@ -65,10 +65,16 @@ const port = readNumberEnv("PORT", DEFAULT_SERVER_PORT);
 const frontendUrl = buildFrontendUrl();
 const backendUrl = buildBackendUrl(port);
 
+const googleClientId = readStringEnv("GOOGLE_CLIENT_ID");
+const googleIosClientId = readStringEnv("GOOGLE_IOS_CLIENT_ID");
+const googleAudiences = [googleClientId, googleIosClientId].filter(Boolean);
+
 module.exports = {
   backendUrl,
   frontendUrl,
-  googleClientId: readStringEnv("GOOGLE_CLIENT_ID"),
+  googleClientId,
+  googleIosClientId,
+  googleAudiences,
   port,
   sessionSecret: readStringEnv("SESSION_SECRET"),
   sessionTtlDays: readNumberEnv("SESSION_TTL_DAYS", 30),

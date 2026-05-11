@@ -3,20 +3,7 @@ import Foundation
 // MARK: - Base URL configuration
 
 private enum APIConfig {
-    static var baseURL: URL {
-        // Production: set "APIBaseURL" as a String in Info.plist.
-        if let raw = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String,
-           let url = URL(string: raw) {
-            return url
-        }
-        #if DEBUG
-        // Simulator: localhost resolves to the Mac's loopback interface.
-        // Physical device: replace with your Mac's LAN IP, e.g. "http://192.168.1.x:3000".
-        return URL(string: "http://localhost:3000")!
-        #else
-        fatalError("Set APIBaseURL in Info.plist before shipping a release build.")
-        #endif
-    }
+    static let baseURL = URL(string: "https://portfolio-tracker.app")!
 }
 
 // MARK: - Error type
