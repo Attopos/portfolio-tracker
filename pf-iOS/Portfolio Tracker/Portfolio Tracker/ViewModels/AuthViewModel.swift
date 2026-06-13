@@ -1,4 +1,5 @@
 import Foundation
+import GoogleSignIn
 import Observation
 
 @Observable
@@ -38,8 +39,18 @@ final class AuthViewModel {
         }
     }
 
+    func reportSignInError(_ error: Error) {
+        authError = error.localizedDescription
+    }
+
+    func reportSignInError(_ message: String) {
+        authError = message
+    }
+
     func signOut() async {
         try? await service.signOut()
+        GIDSignIn.sharedInstance.signOut()
         user = nil
+        authError = nil
     }
 }

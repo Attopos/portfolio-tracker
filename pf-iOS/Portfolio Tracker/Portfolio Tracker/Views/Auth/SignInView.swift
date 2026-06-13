@@ -56,15 +56,43 @@ struct SignInView: View {
 
     private func handleSignIn() {
         guard
-            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-            let root = windowScene.windows.first?.rootViewController
-        else { return }
+            let clientID = Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String,
+            !clientID.isEmpty,
+            let serverClientID = Bundle.main.object(forInfoDictionaryKey: "GIDServerClientID") as? String,
+            !serverClientID.isEmpty
+        else {
+            auth.reportSignInError("Google sign-in is not configured correctly.")
+            return
+        }
 
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let root = windowScene.keyWindow?.rootViewController
+        else {
+            auth.reportSignInError("Unable to open Google sign-in.")
+            return
+        }
+
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(
+            clientID: clientID,
+            serverClientID: serverClientID
+        )
         GIDSignIn.sharedInstance.signIn(withPresenting: root) { result, error in
-            guard error == nil,
-                  let user = result?.user,
-                  let idToken = user.idToken?.tokenString else { return }
-            Task { await auth.signIn(googleCredential: idToken) }
+            if let error {
+                Task { @MainActor in auth.reportSignInError(error) }
+                return
+            }
+
+            guard let idToken = result?.user.idToken?.tokenString else {
+                Task { @MainActor in
+                    auth.reportSignInError("Google did not return an identity token.")
+                }
+                return
+            }
+
+            Task {
+                await auth.signIn(googleCredential: idToken)
+            }
         }
     }
 }

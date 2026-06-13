@@ -19,6 +19,10 @@ This starts:
 - Create `server/.env` from [server/.env.example](/Users/hermes/Desktop/portfolio-tracker/server/.env.example)
 - Create `client/.env.local` from [client/.env.example](/Users/hermes/Desktop/portfolio-tracker/client/.env.example)
 - Set `VITE_GOOGLE_CLIENT_ID` explicitly for the frontend
+- Set `GOOGLE_CLIENT_ID` to the Web OAuth client ID used by the backend.
+- Set the iOS app's `GIDServerClientID` to that same Web OAuth client ID. Keep
+  `GIDClientID` set to the separate iOS OAuth client ID registered for the app's
+  bundle identifier.
 
 ## How to tell what is broken
 

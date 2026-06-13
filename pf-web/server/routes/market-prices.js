@@ -1,6 +1,9 @@
 const express = require("express");
-const { fetchMarketPrices, normalizeMarketAssetSymbol } = require("../services/market-price-service");
 const { requireAuth } = require("../middleware/require-auth");
+const {
+  fetchMarketPrices,
+  normalizeMarketAssetSymbol,
+} = require("../services/market-price-service");
 
 const router = express.Router();
 

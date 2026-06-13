@@ -7,15 +7,15 @@ This document reflects the active API surface used by the current client.
 ### Authentication
 
 - `POST /api/auth/google`
-  - File: `server/server.js`
+  - File: `server/routes/auth.js`
   - Purpose: Accepts a Google ID token, verifies it, creates or loads the local user, and stores the logged-in user id in the session.
 
 - `POST /api/auth/logout`
-  - File: `server/server.js`
+  - File: `server/routes/auth.js`
   - Purpose: Destroys the current session and clears the session cookie.
 
 - `GET /api/me`
-  - File: `server/server.js`
+  - File: `server/routes/auth.js`
   - Purpose: Reads the current session and returns the signed-in local user.
 
 ### Portfolio data

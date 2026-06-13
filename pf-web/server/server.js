@@ -2,20 +2,19 @@ const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const connectPgSimple = require("connect-pg-simple");
-const { OAuth2Client } = require("google-auth-library");
 require("dotenv").config();
 const config = require("./config");
+const createAuthRouter = require("./routes/auth");
 const positionsRouter = require("./routes/positions");
 const fxRateRouter = require("./routes/fx-rate");
 const portfolioHistoryRouter = require("./routes/portfolio-history").router;
 const transactionsRouter = require("./routes/transactions");
-const marketPricesRoute = require("./routes/market-prices-route");
+const marketPricesRouter = require("./routes/market-prices");
 const pool = require("./db");
 
 const app = express();
 const isProduction = String(process.env.NODE_ENV || "").trim() === "production";
-const { allowedOrigins, backendUrl, defaultLocalSessionSecret, frontendUrl, googleClientId, googleAudiences, port, sessionSecret, sessionTtlDays } = config;
-const googleClient = new OAuth2Client(googleClientId);
+const { allowedOrigins, backendUrl, defaultLocalSessionSecret, frontendUrl, googleClientId, port, sessionSecret, sessionTtlDays } = config;
 const PgSession = connectPgSimple(session);
 const sessionCookieMaxAgeMs = Math.max(sessionTtlDays, 1) * 24 * 60 * 60 * 1000;
 const allowedOriginsSet = new Set(allowedOrigins);
@@ -93,117 +92,11 @@ app.get("/api/health", async (req, res) => {
   return res.json(payload);
 });
 
-async function findLocalUserById(userId) {
-  const result = await pool.query(
-    "SELECT id, google_sub, email, name, avatar_url, created_at, updated_at FROM users WHERE id = $1",
-    [userId]
-  );
-  return result.rowCount > 0 ? result.rows[0] : null;
-}
-
-async function findOrCreateLocalUser(googleProfile) {
-  const selectSql = "SELECT * FROM users WHERE google_sub = $1";
-  const selectParams = [googleProfile.sub];
-  const existingResult = await pool.query(selectSql, selectParams);
-
-  if (existingResult.rowCount > 0) {
-    return existingResult.rows[0];
-  }
-
-  const insertSql = `
-    INSERT INTO users (google_sub, email, name, avatar_url)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;
-  `;
-  const insertParams = [
-    googleProfile.sub,
-    googleProfile.email,
-    googleProfile.name,
-    googleProfile.picture,
-  ];
-  const insertResult = await pool.query(insertSql, insertParams);
-  return insertResult.rows[0];
-}
-
-app.post("/api/auth/google", async (req, res) => {
-  const credential = String(req.body && req.body.credential ? req.body.credential : "").trim();
-  if (!credential) {
-    return res.status(400).json({ ok: false, error: "Missing credential." });
-  }
-
-  if (!googleClientId) {
-    console.error("Google auth misconfigured: GOOGLE_CLIENT_ID is missing.");
-    return res.status(500).json({ ok: false, error: "Google auth is not configured." });
-  }
-
-  try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: googleAudiences,
-    });
-    const payload = ticket.getPayload();
-
-    if (!payload || !payload.sub) {
-      return res.status(401).json({ ok: false, error: "Invalid Google token." });
-    }
-
-    const googleUser = {
-      sub: payload.sub,
-      email: payload.email || "",
-      name: payload.name || "",
-      picture: payload.picture || "",
-    };
-    const localUser = await findOrCreateLocalUser(googleUser);
-    req.session.userId = Number(localUser.id);
-
-    return res.json({ ok: true, user: localUser });
-  } catch (error) {
-    if (error && (error.message || "").toLowerCase().includes("token")) {
-      console.error("Google token verification failed:", error.message);
-      return res.status(401).json({ ok: false, error: "Invalid Google token." });
-    }
-
-    console.error("Google auth database error:", error);
-    return res.status(500).json({ ok: false, error: "Failed to find or create local user." });
-  }
-});
-
-app.get("/api/me", async (req, res) => {
-  const userId = Number(req.session && req.session.userId);
-  if (!Number.isInteger(userId) || userId <= 0) {
-    return res.status(401).json({ ok: false, error: "Unauthenticated." });
-  }
-
-  try {
-    const user = await findLocalUserById(userId);
-    if (!user) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ ok: false, error: "Unauthenticated." });
-    }
-
-    return res.json({ ok: true, user });
-  } catch (error) {
-    console.error("Failed to read current session user:", error);
-    return res.status(500).json({ ok: false, error: "Failed to load current user." });
-  }
-});
-
-app.post("/api/auth/logout", (req, res) => {
-  req.session.destroy((error) => {
-    if (error) {
-      console.error("Failed to destroy session:", error);
-      return res.status(500).json({ ok: false, error: "Failed to log out." });
-    }
-
-    res.clearCookie("portfolio.sid");
-    return res.json({ ok: true });
-  });
-});
-
+app.use(createAuthRouter({ isProduction }));
 app.use("/api/positions", positionsRouter);
 app.use("/api/transactions", transactionsRouter);
 app.use("/api/fx-rate", fxRateRouter);
-app.use("/api/market-prices", marketPricesRoute);
+app.use("/api/market-prices", marketPricesRouter);
 app.use("/api/portfolio-history", portfolioHistoryRouter);
 
 app.listen(port, () => {

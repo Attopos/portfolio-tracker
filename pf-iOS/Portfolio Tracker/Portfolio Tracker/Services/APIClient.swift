@@ -21,6 +21,9 @@ enum APIError: LocalizedError {
         case .unauthorized:
             return "Not signed in"
         case .decoding(let error):
+            if let decodingError = error as? DecodingError {
+                return "Unexpected response format: \(decodingError.diagnosticDescription)"
+            }
             return "Unexpected response format: \(error.localizedDescription)"
         case .network(let error):
             return error.localizedDescription
@@ -146,4 +149,21 @@ private func decodeISO8601Date(from decoder: Decoder) throws -> Date {
 
 private struct ServerErrorBody: Decodable {
     let error: String?
+}
+
+private extension DecodingError {
+    var diagnosticDescription: String {
+        switch self {
+        case .dataCorrupted(let context),
+             .keyNotFound(_, let context),
+             .typeMismatch(_, let context),
+             .valueNotFound(_, let context):
+            let path = context.codingPath.map(\.stringValue).joined(separator: ".")
+            return path.isEmpty
+                ? context.debugDescription
+                : "\(path): \(context.debugDescription)"
+        @unknown default:
+            return localizedDescription
+        }
+    }
 }
