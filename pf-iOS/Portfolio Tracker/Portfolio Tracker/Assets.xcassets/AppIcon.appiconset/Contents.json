@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "portfolio-icon.png",
+      "filename" : "light theme.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -13,7 +13,7 @@
           "value" : "dark"
         }
       ],
-      "filename" : "portfolio-icon-darkthene.png",
+      "filename" : "dark theme.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
