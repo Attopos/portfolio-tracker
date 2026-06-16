@@ -507,6 +507,11 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.summary-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 34rem;
+}
+
 .summary-card {
   padding: 2.12rem 2rem 2rem 2.28rem;
   min-height: 142px;

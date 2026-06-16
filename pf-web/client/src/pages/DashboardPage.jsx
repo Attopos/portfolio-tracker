@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ArrowTrendingUpIcon, WalletIcon } from "@heroicons/react/24/outline";
+import { WalletIcon } from "@heroicons/react/24/outline";
 import SummaryCard from "../components/cards/SummaryCard.jsx";
 import AssetBadge from "../features/assets/AssetBadge.jsx";
 import { useAuth } from "../features/auth/AuthContext.jsx";
@@ -177,7 +177,6 @@ function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const {
     cnyPerUsdRate,
-    dailySummary,
     marketPricesByAssetSymbol,
     positions,
   } = usePortfolioWorkspace();
@@ -190,14 +189,6 @@ function DashboardPage() {
 
   const totalUsd = rankedAllocation.reduce((sum, item) => sum + item.usdValue, 0);
   const totalCny = totalUsd * cnyPerUsdRate;
-  const totalInvestedUsd = rankedAllocation.reduce((sum, item) => sum + item.investedUsd, 0);
-  const totalProfitUsd = totalUsd - totalInvestedUsd;
-  const totalProfitCny = totalProfitUsd * cnyPerUsdRate;
-  const totalProfitPercent = totalInvestedUsd > 0 ? (totalProfitUsd / totalInvestedUsd) * 100 : 0;
-  const totalDailyPnlCny = Number(dailySummary?.dailyPnlCny) || 0;
-  const totalDailyPnlPercent = Number(dailySummary?.dailyPnlPct) || 0;
-  const isDailyPositive = totalDailyPnlCny >= 0;
-  const isTotalProfitPositive = totalProfitUsd >= 0;
 
   return (
     <section className="page-panel page-panel-detail">
@@ -208,7 +199,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      <section className="summary-grid summary-grid-compact" aria-label="Portfolio summary">
+      <section className="summary-grid summary-grid-single" aria-label="Portfolio summary">
         <SummaryCard
           label="Value"
           icon={WalletIcon}
@@ -216,32 +207,6 @@ function DashboardPage() {
           footer={formatCurrency(totalCny, "¥")}
         >
           <h2 className="summary-value">{formatCurrency(totalCny, "¥")}</h2>
-        </SummaryCard>
-        <SummaryCard
-          label="Total Profit"
-          icon={ArrowTrendingUpIcon}
-          tone="highlight"
-          footer={(
-            <>
-              <span className={`summary-daily-change-arrow ${isDailyPositive ? "is-up" : "is-down"}`} aria-hidden="true" />
-              <span className="summary-daily-change-value">
-                {`${totalDailyPnlCny >= 0 ? "+" : "-"}${formatCurrency(Math.abs(totalDailyPnlCny), "¥")}`}
-              </span>
-              <span className="summary-daily-change-label">
-                daily
-              </span>
-            </>
-          )}
-          footerClassName={`summary-daily-change ${isDailyPositive ? "is-positive" : "is-negative"}`}
-        >
-          <div className="summary-card-main">
-            <h2 className={`summary-card-value ${isTotalProfitPositive ? "is-positive" : "is-negative"}`}>
-              {`${isTotalProfitPositive ? "+" : "-"}${formatCurrency(Math.abs(totalProfitCny), "¥")}`}
-            </h2>
-            <span className={`summary-card-rate ${isTotalProfitPositive ? "is-positive" : "is-negative"}`}>
-              {`${totalProfitPercent >= 0 ? "+" : "-"}${Math.abs(totalProfitPercent).toFixed(2)}%`}
-            </span>
-          </div>
         </SummaryCard>
       </section>
 

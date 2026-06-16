@@ -13,7 +13,6 @@ struct ContentView: View {
             } else if auth.isAuthenticated {
                 MainTabView()
                     .task { await portfolio.loadAll() }
-                    .task { await portfolio.loadHistory() }
             } else {
                 SignInView()
             }

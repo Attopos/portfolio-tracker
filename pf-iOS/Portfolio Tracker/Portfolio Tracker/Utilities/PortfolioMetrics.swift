@@ -84,11 +84,4 @@ enum PortfolioMetrics {
         positions.reduce(0) { $0 + metrics(for: $1, marketPrices: marketPrices, fxRate: fxRate).valueUSD }
     }
 
-    static func totalInvestedCNY(
-        positions: [Position],
-        marketPrices: [String: MarketPrice],
-        fxRate: Double
-    ) -> Double {
-        positions.reduce(0) { $0 + metrics(for: $1, marketPrices: marketPrices, fxRate: fxRate).investedCNY }
-    }
 }

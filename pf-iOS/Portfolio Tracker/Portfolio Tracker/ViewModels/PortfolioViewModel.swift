@@ -11,9 +11,6 @@ final class PortfolioViewModel {
     var transactions: [Transaction] = []
     var marketPrices: [String: MarketPrice] = [:]
     var fxRate: Double = 6.91
-    var dailySummary: DailySummary?
-    var historyPoints: [HistoryPoint] = []
-    var selectedRange: HistoryRange = .thirtyDays
 
     var isPositionsLoading = false
     var isTransactionsLoading = false
@@ -25,18 +22,15 @@ final class PortfolioViewModel {
     private let positionService: PositionService
     private let transactionService: TransactionService
     private let marketDataService: MarketDataService
-    private let historyService: PortfolioHistoryService
 
     init(
         positionService: PositionService = PositionService(),
         transactionService: TransactionService = TransactionService(),
-        marketDataService: MarketDataService = MarketDataService(),
-        historyService: PortfolioHistoryService = PortfolioHistoryService()
+        marketDataService: MarketDataService = MarketDataService()
     ) {
         self.positionService = positionService
         self.transactionService = transactionService
         self.marketDataService = marketDataService
-        self.historyService = historyService
     }
 
     // MARK: - Computed
@@ -56,7 +50,6 @@ final class PortfolioViewModel {
         async let txn: Void = loadTransactions()
         _ = await (pos, txn)
         await loadMarketData()
-        await loadDailySummary()
     }
 
     func loadPositions() async {
@@ -95,22 +88,6 @@ final class PortfolioViewModel {
         }
     }
 
-    func loadDailySummary() async {
-        do {
-            dailySummary = try await historyService.fetchDailySummary()
-        } catch {
-            // Non-critical
-        }
-    }
-
-    func loadHistory() async {
-        do {
-            historyPoints = try await historyService.fetchHistory(range: selectedRange)
-        } catch {
-            // Non-critical
-        }
-    }
-
     // MARK: - Mutations
 
     func addTransaction(_ payload: CreateTransactionPayload) async throws {
@@ -118,14 +95,12 @@ final class PortfolioViewModel {
         await loadPositions()
         await loadTransactions()
         await loadMarketData()
-        await loadDailySummary()
     }
 
     func deleteTransaction(id: Int) async throws {
         try await transactionService.delete(id: id)
         await loadPositions()
         await loadTransactions()
-        await loadDailySummary()
     }
 
     func updatePosition(
@@ -143,13 +118,11 @@ final class PortfolioViewModel {
         if let i = positions.firstIndex(where: { $0.id == assetId }) {
             positions[i] = updated
         }
-        await loadDailySummary()
     }
 
     func deletePosition(assetId: String) async throws {
         try await positionService.delete(assetId: assetId)
         positions.removeAll { $0.id == assetId }
         transactions.removeAll { $0.assetId == assetId }
-        await loadDailySummary()
     }
 }

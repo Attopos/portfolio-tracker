@@ -4,7 +4,6 @@ import {
   createTradeTransaction,
   deleteHolding as deleteHoldingRequest,
   deleteTransaction as deleteTransactionRequest,
-  fetchPortfolioDailySummary,
   fetchMarketPrices,
   fetchPositions,
   fetchTransactions,
@@ -24,7 +23,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
   const [marketPricesByAssetSymbol, setMarketPricesByAssetSymbol] = useState({});
   const [cnyPerUsdRate, setCnyPerUsdRate] = useState(DEFAULT_CNY_PER_USD);
-  const [dailySummary, setDailySummary] = useState(null);
   const [marketStatus, setMarketStatus] = useState("");
 
   async function refreshPositions() {
@@ -130,7 +128,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
   useEffect(() => {
     if (!isAuthenticated || positions.length === 0) {
       setMarketPricesByAssetSymbol({});
-      setDailySummary(null);
       setMarketStatus("");
       return;
     }
@@ -141,10 +138,9 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       .filter(Boolean);
 
     async function refreshMarketData() {
-      const [rateResult, pricesResult, dailySummaryResult] = await Promise.allSettled([
+      const [rateResult, pricesResult] = await Promise.allSettled([
         fetchUsdCnyRate(),
         fetchMarketPrices(trackedAssetSymbols),
-        fetchPortfolioDailySummary(),
       ]);
 
       if (cancelled) {
@@ -161,13 +157,7 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
         setMarketPricesByAssetSymbol({});
       }
 
-      if (dailySummaryResult.status === "fulfilled") {
-        setDailySummary(dailySummaryResult.value);
-      } else {
-        setDailySummary(null);
-      }
-
-      const failures = [rateResult, pricesResult, dailySummaryResult]
+      const failures = [rateResult, pricesResult]
         .filter((result) => result.status === "rejected")
         .map((result) => {
           return result.reason instanceof Error ? result.reason.message : "Failed to refresh market data.";
@@ -185,7 +175,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
         return;
       }
 
-      setDailySummary(null);
       setMarketPricesByAssetSymbol({});
       setMarketStatus(error instanceof Error ? error.message : "Failed to refresh market data.");
     });
@@ -203,7 +192,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
       deleteTransaction,
       updateHolding,
       cnyPerUsdRate,
-      dailySummary,
       isPositionsLoading,
       isTransactionsLoading,
       marketPricesByAssetSymbol,
@@ -215,7 +203,6 @@ export function PortfolioWorkspaceProvider({ children, isAuthenticated }) {
     }),
     [
       cnyPerUsdRate,
-      dailySummary,
       deleteHolding,
       deleteTransaction,
       updateHolding,
