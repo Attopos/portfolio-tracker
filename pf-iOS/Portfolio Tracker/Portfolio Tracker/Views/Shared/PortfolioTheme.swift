@@ -114,19 +114,99 @@ struct PTAdaptiveStack<Content: View>: View {
 struct PTAssetBadge: View {
     let symbol: String
 
+    private var imageName: String? {
+        Self.assetIconMap[Self.normalizedKey(symbol)]
+    }
+
     var body: some View {
-        Text(symbol.prefix(3).uppercased())
-            .font(.caption.weight(.heavy))
-            .foregroundStyle(Color.black)
-            .frame(width: 42, height: 42)
-            .background(
-                LinearGradient(
-                    colors: [PTTheme.accent.opacity(0.98), PTTheme.accent.opacity(0.86)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        Group {
+            if let imageName {
+                Image(imageName)
+                    .resizable()
+                    .renderingMode(.original)
+                    .scaledToFit()
+                    .padding(6)
+                    .background(PTTheme.surface2)
+            } else {
+                Text(symbol.prefix(3).uppercased())
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(Color.black)
+                    .background(
+                        LinearGradient(
+                            colors: [PTTheme.accent.opacity(0.98), PTTheme.accent.opacity(0.86)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+        }
+        .frame(width: 42, height: 42)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private static let assetIconMap: [String: String] = {
+        let pairs: [(String, String)] = [
+            ("BTC", "asset-btc"),
+            ("BITCOIN", "asset-btc"),
+            ("CRYPTO-BTC", "asset-btc"),
+            ("ETH", "asset-eth"),
+            ("ETHEREUM", "asset-eth"),
+            ("CRYPTO-ETH", "asset-eth"),
+            ("GOLD", "asset-gold"),
+            ("XAU", "asset-gold"),
+            ("COMMODITY-GOLD", "asset-gold"),
+            ("QQQ", "asset-nasdaq100"),
+            ("NASDAQ", "asset-nasdaq100"),
+            ("NASDAQ100", "asset-nasdaq100"),
+            ("NASDAQ 100", "asset-nasdaq100"),
+            ("INDEX-NASDAQ-100", "asset-nasdaq100"),
+            ("N225", "asset-nikkei225"),
+            ("NIKKEI", "asset-nikkei225"),
+            ("NIKKEI225", "asset-nikkei225"),
+            ("NIKKEI 225", "asset-nikkei225"),
+            ("INDEX-NIKKEI-225", "asset-nikkei225"),
+            ("SPX", "asset-sp500"),
+            ("SP500", "asset-sp500"),
+            ("S&P500", "asset-sp500"),
+            ("S&P 500", "asset-sp500"),
+            ("INDEX-SP-500", "asset-sp500"),
+            ("DAX", "asset-dax40"),
+            ("DAX40", "asset-dax40"),
+            ("DAX 40", "asset-dax40"),
+            ("INDEX-DAX-40", "asset-dax40"),
+            ("CAC", "asset-cac40"),
+            ("CAC40", "asset-cac40"),
+            ("CAC 40", "asset-cac40"),
+            ("INDEX-CAC-40", "asset-cac40"),
+        ]
+
+        return Dictionary(uniqueKeysWithValues: pairs.map { (normalizedKey($0.0), $0.1) })
+    }()
+
+    private static func normalizedKey(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+            .replacingOccurrences(of: "_", with: "-")
+    }
+}
+
+struct PTAssetIconBadge: View {
+    let assetId: String
+    let symbol: String?
+    let name: String
+
+    var body: some View {
+        PTAssetBadge(symbol: preferredKey)
+    }
+
+    private var preferredKey: String {
+        [
+            assetId,
+            symbol ?? "",
+            name,
+        ]
+        .first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } ?? assetId
     }
 }
 
