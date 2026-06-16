@@ -5,16 +5,24 @@ struct DailySummaryCard: View {
     let totalCNY: Double
 
     private var isPositive: Bool { summary.dailyPnlCny >= 0 }
-    private var pnlColor: Color { isPositive ? .green : .red }
+    private var pnlColor: Color { isPositive ? PTTheme.accent : PTTheme.negative }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Portfolio Value")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Image(systemName: "wallet.pass")
+                    .foregroundStyle(PTTheme.accent)
+                Text("Value")
+                    .font(.subheadline)
+                    .foregroundStyle(PTTheme.textSoft)
+            }
 
             Text(Formatters.cny(totalCNY))
-                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .font(.system(size: 30, weight: .medium, design: .rounded))
+                .foregroundStyle(PTTheme.textStrong)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
             HStack(spacing: 6) {
                 Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
@@ -25,14 +33,11 @@ struct DailySummaryCard: View {
                     .font(.subheadline)
                 Text("24h")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(PTTheme.textMuted)
             }
             .foregroundStyle(pnlColor)
         }
-        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .padding(.horizontal)
+        .portfolioCard(padding: 20)
     }
 }

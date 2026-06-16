@@ -20,6 +20,7 @@ struct AddTransactionView: View {
             Form {
                 Section("Asset") {
                     Toggle("New Asset", isOn: $isNewAsset.animation())
+                        .tint(PTTheme.accent)
 
                     if isNewAsset {
                         TextField("Asset Name", text: $assetName)
@@ -47,25 +48,23 @@ struct AddTransactionView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    HStack {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Quantity")
-                        Spacer()
                         TextField("0", text: $quantityText)
                             .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
+                            .textFieldStyle(.roundedBorder)
                     }
 
-                    HStack {
-                        Text("Unit Price")
-                        Text("(optional)")
-                            .foregroundStyle(.secondary)
-                            .font(.footnote)
-                        Spacer()
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("Unit Price")
+                            Text("(optional)")
+                                .foregroundStyle(.secondary)
+                                .font(.footnote)
+                        }
                         TextField("0.00", text: $unitPriceText)
                             .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
+                            .textFieldStyle(.roundedBorder)
                     }
 
                     DatePicker(
@@ -77,21 +76,29 @@ struct AddTransactionView: View {
 
                 if let err = submitError {
                     Section {
-                        Text(err).foregroundStyle(.red).font(.footnote)
+                        Text(err).foregroundStyle(PTTheme.negative).font(.footnote)
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(PTTheme.canvas)
+            .foregroundStyle(PTTheme.text)
             .navigationTitle("Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(PTTheme.canvas, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        .foregroundStyle(PTTheme.text)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if isSubmitting {
                         ProgressView()
+                            .tint(PTTheme.accent)
                     } else {
                         Button("Add") { Task { await submit() } }
+                            .foregroundStyle(PTTheme.accent)
                             .disabled(!canSubmit)
                     }
                 }

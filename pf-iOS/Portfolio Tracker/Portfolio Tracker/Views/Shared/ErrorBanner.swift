@@ -6,15 +6,12 @@ struct ErrorBanner: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.yellow)
+                .foregroundStyle(PTTheme.negative)
             Text(message)
                 .font(.subheadline)
-                .foregroundStyle(.primary)
+                .foregroundStyle(PTTheme.text)
         }
-        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGray6))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .padding(.horizontal)
+        .portfolioCard()
     }
 }

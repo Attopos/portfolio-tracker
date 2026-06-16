@@ -58,7 +58,7 @@ enum APIError: LocalizedError {
 /// properties are either immutable or thread-safe (URLSession, JSONDecoder/Encoder).
 final class APIClient: @unchecked Sendable {
 
-    nonisolated(unsafe) static let shared = APIClient()
+    nonisolated static let shared = APIClient()
 
     private let session: URLSession
     private let decoder: JSONDecoder

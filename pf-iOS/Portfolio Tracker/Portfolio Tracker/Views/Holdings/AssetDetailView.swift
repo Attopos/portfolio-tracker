@@ -19,79 +19,92 @@ struct AssetDetailView: View {
         PortfolioMetrics.metrics(for: current, marketPrices: portfolio.marketPrices, fxRate: portfolio.fxRate)
     }
 
+    private var assetTransactions: [Transaction] {
+        portfolio.transactions.filter { $0.assetId == position.id }
+    }
+
     var body: some View {
-        List {
-            Section("Position") {
-                LabeledContent("Asset", value: current.name)
-                LabeledContent("Quantity", value: Formatters.quantity(current.position))
-                LabeledContent("Currency", value: current.currency.rawValue)
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                PTPageHeader(eyebrow: current.currency.rawValue, title: current.name)
 
-            Section("Valuation") {
-                LabeledContent("Value (CNY)", value: Formatters.cny(metrics.valueCNY))
-                LabeledContent("Value (USD)", value: Formatters.usd(metrics.valueUSD))
-                LabeledContent(
-                    "Effective Price",
-                    value: Formatters.value(metrics.effectivePrice, currency: current.currency)
-                )
-                if current.manualMarketPrice != nil {
-                    Label("Manual price override is active", systemImage: "pencil.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                VStack(spacing: 12) {
+                    detailLine("Quantity", Formatters.quantity(current.position))
+                    detailLine("Currency", current.currency.rawValue)
+                    detailLine("Value (CNY)", Formatters.cny(metrics.valueCNY))
+                    detailLine("Value (USD)", Formatters.usd(metrics.valueUSD))
+                    detailLine("Effective Price", Formatters.value(metrics.effectivePrice, currency: current.currency))
                 }
-            }
+                .portfolioCard()
 
-            Section {
-                HStack {
-                    Text("Override Price")
-                    Spacer()
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Price Override")
+                        .font(.headline)
+                        .foregroundStyle(PTTheme.textStrong)
+
                     TextField("e.g. 50000", text: $manualPriceText)
                         .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: 160)
-                }
+                        .textFieldStyle(.plain)
+                        .padding(13)
+                        .background(PTTheme.surface2)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .foregroundStyle(PTTheme.text)
 
-                HStack(spacing: 16) {
-                    Button("Save") { Task { await saveManualPrice() } }
-                        .disabled(isSaving || manualPriceText.isEmpty)
+                    HStack(spacing: 12) {
+                        Button("Save") { Task { await saveManualPrice() } }
+                            .buttonStyle(PTAccentButtonStyle())
+                            .disabled(isSaving || manualPriceText.isEmpty)
 
-                    if current.manualMarketPrice != nil {
-                        Button("Clear Override", role: .destructive) {
-                            Task { await clearManualPrice() }
+                        if current.manualMarketPrice != nil {
+                            Button("Clear") { Task { await clearManualPrice() } }
+                                .foregroundStyle(PTTheme.negative)
+                                .disabled(isSaving)
                         }
-                        .disabled(isSaving)
+
+                        if isSaving {
+                            ProgressView()
+                                .tint(PTTheme.accent)
+                        }
+                    }
+
+                    if let saveError {
+                        Text(saveError)
+                            .font(.caption)
+                            .foregroundStyle(PTTheme.negative)
+                    }
+                }
+                .portfolioCard()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Recent Transactions")
+                        .font(.headline)
+                        .foregroundStyle(PTTheme.textStrong)
+
+                    if assetTransactions.isEmpty {
+                        Text("No transactions recorded.")
+                            .font(.subheadline)
+                            .foregroundStyle(PTTheme.textMuted)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(assetTransactions) { txn in
+                            TransactionRow(transaction: txn)
+                        }
                     }
                 }
 
-                if isSaving { ProgressView() }
-                if let err = saveError {
-                    Text(err).font(.caption).foregroundStyle(.red)
-                }
-            } header: {
-                Text("Price Override")
-            } footer: {
-                Text("Overrides live market price for this holding only.")
-            }
-
-            Section("Recent Transactions") {
-                let assetTxns = portfolio.transactions.filter { $0.assetId == position.id }
-                if assetTxns.isEmpty {
-                    Text("No transactions recorded.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(assetTxns) { txn in
-                        TransactionRow(transaction: txn)
-                    }
-                }
-            }
-
-            Section {
                 Button("Delete Holding", role: .destructive) {
                     showDeleteConfirm = true
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(PTTheme.negative.opacity(0.14))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
+            .padding(18)
         }
-        .navigationTitle(current.name)
+        .portfolioScreenBackground()
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             manualPriceText = current.manualMarketPrice.map { String($0) } ?? ""
@@ -110,6 +123,18 @@ struct AssetDetailView: View {
         } message: {
             Text("All associated transactions will also be removed. This cannot be undone.")
         }
+    }
+
+    private func detailLine(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(PTTheme.textMuted)
+            Spacer()
+            Text(value)
+                .foregroundStyle(PTTheme.textStrong)
+                .monospacedDigit()
+        }
+        .font(.subheadline)
     }
 
     private func saveManualPrice() async {

@@ -9,6 +9,7 @@ struct HistoryChartView: View {
             HStack {
                 Text("History")
                     .font(.headline)
+                    .foregroundStyle(PTTheme.textStrong)
                 Spacer()
                 // @Bindable wrapper lets us bind to an @Observable from @Environment
                 let vm = Bindable(portfolio)
@@ -19,14 +20,14 @@ struct HistoryChartView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 200)
+                .tint(PTTheme.accent)
             }
-            .padding(.horizontal)
 
             if portfolio.historyPoints.isEmpty {
                 Text("No history data yet.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(PTTheme.textMuted)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
+                    .padding(.vertical, 28)
             } else {
                 Chart(portfolio.historyPoints) { point in
                     LineMark(
@@ -34,19 +35,31 @@ struct HistoryChartView: View {
                         y: .value("USD", point.totalUsd)
                     )
                     .interpolationMethod(.catmullRom)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(PTTheme.accent)
 
                     AreaMark(
                         x: .value("Date", point.capturedAt),
                         y: .value("USD", point.totalUsd)
                     )
                     .interpolationMethod(.catmullRom)
-                    .foregroundStyle(.blue.opacity(0.12))
+                    .foregroundStyle(PTTheme.accent.opacity(0.12))
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) {
+                        AxisGridLine().foregroundStyle(PTTheme.line)
+                        AxisValueLabel().foregroundStyle(PTTheme.textMuted)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) {
+                        AxisGridLine().foregroundStyle(PTTheme.line)
+                        AxisValueLabel().foregroundStyle(PTTheme.textMuted)
+                    }
                 }
                 .frame(height: 160)
-                .padding(.horizontal)
             }
         }
+        .portfolioCard(padding: 18)
         .onChange(of: portfolio.selectedRange) { _, _ in
             Task { await portfolio.loadHistory() }
         }

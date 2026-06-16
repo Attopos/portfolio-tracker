@@ -25,6 +25,18 @@ struct ContentView: View {
 // MARK: - Main navigation
 
 struct MainTabView: View {
+    init() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(PTTheme.canvas)
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(PTTheme.textMuted)
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor(PTTheme.textMuted)]
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(PTTheme.accent)
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(PTTheme.accent)]
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView {
             DashboardView()

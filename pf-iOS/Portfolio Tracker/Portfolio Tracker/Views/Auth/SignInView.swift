@@ -5,21 +5,30 @@ struct SignInView: View {
     @Environment(AuthViewModel.self) private var auth
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 24) {
             Spacer()
 
-            VStack(spacing: 12) {
+            VStack(spacing: 18) {
                 Image(systemName: "chart.pie.fill")
-                    .font(.system(size: 72))
-                    .foregroundStyle(.blue)
+                    .font(.system(size: 58))
+                    .foregroundStyle(PTTheme.accent)
                 Text("Portfolio Tracker")
-                    .font(.largeTitle.bold())
+                    .font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .foregroundStyle(PTTheme.textStrong)
+                Text("Sign in to sync your positions, market prices, and transaction ledger.")
+                    .font(.subheadline)
+                    .foregroundStyle(PTTheme.textMuted)
+                    .multilineTextAlignment(.center)
             }
+            .portfolioCard(padding: 28)
+            .padding(.horizontal, 22)
 
             Spacer()
 
             if auth.isLoading {
                 ProgressView("Signing in...")
+                    .tint(PTTheme.accent)
+                    .foregroundStyle(PTTheme.text)
             } else {
                 Button(action: handleSignIn) {
                     HStack(spacing: 10) {
@@ -29,21 +38,15 @@ struct SignInView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color(.systemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
                 }
+                .buttonStyle(PTAccentButtonStyle())
                 .padding(.horizontal, 32)
             }
 
             if let error = auth.authError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(PTTheme.negative)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             }
@@ -51,7 +54,7 @@ struct SignInView: View {
             Spacer()
         }
         .padding()
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background(PTTheme.canvas.ignoresSafeArea())
     }
 
     private func handleSignIn() {

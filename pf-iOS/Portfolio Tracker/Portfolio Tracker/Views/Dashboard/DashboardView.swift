@@ -1,24 +1,53 @@
 import SwiftUI
 
 struct DashboardView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(PortfolioViewModel.self) private var portfolio
+
+    private var totalInvestedCNY: Double {
+        PortfolioMetrics.totalInvestedCNY(
+            positions: portfolio.positions,
+            marketPrices: portfolio.marketPrices,
+            fxRate: portfolio.fxRate
+        )
+    }
+
+    private var totalProfitCNY: Double {
+        portfolio.totalValueCNY - totalInvestedCNY
+    }
+
+    private var totalProfitPercent: Double {
+        totalInvestedCNY > 0 ? (totalProfitCNY / totalInvestedCNY) * 100 : 0
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    if let summary = portfolio.dailySummary {
-                        DailySummaryCard(summary: summary, totalCNY: portfolio.totalValueCNY)
-                    } else if portfolio.positions.isEmpty {
-                        ContentUnavailableView(
-                            "No Holdings Yet",
-                            systemImage: "chart.pie.fill",
-                            description: Text("Go to Transactions to record your first trade.")
+                VStack(alignment: .leading, spacing: 18) {
+                    PTPageHeader(eyebrow: "Dashboard", title: "Portfolio overview")
+
+                    if portfolio.positions.isEmpty {
+                        PTEmptyState(
+                            title: "No Holdings Yet",
+                            message: "Go to Transactions to record your first trade.",
+                            systemImage: "chart.pie.fill"
                         )
-                        .padding(.top, 60)
+                    } else if let summary = portfolio.dailySummary {
+                        LazyVGrid(columns: summaryColumns, spacing: 14) {
+                            DailySummaryCard(summary: summary, totalCNY: portfolio.totalValueCNY)
+                            PTMetricCard(
+                                label: "Total Profit",
+                                systemImage: "arrow.up.right",
+                                value: "\(totalProfitCNY >= 0 ? "+" : "-")\(Formatters.cny(abs(totalProfitCNY)))",
+                                footer: Formatters.percent(totalProfitPercent),
+                                valueColor: totalProfitCNY >= 0 ? PTTheme.accent : PTTheme.negative
+                            )
+                        }
                     } else {
                         ProgressView()
-                            .padding(.top, 40)
+                            .tint(PTTheme.accent)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 30)
                     }
 
                     if !portfolio.positions.isEmpty {
@@ -31,13 +60,21 @@ struct DashboardView: View {
                         HistoryChartView()
                     }
                 }
-                .padding(.vertical)
+                .padding(18)
             }
-            .navigationTitle("Dashboard")
+            .portfolioScreenBackground()
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .refreshable {
                 await portfolio.loadAll()
                 await portfolio.loadHistory()
             }
         }
+    }
+
+    private var summaryColumns: [GridItem] {
+        horizontalSizeClass == .compact
+            ? [GridItem(.flexible(), spacing: 14)]
+            : [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
     }
 }
