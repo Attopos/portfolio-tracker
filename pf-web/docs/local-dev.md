@@ -14,6 +14,19 @@ This starts:
 - Backend: `http://localhost:3000`
 - Health check: `http://localhost:3000/api/health`
 
+## Start only the iOS backend
+
+Run this in the project root before launching the iOS simulator:
+
+```bash
+./scripts/ios-dev.sh
+```
+
+The script checks `http://localhost:3000/api/health` first. If the backend is
+already running, it exits without starting another copy. If it is not running,
+it starts the backend in the background and writes logs to
+`$TMPDIR/portfolio-tracker-ios-dev.log`.
+
 ## Required local config
 
 - Create `server/.env` from [server/.env.example](/Users/hermes/Desktop/portfolio-tracker/server/.env.example)

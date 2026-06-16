@@ -114,6 +114,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A13811472FAE4ABB0062E9C9 /* Build configuration list for PBXNativeTarget "Portfolio Tracker" */;
 			buildPhases = (
+				A13812272FB204000062E9C9 /* Start Local Backend */,
 				A13811202FAE4AB90062E9C9 /* Sources */,
 				A13811212FAE4AB90062E9C9 /* Frameworks */,
 				A13811222FAE4AB90062E9C9 /* Resources */,
@@ -250,6 +251,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A13812272FB204000062E9C9 /* Start Local Backend */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Start Local Backend";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  \"$SRCROOT/../../scripts/ios-dev.sh\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A13811202FAE4AB90062E9C9 /* Sources */ = {

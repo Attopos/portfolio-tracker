@@ -3,7 +3,27 @@ import Foundation
 // MARK: - Base URL configuration
 
 private enum APIConfig {
-    static let baseURL = URL(string: "https://portfolio-tracker.app")!
+    static var baseURL: URL {
+        if
+            let rawValue = Bundle.main.object(forInfoDictionaryKey: "APIBaseURL") as? String,
+            let url = URL(string: rawValue.trimmingCharacters(in: .whitespacesAndNewlines)),
+            !rawValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            return url
+        }
+
+        return defaultBaseURL
+    }
+
+    #if DEBUG
+    #if targetEnvironment(simulator)
+    private static let defaultBaseURL = URL(string: "http://localhost:3000")!
+    #else
+    private static let defaultBaseURL = URL(string: "https://portfolio-tracker.app")!
+    #endif
+    #else
+    private static let defaultBaseURL = URL(string: "https://portfolio-tracker.app")!
+    #endif
 }
 
 // MARK: - Error type
@@ -45,7 +65,10 @@ final class APIClient: @unchecked Sendable {
     private let encoder: JSONEncoder
 
     private init() {
-        session = URLSession(configuration: .default)
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 8
+        configuration.timeoutIntervalForResource = 15
+        session = URLSession(configuration: configuration)
 
         decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom(decodeISO8601Date)
